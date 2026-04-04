@@ -19,6 +19,15 @@ public class UserRepository : IUserRepository
         return await _context.Users.FindAsync([id], cancellationToken);
     }
 
+    public async Task<IReadOnlyList<User>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        var idList = ids.ToList();
+        return await _context.Users
+            .AsNoTracking()
+            .Where(u => idList.Contains(u.Id))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<User?> GetByFirebaseUidAsync(string firebaseUid, CancellationToken cancellationToken = default)
     {
         return await _context.Users

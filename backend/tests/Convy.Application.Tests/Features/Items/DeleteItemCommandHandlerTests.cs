@@ -14,13 +14,14 @@ public class DeleteItemCommandHandlerTests
     private readonly IHouseholdListRepository _listRepository = Substitute.For<IHouseholdListRepository>();
     private readonly IHouseholdRepository _householdRepository = Substitute.For<IHouseholdRepository>();
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
+    private readonly IHouseholdNotificationService _notifications = Substitute.For<IHouseholdNotificationService>();
     private readonly DeleteItemCommandHandler _handler;
     private readonly Guid _userId = Guid.NewGuid();
 
     public DeleteItemCommandHandlerTests()
     {
         _currentUser.UserId.Returns(_userId);
-        _handler = new DeleteItemCommandHandler(_itemRepository, _listRepository, _householdRepository, _currentUser);
+        _handler = new DeleteItemCommandHandler(_itemRepository, _listRepository, _householdRepository, _currentUser, _notifications);
     }
 
     [Fact]
@@ -43,6 +44,7 @@ public class DeleteItemCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         _itemRepository.Received(1).Remove(item);
         await _itemRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _notifications.Received(1).NotifyItemDeleted(household.Id, item.Id, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -60,6 +62,7 @@ public class DeleteItemCommandHandlerTests
         // Assert
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("NotFound");
+        await _notifications.DidNotReceive().NotifyItemDeleted(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

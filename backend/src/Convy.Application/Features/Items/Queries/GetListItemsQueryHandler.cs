@@ -11,17 +11,20 @@ public class GetListItemsQueryHandler : IRequestHandler<GetListItemsQuery, Resul
     private readonly IListItemRepository _itemRepository;
     private readonly IHouseholdListRepository _listRepository;
     private readonly IHouseholdRepository _householdRepository;
+    private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUser;
 
     public GetListItemsQueryHandler(
         IListItemRepository itemRepository,
         IHouseholdListRepository listRepository,
         IHouseholdRepository householdRepository,
+        IUserRepository userRepository,
         ICurrentUserService currentUser)
     {
         _itemRepository = itemRepository;
         _listRepository = listRepository;
         _householdRepository = householdRepository;
+        _userRepository = userRepository;
         _currentUser = currentUser;
     }
 
@@ -37,6 +40,12 @@ public class GetListItemsQueryHandler : IRequestHandler<GetListItemsQuery, Resul
 
         var items = await _itemRepository.GetByListIdAsync(request.ListId, request.IncludeCompleted, cancellationToken);
 
+        var userIds = items.Select(i => i.CreatedBy)
+            .Concat(items.Where(i => i.CompletedBy.HasValue).Select(i => i.CompletedBy!.Value))
+            .Distinct();
+        var users = await _userRepository.GetByIdsAsync(userIds, cancellationToken);
+        var userNames = users.ToDictionary(u => u.Id, u => u.DisplayName);
+
         var dtos = items.Select(i => new ListItemDto(
             i.Id,
             i.Title,
@@ -45,9 +54,11 @@ public class GetListItemsQueryHandler : IRequestHandler<GetListItemsQuery, Resul
             i.Note,
             i.ListId,
             i.CreatedBy,
+            userNames.GetValueOrDefault(i.CreatedBy, "Unknown"),
             i.CreatedAt,
             i.IsCompleted,
             i.CompletedBy,
+            i.CompletedBy.HasValue ? userNames.GetValueOrDefault(i.CompletedBy.Value, "Unknown") : null,
             i.CompletedAt)).ToList();
 
         return Result<IReadOnlyList<ListItemDto>>.Success(dtos);

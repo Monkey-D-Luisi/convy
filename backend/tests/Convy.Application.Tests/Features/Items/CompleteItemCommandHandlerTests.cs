@@ -1,5 +1,6 @@
 using Convy.Application.Common.Interfaces;
 using Convy.Application.Features.Items.Commands;
+using Convy.Application.Features.Items.DTOs;
 using Convy.Domain.Entities;
 using Convy.Domain.Repositories;
 using Convy.Domain.ValueObjects;
@@ -13,14 +14,18 @@ public class CompleteItemCommandHandlerTests
     private readonly IListItemRepository _itemRepository = Substitute.For<IListItemRepository>();
     private readonly IHouseholdListRepository _listRepository = Substitute.For<IHouseholdListRepository>();
     private readonly IHouseholdRepository _householdRepository = Substitute.For<IHouseholdRepository>();
+    private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
+    private readonly IHouseholdNotificationService _notifications = Substitute.For<IHouseholdNotificationService>();
     private readonly CompleteItemCommandHandler _handler;
     private readonly Guid _userId = Guid.NewGuid();
 
     public CompleteItemCommandHandlerTests()
     {
         _currentUser.UserId.Returns(_userId);
-        _handler = new CompleteItemCommandHandler(_itemRepository, _listRepository, _householdRepository, _currentUser);
+        _userRepository.GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<User> { new("firebase-uid", "Test User", "test@example.com") });
+        _handler = new CompleteItemCommandHandler(_itemRepository, _listRepository, _householdRepository, _userRepository, _currentUser, _notifications);
     }
 
     [Fact]
@@ -44,6 +49,7 @@ public class CompleteItemCommandHandlerTests
         item.IsCompleted.Should().BeTrue();
         item.CompletedBy.Should().Be(_userId);
         await _itemRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _notifications.Received(1).NotifyItemCompleted(household.Id, Arg.Any<ListItemDto>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -61,6 +67,7 @@ public class CompleteItemCommandHandlerTests
         // Assert
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("NotFound");
+        await _notifications.DidNotReceive().NotifyItemCompleted(Arg.Any<Guid>(), Arg.Any<ListItemDto>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

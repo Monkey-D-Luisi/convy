@@ -1,5 +1,6 @@
 using Convy.Application.Common.Interfaces;
 using Convy.Application.Features.Items.Commands;
+using Convy.Application.Features.Items.DTOs;
 using Convy.Domain.Entities;
 using Convy.Domain.Exceptions;
 using Convy.Domain.Repositories;
@@ -14,14 +15,18 @@ public class UncompleteItemCommandHandlerTests
     private readonly IListItemRepository _itemRepository = Substitute.For<IListItemRepository>();
     private readonly IHouseholdListRepository _listRepository = Substitute.For<IHouseholdListRepository>();
     private readonly IHouseholdRepository _householdRepository = Substitute.For<IHouseholdRepository>();
+    private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
+    private readonly IHouseholdNotificationService _notifications = Substitute.For<IHouseholdNotificationService>();
     private readonly UncompleteItemCommandHandler _handler;
     private readonly Guid _userId = Guid.NewGuid();
 
     public UncompleteItemCommandHandlerTests()
     {
         _currentUser.UserId.Returns(_userId);
-        _handler = new UncompleteItemCommandHandler(_itemRepository, _listRepository, _householdRepository, _currentUser);
+        _userRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(new User("firebase-uid", "Test User", "test@example.com"));
+        _handler = new UncompleteItemCommandHandler(_itemRepository, _listRepository, _householdRepository, _userRepository, _currentUser, _notifications);
     }
 
     [Fact]
@@ -47,6 +52,7 @@ public class UncompleteItemCommandHandlerTests
         item.IsCompleted.Should().BeFalse();
         item.CompletedBy.Should().BeNull();
         await _itemRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _notifications.Received(1).NotifyItemUncompleted(household.Id, Arg.Any<ListItemDto>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -64,6 +70,7 @@ public class UncompleteItemCommandHandlerTests
         // Assert
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("NotFound");
+        await _notifications.DidNotReceive().NotifyItemUncompleted(Arg.Any<Guid>(), Arg.Any<ListItemDto>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

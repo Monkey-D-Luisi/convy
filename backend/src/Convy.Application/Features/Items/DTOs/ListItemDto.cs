@@ -8,7 +8,9 @@ public record ListItemDto(
     string? Note,
     Guid ListId,
     Guid CreatedBy,
+    string CreatedByName,
     DateTime CreatedAt,
     bool IsCompleted,
     Guid? CompletedBy,
+    string? CompletedByName,
     DateTime? CompletedAt);

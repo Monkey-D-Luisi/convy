@@ -1,6 +1,8 @@
+using Convy.Application.Common.Interfaces;
 using Convy.Domain.Repositories;
 using Convy.Infrastructure.Persistence;
 using Convy.Infrastructure.Repositories;
+using Convy.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +21,7 @@ public static class DependencyInjection
         services.AddScoped<IInviteRepository, InviteRepository>();
         services.AddScoped<IHouseholdListRepository, HouseholdListRepository>();
         services.AddScoped<IListItemRepository, ListItemRepository>();
+        services.AddScoped<IHouseholdNotificationService, HouseholdNotificationService>();
 
         return services;
     }

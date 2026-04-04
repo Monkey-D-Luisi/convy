@@ -1,5 +1,6 @@
 using Convy.Application.Common.Interfaces;
 using Convy.Application.Features.Items.Commands;
+using Convy.Application.Features.Items.DTOs;
 using Convy.Domain.Entities;
 using Convy.Domain.Repositories;
 using Convy.Domain.ValueObjects;
@@ -13,14 +14,18 @@ public class CreateItemCommandHandlerTests
     private readonly IListItemRepository _itemRepository = Substitute.For<IListItemRepository>();
     private readonly IHouseholdListRepository _listRepository = Substitute.For<IHouseholdListRepository>();
     private readonly IHouseholdRepository _householdRepository = Substitute.For<IHouseholdRepository>();
+    private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
+    private readonly IHouseholdNotificationService _notifications = Substitute.For<IHouseholdNotificationService>();
     private readonly CreateItemCommandHandler _handler;
     private readonly Guid _userId = Guid.NewGuid();
 
     public CreateItemCommandHandlerTests()
     {
         _currentUser.UserId.Returns(_userId);
-        _handler = new CreateItemCommandHandler(_itemRepository, _listRepository, _householdRepository, _currentUser);
+        var user = new User("firebase-uid", "Test User", "test@example.com");
+        _userRepository.GetByIdAsync(_userId, Arg.Any<CancellationToken>()).Returns(user);
+        _handler = new CreateItemCommandHandler(_itemRepository, _listRepository, _householdRepository, _userRepository, _currentUser, _notifications);
     }
 
     [Fact]
@@ -42,6 +47,7 @@ public class CreateItemCommandHandlerTests
         result.Value.Should().NotBeEmpty();
         await _itemRepository.Received(1).AddAsync(Arg.Any<ListItem>(), Arg.Any<CancellationToken>());
         await _itemRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _notifications.Received(1).NotifyItemCreated(household.Id, Arg.Any<ListItemDto>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -77,6 +83,7 @@ public class CreateItemCommandHandlerTests
         // Assert
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("NotFound");
+        await _notifications.DidNotReceive().NotifyItemCreated(Arg.Any<Guid>(), Arg.Any<ListItemDto>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

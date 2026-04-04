@@ -33,6 +33,41 @@ public class ListItemRepository : IListItemRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<ListItem>> SearchByTitleInListAsync(Guid listId, string title, CancellationToken cancellationToken = default)
+    {
+        var normalizedTitle = title.Trim().ToLowerInvariant();
+
+        return await _context.ListItems
+            .Where(i => i.ListId == listId && !i.IsCompleted)
+            .Where(i => EF.Functions.ILike(i.Title, $"%{normalizedTitle}%"))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<string>> GetFrequentTitlesAsync(Guid householdId, string? query, int limit = 10, CancellationToken cancellationToken = default)
+    {
+        var householdListIds = _context.HouseholdLists
+            .Where(l => l.HouseholdId == householdId)
+            .Select(l => l.Id);
+
+        var titlesQuery = _context.ListItems
+            .Where(i => householdListIds.Contains(i.ListId));
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var normalizedQuery = query.Trim().ToLowerInvariant();
+            titlesQuery = titlesQuery.Where(i => EF.Functions.ILike(i.Title, $"%{normalizedQuery}%"));
+        }
+
+        return await titlesQuery
+            .GroupBy(i => i.Title.ToLower())
+            .OrderByDescending(g => g.Count())
+            .Take(limit)
+            .Select(g => g.First().Title)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddAsync(ListItem item, CancellationToken cancellationToken = default)
     {
         await _context.ListItems.AddAsync(item, cancellationToken);

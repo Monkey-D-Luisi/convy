@@ -1,5 +1,6 @@
 using Convy.Application.Common.Interfaces;
 using Convy.Application.Common.Models;
+using Convy.Application.Features.Items.DTOs;
 using Convy.Domain.Repositories;
 using MediatR;
 
@@ -10,18 +11,24 @@ public class CompleteItemCommandHandler : IRequestHandler<CompleteItemCommand, R
     private readonly IListItemRepository _itemRepository;
     private readonly IHouseholdListRepository _listRepository;
     private readonly IHouseholdRepository _householdRepository;
+    private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUser;
+    private readonly IHouseholdNotificationService _notifications;
 
     public CompleteItemCommandHandler(
         IListItemRepository itemRepository,
         IHouseholdListRepository listRepository,
         IHouseholdRepository householdRepository,
-        ICurrentUserService currentUser)
+        IUserRepository userRepository,
+        ICurrentUserService currentUser,
+        IHouseholdNotificationService notifications)
     {
         _itemRepository = itemRepository;
         _listRepository = listRepository;
         _householdRepository = householdRepository;
+        _userRepository = userRepository;
         _currentUser = currentUser;
+        _notifications = notifications;
     }
 
     public async Task<Result> Handle(CompleteItemCommand request, CancellationToken cancellationToken)
@@ -41,6 +48,16 @@ public class CompleteItemCommandHandler : IRequestHandler<CompleteItemCommand, R
         item.Complete(_currentUser.UserId);
 
         await _itemRepository.SaveChangesAsync(cancellationToken);
+
+        var userIds = new[] { item.CreatedBy, _currentUser.UserId }.Distinct();
+        var users = await _userRepository.GetByIdsAsync(userIds, cancellationToken);
+        var userNames = users.ToDictionary(u => u.Id, u => u.DisplayName);
+        var dto = new ListItemDto(item.Id, item.Title, item.Quantity, item.Unit, item.Note,
+            item.ListId, item.CreatedBy, userNames.GetValueOrDefault(item.CreatedBy, "Unknown"), item.CreatedAt,
+            item.IsCompleted, item.CompletedBy,
+            item.CompletedBy.HasValue ? userNames.GetValueOrDefault(item.CompletedBy.Value, "Unknown") : null,
+            item.CompletedAt);
+        await _notifications.NotifyItemCompleted(list.HouseholdId, dto, cancellationToken);
 
         return Result.Success();
     }

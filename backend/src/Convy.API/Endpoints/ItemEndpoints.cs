@@ -91,6 +91,37 @@ public static class ItemEndpoints
                 ? Results.NoContent()
                 : MapError(result.Error!);
         });
+
+        group.MapGet("/check-duplicate", async (
+            Guid listId,
+            string title,
+            IMediator mediator) =>
+        {
+            var query = new CheckDuplicateItemQuery(listId, title);
+            var result = await mediator.Send(query);
+
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : MapError(result.Error!);
+        });
+
+        // Suggestions endpoint scoped to household
+        var suggestionsGroup = routes.MapGroup("/api/v1/households/{householdId:guid}/item-suggestions")
+            .WithTags("Items")
+            .RequireAuthorization();
+
+        suggestionsGroup.MapGet("/", async (
+            Guid householdId,
+            string? query,
+            IMediator mediator) =>
+        {
+            var suggestionsQuery = new GetItemSuggestionsQuery(householdId, query);
+            var result = await mediator.Send(suggestionsQuery);
+
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : MapError(result.Error!);
+        });
     }
 
     private static IResult MapError(Error error) => error.Code switch

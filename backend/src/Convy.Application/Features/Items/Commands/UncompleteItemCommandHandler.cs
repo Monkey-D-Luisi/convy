@@ -1,5 +1,6 @@
 using Convy.Application.Common.Interfaces;
 using Convy.Application.Common.Models;
+using Convy.Application.Features.Items.DTOs;
 using Convy.Domain.Repositories;
 using MediatR;
 
@@ -10,18 +11,24 @@ public class UncompleteItemCommandHandler : IRequestHandler<UncompleteItemComman
     private readonly IListItemRepository _itemRepository;
     private readonly IHouseholdListRepository _listRepository;
     private readonly IHouseholdRepository _householdRepository;
+    private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUser;
+    private readonly IHouseholdNotificationService _notifications;
 
     public UncompleteItemCommandHandler(
         IListItemRepository itemRepository,
         IHouseholdListRepository listRepository,
         IHouseholdRepository householdRepository,
-        ICurrentUserService currentUser)
+        IUserRepository userRepository,
+        ICurrentUserService currentUser,
+        IHouseholdNotificationService notifications)
     {
         _itemRepository = itemRepository;
         _listRepository = listRepository;
         _householdRepository = householdRepository;
+        _userRepository = userRepository;
         _currentUser = currentUser;
+        _notifications = notifications;
     }
 
     public async Task<Result> Handle(UncompleteItemCommand request, CancellationToken cancellationToken)
@@ -41,6 +48,12 @@ public class UncompleteItemCommandHandler : IRequestHandler<UncompleteItemComman
         item.Uncomplete();
 
         await _itemRepository.SaveChangesAsync(cancellationToken);
+
+        var user = await _userRepository.GetByIdAsync(item.CreatedBy, cancellationToken);
+        var dto = new ListItemDto(item.Id, item.Title, item.Quantity, item.Unit, item.Note,
+            item.ListId, item.CreatedBy, user?.DisplayName ?? "Unknown", item.CreatedAt,
+            item.IsCompleted, item.CompletedBy, null, item.CompletedAt);
+        await _notifications.NotifyItemUncompleted(list.HouseholdId, dto, cancellationToken);
 
         return Result.Success();
     }

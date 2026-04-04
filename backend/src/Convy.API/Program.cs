@@ -4,6 +4,7 @@ using Convy.API.Services;
 using Convy.Application;
 using Convy.Application.Common.Interfaces;
 using Convy.Infrastructure;
+using Convy.Infrastructure.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -66,6 +67,9 @@ app.MapHouseholdEndpoints();
 app.MapInviteEndpoints();
 app.MapListEndpoints();
 app.MapItemEndpoints();
+
+// SignalR hub
+app.MapHub<HouseholdHub>("/hubs/household");
 
 app.Run();
 
