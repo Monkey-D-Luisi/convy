@@ -65,6 +65,7 @@ app.MapUserEndpoints();
 app.MapHouseholdEndpoints();
 app.MapInviteEndpoints();
 app.MapListEndpoints();
+app.MapItemEndpoints();
 
 app.Run();
 

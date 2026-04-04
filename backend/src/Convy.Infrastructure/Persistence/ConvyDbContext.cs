@@ -10,6 +10,7 @@ public class ConvyDbContext : DbContext
     public DbSet<HouseholdMembership> HouseholdMemberships => Set<HouseholdMembership>();
     public DbSet<Invite> Invites => Set<Invite>();
     public DbSet<HouseholdList> HouseholdLists => Set<HouseholdList>();
+    public DbSet<ListItem> ListItems => Set<ListItem>();
 
     public ConvyDbContext(DbContextOptions<ConvyDbContext> options) : base(options)
     {
