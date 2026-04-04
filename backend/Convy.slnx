@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Convy.API/Convy.API.csproj" />
+    <Project Path="src/Convy.Application/Convy.Application.csproj" />
+    <Project Path="src/Convy.Domain/Convy.Domain.csproj" />
+    <Project Path="src/Convy.Infrastructure/Convy.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Convy.API.Tests/Convy.API.Tests.csproj" />
+    <Project Path="tests/Convy.Application.Tests/Convy.Application.Tests.csproj" />
+    <Project Path="tests/Convy.Domain.Tests/Convy.Domain.Tests.csproj" />
+    <Project Path="tests/Convy.Infrastructure.Tests/Convy.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

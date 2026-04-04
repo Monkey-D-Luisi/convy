@@ -1,0 +1,96 @@
+# =====================
+# .NET / ASP.NET Core
+# =====================
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]uild/
+bld/
+[Oo]ut/
+msbuild.log
+msbuild.err
+msbuild.wrn
+*.nupkg
+*.snupkg
+**/Properties/launchSettings.json
+appsettings.*.local.json
+
+# =====================
+# Kotlin / Gradle / KMP
+# =====================
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+local.properties
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# =====================
+# JetBrains IDEs
+# =====================
+.idea/
+*.iws
+*.ipr
+
+# =====================
+# Visual Studio / VS Code
+# =====================
+.vs/
+*.rsuser
+*.cache
+*.ncb
+*.bak
+*.log
+
+# =====================
+# macOS
+# =====================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# =====================
+# Windows
+# =====================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# =====================
+# Docker
+# =====================
+docker-compose.override.yml
+
+# =====================
+# Environment
+# =====================
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# =====================
+# Misc
+# =====================
+*.tmp
+*.bak
+*.swp
+*~
+node_modules/

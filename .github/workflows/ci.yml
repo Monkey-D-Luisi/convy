@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend Build & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: convy_test
+          POSTGRES_USER: convy
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U convy -d convy_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore backend/Convy.slnx
+
+      - name: Build
+        run: dotnet build backend/Convy.slnx --no-restore -c Release
+
+      - name: Test
+        run: dotnet test backend/Convy.slnx --no-build -c Release --verbosity normal
+        env:
+          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=convy_test;Username=convy;Password=test_password"

@@ -1,0 +1,32 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "windows": "powershell -NoProfile -Command \"$input = [Console]::In.ReadToEnd(); $data = $input | ConvertFrom-Json; if ($data.tool_name -eq 'write' -or $data.tool_name -eq 'edit') { $path = $data.tool_input.file_path; if ($path -match 'Convy\\.Domain' -and $path -notmatch 'Tests') { $content = if ($data.tool_input.content) { $data.tool_input.content } elseif ($data.tool_input.new_string) { $data.tool_input.new_string } else { '' }; if ($content -match 'using Convy\\.Infrastructure|using Microsoft\\.EntityFrameworkCore|using Npgsql') { Write-Output '{\\\"decision\\\": \\\"block\\\", \\\"reason\\\": \\\"Domain layer must not reference Infrastructure or EF Core\\\"}' } } }\"",
+        "timeout": 10
+      }
+    ]
+  },
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://convy:convy_dev_password@localhost:5432/convy"
+      ]
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    }
+  }
+}
