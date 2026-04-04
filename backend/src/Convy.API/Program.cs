@@ -64,6 +64,7 @@ app.MapHealthChecks("/health");
 app.MapUserEndpoints();
 app.MapHouseholdEndpoints();
 app.MapInviteEndpoints();
+app.MapListEndpoints();
 
 app.Run();
 
