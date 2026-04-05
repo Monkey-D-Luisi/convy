@@ -23,12 +23,14 @@ sealed interface HouseholdListsIntent {
     data class UpdateNewListType(val type: ListType) : HouseholdListsIntent
     data object CreateList : HouseholdListsIntent
     data object OpenMembers : HouseholdListsIntent
+    data object OpenActivity : HouseholdListsIntent
     data object OpenSettings : HouseholdListsIntent
 }
 
 sealed interface HouseholdListsSideEffect {
     data class NavigateToList(val householdId: String, val listId: String, val listName: String) : HouseholdListsSideEffect
     data class NavigateToMembers(val householdId: String) : HouseholdListsSideEffect
+    data class NavigateToActivity(val householdId: String) : HouseholdListsSideEffect
     data object NavigateToSettings : HouseholdListsSideEffect
     data class ShowError(val message: String) : HouseholdListsSideEffect
 }

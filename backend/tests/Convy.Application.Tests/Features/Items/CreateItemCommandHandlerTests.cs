@@ -17,6 +17,7 @@ public class CreateItemCommandHandlerTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
     private readonly IHouseholdNotificationService _notifications = Substitute.For<IHouseholdNotificationService>();
+    private readonly IActivityLogger _activityLogger = Substitute.For<IActivityLogger>();
     private readonly CreateItemCommandHandler _handler;
     private readonly Guid _userId = Guid.NewGuid();
 
@@ -25,7 +26,7 @@ public class CreateItemCommandHandlerTests
         _currentUser.UserId.Returns(_userId);
         var user = new User("firebase-uid", "Test User", "test@example.com");
         _userRepository.GetByIdAsync(_userId, Arg.Any<CancellationToken>()).Returns(user);
-        _handler = new CreateItemCommandHandler(_itemRepository, _listRepository, _householdRepository, _userRepository, _currentUser, _notifications);
+        _handler = new CreateItemCommandHandler(_itemRepository, _listRepository, _householdRepository, _userRepository, _currentUser, _notifications, _activityLogger);
     }
 
     [Fact]

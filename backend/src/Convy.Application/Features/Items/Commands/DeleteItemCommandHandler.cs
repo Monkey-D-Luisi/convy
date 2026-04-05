@@ -1,6 +1,7 @@
 using Convy.Application.Common.Interfaces;
 using Convy.Application.Common.Models;
 using Convy.Domain.Repositories;
+using Convy.Domain.ValueObjects;
 using MediatR;
 
 namespace Convy.Application.Features.Items.Commands;
@@ -12,19 +13,22 @@ public class DeleteItemCommandHandler : IRequestHandler<DeleteItemCommand, Resul
     private readonly IHouseholdRepository _householdRepository;
     private readonly ICurrentUserService _currentUser;
     private readonly IHouseholdNotificationService _notifications;
+    private readonly IActivityLogger _activityLogger;
 
     public DeleteItemCommandHandler(
         IListItemRepository itemRepository,
         IHouseholdListRepository listRepository,
         IHouseholdRepository householdRepository,
         ICurrentUserService currentUser,
-        IHouseholdNotificationService notifications)
+        IHouseholdNotificationService notifications,
+        IActivityLogger activityLogger)
     {
         _itemRepository = itemRepository;
         _listRepository = listRepository;
         _householdRepository = householdRepository;
         _currentUser = currentUser;
         _notifications = notifications;
+        _activityLogger = activityLogger;
     }
 
     public async Task<Result> Handle(DeleteItemCommand request, CancellationToken cancellationToken)
@@ -46,6 +50,7 @@ public class DeleteItemCommandHandler : IRequestHandler<DeleteItemCommand, Resul
         await _itemRepository.SaveChangesAsync(cancellationToken);
 
         await _notifications.NotifyItemDeleted(list.HouseholdId, itemId, cancellationToken);
+        await _activityLogger.LogAsync(list.HouseholdId, ActivityEntityType.Item, itemId, ActivityActionType.Deleted, _currentUser.UserId, cancellationToken: cancellationToken);
 
         return Result.Success();
     }

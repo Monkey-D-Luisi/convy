@@ -3,6 +3,7 @@ using Convy.Application.Common.Models;
 using Convy.Application.Features.Items.DTOs;
 using Convy.Domain.Entities;
 using Convy.Domain.Repositories;
+using Convy.Domain.ValueObjects;
 using MediatR;
 
 namespace Convy.Application.Features.Items.Commands;
@@ -15,6 +16,7 @@ public class CreateItemCommandHandler : IRequestHandler<CreateItemCommand, Resul
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUser;
     private readonly IHouseholdNotificationService _notifications;
+    private readonly IActivityLogger _activityLogger;
 
     public CreateItemCommandHandler(
         IListItemRepository itemRepository,
@@ -22,7 +24,8 @@ public class CreateItemCommandHandler : IRequestHandler<CreateItemCommand, Resul
         IHouseholdRepository householdRepository,
         IUserRepository userRepository,
         ICurrentUserService currentUser,
-        IHouseholdNotificationService notifications)
+        IHouseholdNotificationService notifications,
+        IActivityLogger activityLogger)
     {
         _itemRepository = itemRepository;
         _listRepository = listRepository;
@@ -30,6 +33,7 @@ public class CreateItemCommandHandler : IRequestHandler<CreateItemCommand, Resul
         _userRepository = userRepository;
         _currentUser = currentUser;
         _notifications = notifications;
+        _activityLogger = activityLogger;
     }
 
     public async Task<Result<Guid>> Handle(CreateItemCommand request, CancellationToken cancellationToken)
@@ -52,6 +56,7 @@ public class CreateItemCommandHandler : IRequestHandler<CreateItemCommand, Resul
             item.ListId, item.CreatedBy, user?.DisplayName ?? "Unknown", item.CreatedAt,
             item.IsCompleted, item.CompletedBy, null, item.CompletedAt);
         await _notifications.NotifyItemCreated(list.HouseholdId, dto, cancellationToken);
+        await _activityLogger.LogAsync(list.HouseholdId, ActivityEntityType.Item, item.Id, ActivityActionType.Created, _currentUser.UserId, item.Title, cancellationToken);
 
         return Result<Guid>.Success(item.Id);
     }

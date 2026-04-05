@@ -5,6 +5,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.convy.app.navigation.AppNavigator
 import com.convy.app.navigation.NavRoute
+import com.convy.app.ui.screens.activity.ActivityScreen
+import com.convy.app.ui.screens.activity.ActivityStore
 import com.convy.app.ui.screens.auth.AuthScreen
 import com.convy.app.ui.screens.auth.AuthStore
 import com.convy.app.ui.screens.householdsetup.HouseholdSetupScreen
@@ -63,6 +65,9 @@ fun App() {
                     onNavigateToMembers = { householdId ->
                         navigator.navigateTo(NavRoute.Members(householdId))
                     },
+                    onNavigateToActivity = { householdId ->
+                        navigator.navigateTo(NavRoute.Activity(householdId))
+                    },
                     onNavigateToSettings = {
                         navigator.navigateTo(NavRoute.Settings)
                     },
@@ -108,6 +113,14 @@ fun App() {
             is NavRoute.Members -> {
                 val store = koinInject<MembersStore> { parametersOf(route.householdId) }
                 MembersScreen(
+                    store = store,
+                    onNavigateBack = { navigator.navigateBack() },
+                )
+            }
+
+            is NavRoute.Activity -> {
+                val store = koinInject<ActivityStore> { parametersOf(route.householdId) }
+                ActivityScreen(
                     store = store,
                     onNavigateBack = { navigator.navigateBack() },
                 )

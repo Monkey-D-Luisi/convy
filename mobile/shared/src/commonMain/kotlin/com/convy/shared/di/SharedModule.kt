@@ -1,6 +1,8 @@
 package com.convy.shared.di
 
 import com.convy.shared.data.remote.ConvyApi
+import com.convy.shared.data.remote.HouseholdRealtimeService
+import com.convy.shared.data.remote.SignalRClient
 import com.convy.shared.data.remote.TokenProvider
 import com.convy.shared.data.repository.*
 import com.convy.shared.domain.repository.*
@@ -52,6 +54,9 @@ val networkModule = module {
     }
 
     single { ConvyApi(get()) }
+
+    single { SignalRClient(get<TokenProvider>(), get<Json>()) }
+    single { HouseholdRealtimeService(get(), get<Json>()) }
 }
 
 val repositoryModule = module {
@@ -63,6 +68,7 @@ val repositoryModule = module {
     single<ListRepository> { ListRepositoryImpl(get()) }
     single<ItemRepository> { ItemRepositoryImpl(get()) }
     single<InviteRepository> { InviteRepositoryImpl(get()) }
+    single<ActivityRepository> { ActivityRepositoryImpl(get()) }
 }
 
 val sharedModules = listOf(networkModule, repositoryModule)

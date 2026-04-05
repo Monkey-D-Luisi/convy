@@ -8,5 +8,6 @@ sealed interface NavRoute {
     data class CreateItem(val householdId: String, val listId: String) : NavRoute
     data class EditItem(val householdId: String, val listId: String, val itemId: String) : NavRoute
     data class Members(val householdId: String) : NavRoute
+    data class Activity(val householdId: String) : NavRoute
     data object Settings : NavRoute
 }

@@ -17,6 +17,7 @@ public class CompleteItemCommandHandlerTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
     private readonly IHouseholdNotificationService _notifications = Substitute.For<IHouseholdNotificationService>();
+    private readonly IActivityLogger _activityLogger = Substitute.For<IActivityLogger>();
     private readonly CompleteItemCommandHandler _handler;
     private readonly Guid _userId = Guid.NewGuid();
 
@@ -25,7 +26,7 @@ public class CompleteItemCommandHandlerTests
         _currentUser.UserId.Returns(_userId);
         _userRepository.GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(new List<User> { new("firebase-uid", "Test User", "test@example.com") });
-        _handler = new CompleteItemCommandHandler(_itemRepository, _listRepository, _householdRepository, _userRepository, _currentUser, _notifications);
+        _handler = new CompleteItemCommandHandler(_itemRepository, _listRepository, _householdRepository, _userRepository, _currentUser, _notifications, _activityLogger);
     }
 
     [Fact]

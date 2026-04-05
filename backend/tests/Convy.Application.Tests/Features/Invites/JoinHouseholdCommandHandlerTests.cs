@@ -11,7 +11,10 @@ public class JoinHouseholdCommandHandlerTests
 {
     private readonly IInviteRepository _inviteRepository = Substitute.For<IInviteRepository>();
     private readonly IHouseholdRepository _householdRepository = Substitute.For<IHouseholdRepository>();
+    private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
+    private readonly IHouseholdNotificationService _notifications = Substitute.For<IHouseholdNotificationService>();
+    private readonly IActivityLogger _activityLogger = Substitute.For<IActivityLogger>();
     private readonly JoinHouseholdCommandHandler _handler;
 
     private readonly Guid _userId = Guid.NewGuid();
@@ -19,7 +22,7 @@ public class JoinHouseholdCommandHandlerTests
     public JoinHouseholdCommandHandlerTests()
     {
         _currentUser.UserId.Returns(_userId);
-        _handler = new JoinHouseholdCommandHandler(_inviteRepository, _householdRepository, _currentUser);
+        _handler = new JoinHouseholdCommandHandler(_inviteRepository, _householdRepository, _userRepository, _currentUser, _notifications, _activityLogger);
     }
 
     [Fact]

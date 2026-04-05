@@ -86,3 +86,15 @@ fun DuplicateItemDto.toDomain(): DuplicateItem = DuplicateItem(
     quantity = quantity,
     unit = unit,
 )
+
+fun ActivityLogEntryDto.toDomain(): ActivityLogEntry = ActivityLogEntry(
+    id = id,
+    householdId = householdId,
+    entityType = entityType,
+    entityId = entityId,
+    actionType = actionType,
+    performedBy = performedBy,
+    performedByName = performedByName,
+    createdAt = createdAt,
+    metadata = metadata,
+)

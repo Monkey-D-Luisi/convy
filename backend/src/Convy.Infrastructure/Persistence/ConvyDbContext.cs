@@ -11,6 +11,7 @@ public class ConvyDbContext : DbContext
     public DbSet<Invite> Invites => Set<Invite>();
     public DbSet<HouseholdList> HouseholdLists => Set<HouseholdList>();
     public DbSet<ListItem> ListItems => Set<ListItem>();
+    public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
 
     public ConvyDbContext(DbContextOptions<ConvyDbContext> options) : base(options)
     {

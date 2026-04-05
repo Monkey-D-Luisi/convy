@@ -2,6 +2,7 @@ using Convy.Application.Common.Interfaces;
 using Convy.Application.Common.Models;
 using Convy.Application.Features.Items.DTOs;
 using Convy.Domain.Repositories;
+using Convy.Domain.ValueObjects;
 using MediatR;
 
 namespace Convy.Application.Features.Items.Commands;
@@ -14,6 +15,7 @@ public class CompleteItemCommandHandler : IRequestHandler<CompleteItemCommand, R
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUserService _currentUser;
     private readonly IHouseholdNotificationService _notifications;
+    private readonly IActivityLogger _activityLogger;
 
     public CompleteItemCommandHandler(
         IListItemRepository itemRepository,
@@ -21,7 +23,8 @@ public class CompleteItemCommandHandler : IRequestHandler<CompleteItemCommand, R
         IHouseholdRepository householdRepository,
         IUserRepository userRepository,
         ICurrentUserService currentUser,
-        IHouseholdNotificationService notifications)
+        IHouseholdNotificationService notifications,
+        IActivityLogger activityLogger)
     {
         _itemRepository = itemRepository;
         _listRepository = listRepository;
@@ -29,6 +32,7 @@ public class CompleteItemCommandHandler : IRequestHandler<CompleteItemCommand, R
         _userRepository = userRepository;
         _currentUser = currentUser;
         _notifications = notifications;
+        _activityLogger = activityLogger;
     }
 
     public async Task<Result> Handle(CompleteItemCommand request, CancellationToken cancellationToken)
@@ -58,6 +62,7 @@ public class CompleteItemCommandHandler : IRequestHandler<CompleteItemCommand, R
             item.CompletedBy.HasValue ? userNames.GetValueOrDefault(item.CompletedBy.Value, "Unknown") : null,
             item.CompletedAt);
         await _notifications.NotifyItemCompleted(list.HouseholdId, dto, cancellationToken);
+        await _activityLogger.LogAsync(list.HouseholdId, ActivityEntityType.Item, item.Id, ActivityActionType.Completed, _currentUser.UserId, item.Title, cancellationToken);
 
         return Result.Success();
     }

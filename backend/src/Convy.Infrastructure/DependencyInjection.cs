@@ -21,7 +21,9 @@ public static class DependencyInjection
         services.AddScoped<IInviteRepository, InviteRepository>();
         services.AddScoped<IHouseholdListRepository, HouseholdListRepository>();
         services.AddScoped<IListItemRepository, ListItemRepository>();
+        services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<IHouseholdNotificationService, HouseholdNotificationService>();
+        services.AddScoped<IActivityLogger, ActivityLogger>();
 
         return services;
     }

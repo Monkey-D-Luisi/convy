@@ -3,6 +3,7 @@ using Convy.Application.Common.Models;
 using Convy.Application.Features.Invites.DTOs;
 using Convy.Domain.Entities;
 using Convy.Domain.Repositories;
+using Convy.Domain.ValueObjects;
 using MediatR;
 
 namespace Convy.Application.Features.Invites.Commands;
@@ -12,15 +13,18 @@ public class CreateInviteCommandHandler : IRequestHandler<CreateInviteCommand, R
     private readonly IInviteRepository _inviteRepository;
     private readonly IHouseholdRepository _householdRepository;
     private readonly ICurrentUserService _currentUser;
+    private readonly IActivityLogger _activityLogger;
 
     public CreateInviteCommandHandler(
         IInviteRepository inviteRepository,
         IHouseholdRepository householdRepository,
-        ICurrentUserService currentUser)
+        ICurrentUserService currentUser,
+        IActivityLogger activityLogger)
     {
         _inviteRepository = inviteRepository;
         _householdRepository = householdRepository;
         _currentUser = currentUser;
+        _activityLogger = activityLogger;
     }
 
     public async Task<Result<InviteDto>> Handle(CreateInviteCommand request, CancellationToken cancellationToken)
@@ -37,6 +41,8 @@ public class CreateInviteCommandHandler : IRequestHandler<CreateInviteCommand, R
 
         await _inviteRepository.AddAsync(invite, cancellationToken);
         await _inviteRepository.SaveChangesAsync(cancellationToken);
+
+        await _activityLogger.LogAsync(request.HouseholdId, ActivityEntityType.Invite, invite.Id, ActivityActionType.Created, _currentUser.UserId, cancellationToken: cancellationToken);
 
         return Result<InviteDto>.Success(new InviteDto(
             invite.Id,

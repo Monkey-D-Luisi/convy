@@ -13,13 +13,15 @@ public class ArchiveListCommandHandlerTests
     private readonly IHouseholdListRepository _listRepository = Substitute.For<IHouseholdListRepository>();
     private readonly IHouseholdRepository _householdRepository = Substitute.For<IHouseholdRepository>();
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
+    private readonly IHouseholdNotificationService _notifications = Substitute.For<IHouseholdNotificationService>();
+    private readonly IActivityLogger _activityLogger = Substitute.For<IActivityLogger>();
     private readonly ArchiveListCommandHandler _handler;
     private readonly Guid _userId = Guid.NewGuid();
 
     public ArchiveListCommandHandlerTests()
     {
         _currentUser.UserId.Returns(_userId);
-        _handler = new ArchiveListCommandHandler(_listRepository, _householdRepository, _currentUser);
+        _handler = new ArchiveListCommandHandler(_listRepository, _householdRepository, _currentUser, _notifications, _activityLogger);
     }
 
     [Fact]

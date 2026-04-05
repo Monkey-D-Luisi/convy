@@ -110,3 +110,16 @@ data class ErrorResponse(
     @SerialName("code") val code: String,
     @SerialName("message") val message: String,
 )
+
+@Serializable
+data class ActivityLogEntryDto(
+    @SerialName("id") val id: String,
+    @SerialName("householdId") val householdId: String,
+    @SerialName("entityType") val entityType: String,
+    @SerialName("entityId") val entityId: String,
+    @SerialName("actionType") val actionType: String,
+    @SerialName("performedBy") val performedBy: String,
+    @SerialName("performedByName") val performedByName: String,
+    @SerialName("createdAt") val createdAt: String,
+    @SerialName("metadata") val metadata: String?,
+)

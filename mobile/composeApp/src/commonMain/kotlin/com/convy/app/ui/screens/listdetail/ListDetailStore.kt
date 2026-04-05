@@ -1,5 +1,7 @@
 package com.convy.app.ui.screens.listdetail
 
+import com.convy.shared.data.remote.HouseholdEvent
+import com.convy.shared.data.remote.HouseholdRealtimeService
 import com.convy.shared.domain.repository.ItemRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -11,6 +13,7 @@ class ListDetailStore(
     private val listId: String,
     private val listName: String,
     private val itemRepository: ItemRepository,
+    private val realtimeService: HouseholdRealtimeService,
 ) {
     private val scope = CoroutineScope(Dispatchers.Main)
     private val _state = MutableStateFlow(
@@ -27,6 +30,7 @@ class ListDetailStore(
 
     init {
         loadItems()
+        observeRealtimeEvents()
     }
 
     fun processIntent(intent: ListDetailIntent) {
@@ -84,6 +88,21 @@ class ListDetailStore(
                     _sideEffects.emit(ListDetailSideEffect.ShowError(error.message ?: "Failed to update item"))
                 },
             )
+        }
+    }
+
+    private fun observeRealtimeEvents() {
+        scope.launch {
+            realtimeService.events.collect { event ->
+                when (event) {
+                    is HouseholdEvent.ItemCreated,
+                    is HouseholdEvent.ItemUpdated,
+                    is HouseholdEvent.ItemCompleted,
+                    is HouseholdEvent.ItemUncompleted,
+                    is HouseholdEvent.ItemDeleted -> loadItems()
+                    else -> {}
+                }
+            }
         }
     }
 }

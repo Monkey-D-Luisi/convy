@@ -1,5 +1,7 @@
 package com.convy.app.ui.screens.lists
 
+import com.convy.shared.data.remote.HouseholdEvent
+import com.convy.shared.data.remote.HouseholdRealtimeService
 import com.convy.shared.domain.model.ListType
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.ListRepository
@@ -12,6 +14,7 @@ class HouseholdListsStore(
     private val householdId: String,
     private val householdRepository: HouseholdRepository,
     private val listRepository: ListRepository,
+    private val realtimeService: HouseholdRealtimeService,
 ) {
     private val scope = CoroutineScope(Dispatchers.Main)
     private val _state = MutableStateFlow(HouseholdListsState(householdId = householdId))
@@ -22,6 +25,8 @@ class HouseholdListsStore(
 
     init {
         loadData()
+        connectRealtime()
+        observeRealtimeEvents()
     }
 
     fun processIntent(intent: HouseholdListsIntent) {
@@ -43,6 +48,9 @@ class HouseholdListsStore(
             is HouseholdListsIntent.CreateList -> createList()
             is HouseholdListsIntent.OpenMembers -> scope.launch {
                 _sideEffects.emit(HouseholdListsSideEffect.NavigateToMembers(householdId))
+            }
+            is HouseholdListsIntent.OpenActivity -> scope.launch {
+                _sideEffects.emit(HouseholdListsSideEffect.NavigateToActivity(householdId))
             }
             is HouseholdListsIntent.OpenSettings -> scope.launch {
                 _sideEffects.emit(HouseholdListsSideEffect.NavigateToSettings)
@@ -85,6 +93,26 @@ class HouseholdListsStore(
                     _sideEffects.emit(HouseholdListsSideEffect.ShowError(error.message ?: "Failed to create list"))
                 },
             )
+        }
+    }
+
+    private fun connectRealtime() {
+        scope.launch {
+            realtimeService.connect(householdId)
+        }
+    }
+
+    private fun observeRealtimeEvents() {
+        scope.launch {
+            realtimeService.events.collect { event ->
+                when (event) {
+                    is HouseholdEvent.ListCreated,
+                    is HouseholdEvent.ListRenamed,
+                    is HouseholdEvent.ListArchived,
+                    is HouseholdEvent.MemberJoined -> loadData()
+                    else -> {}
+                }
+            }
         }
     }
 }

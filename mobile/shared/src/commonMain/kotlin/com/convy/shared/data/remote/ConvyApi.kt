@@ -104,4 +104,10 @@ class ConvyApi(private val client: HttpClient) {
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()
+
+    // Activity
+    suspend fun getHouseholdActivity(householdId: String, limit: Int = 50): List<ActivityLogEntryDto> =
+        client.get("api/v1/households/$householdId/activity") {
+            parameter("limit", limit)
+        }.body()
 }

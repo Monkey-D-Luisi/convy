@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -27,6 +28,7 @@ fun HouseholdListsScreen(
     store: HouseholdListsStore,
     onNavigateToList: (String, String, String) -> Unit,
     onNavigateToMembers: (String) -> Unit,
+    onNavigateToActivity: (String) -> Unit,
     onNavigateToSettings: () -> Unit,
 ) {
     val state by store.state.collectAsState()
@@ -38,6 +40,8 @@ fun HouseholdListsScreen(
                     onNavigateToList(effect.householdId, effect.listId, effect.listName)
                 is HouseholdListsSideEffect.NavigateToMembers ->
                     onNavigateToMembers(effect.householdId)
+                is HouseholdListsSideEffect.NavigateToActivity ->
+                    onNavigateToActivity(effect.householdId)
                 is HouseholdListsSideEffect.NavigateToSettings ->
                     onNavigateToSettings()
                 is HouseholdListsSideEffect.ShowError -> {}
@@ -61,6 +65,9 @@ fun HouseholdListsContent(
                     Text(state.householdName.ifEmpty { "My Home" })
                 },
                 actions = {
+                    IconButton(onClick = { onIntent(HouseholdListsIntent.OpenActivity) }) {
+                        Icon(Icons.Default.Notifications, contentDescription = "Activity")
+                    }
                     IconButton(onClick = { onIntent(HouseholdListsIntent.OpenMembers) }) {
                         Icon(Icons.Default.Person, contentDescription = "Members")
                     }
