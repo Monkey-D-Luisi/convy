@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -84,12 +85,17 @@ fun ItemFormContent(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
         ) {
-            OutlinedTextField(
+            TextField(
                 value = state.title,
                 onValueChange = { onIntent(ItemFormIntent.UpdateTitle(it)) },
                 label = { Text("Title *") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = TextFieldDefaults.colors(
+                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             )
 
@@ -141,36 +147,51 @@ fun ItemFormContent(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                OutlinedTextField(
+                TextField(
                     value = state.quantity,
                     onValueChange = { onIntent(ItemFormIntent.UpdateQuantity(it)) },
                     label = { Text("Qty") },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = TextFieldDefaults.colors(
+                        unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                        focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                    ),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
                         imeAction = ImeAction.Next,
                     ),
                 )
-                OutlinedTextField(
+                TextField(
                     value = state.unit,
                     onValueChange = { onIntent(ItemFormIntent.UpdateUnit(it)) },
                     label = { Text("Unit") },
                     placeholder = { Text("e.g. kg, pcs") },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = TextFieldDefaults.colors(
+                        unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                        focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                    ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
+            TextField(
                 value = state.note,
                 onValueChange = { onIntent(ItemFormIntent.UpdateNote(it)) },
                 label = { Text("Note") },
                 placeholder = { Text("Optional note...") },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = TextFieldDefaults.colors(
+                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
                 minLines = 2,
                 maxLines = 4,
             )
@@ -188,7 +209,8 @@ fun ItemFormContent(
 
             Button(
                 onClick = { onIntent(ItemFormIntent.Save) },
-                modifier = Modifier.fillMaxWidth().height(48.dp),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(28.dp),
                 enabled = state.title.isNotBlank() && !state.isSaving,
             ) {
                 if (state.isSaving) {

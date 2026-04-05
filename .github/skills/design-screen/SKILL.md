@@ -4,6 +4,14 @@ description: "Workflow for designing a mobile screen using Stitch MCP. Use when 
 ---
 # Design Screen Workflow
 
+## MANDATORY RULES — DO NOT SKIP
+
+1. **Model**: Always use `GEMINI_3_1_PRO` (`modelId: "GEMINI_3_1_PRO"`). Never use `GEMINI_3_FLASH` or default.
+2. **Detailed prompt**: Every Stitch prompt MUST include ALL sections from the template below. Vague or incomplete prompts are not acceptable.
+3. **Project**: Use the existing Stitch project **"Convy — Household Coordination App"** (ID: `5694262812667273070`). Do not create a new project.
+4. **Dark mode**: Always generate a dark mode variant after the light mode screen using `mcp_stitch_generate_variants` with `aspects: ["COLOR_SCHEME"]`.
+5. **User review**: After generating, ask the user via `vscode_askQuestions` if the design looks good before proceeding to implementation.
+
 ## When to Use
 - Designing a new screen before implementation
 - Creating design variants or exploring layout options
@@ -24,61 +32,91 @@ From the spec, identify:
 - All possible states (empty, loading, data, error)
 
 ### Step 2: Compose Stitch Prompt
-Structure the prompt for Stitch MCP:
+
+**IMPORTANT**: The prompt MUST be extremely detailed and structured. Every section below is mandatory — do not omit or abbreviate any section. A well-defined prompt produces a high-quality design; a vague prompt produces unusable output.
+
+Structure the prompt for Stitch MCP using this template (ALL sections required):
 
 ```
 Screen: {Screen Name}
 App: Convy — Shared household coordination app
-Platform: Mobile (Android, Material Design 3)
+Platform: Mobile (Android, Compose Multiplatform, Material Design 3)
 Theme: Light mode primary, generate dark mode variant too
+Design System: "Convy Hearth" — Primary #10B981 teal, Plus Jakarta Sans headlines, Be Vietnam Pro body, rounded 8dp shapes
 
-PURPOSE: {One-line screen purpose}
+PURPOSE: {One-line screen purpose describing the user goal}
 
-LAYOUT (top to bottom):
-- Top app bar: {title, actions}
-- Body: {main content description}
-- Bottom: {FAB, bottom bar, etc.}
+USER CONTEXT: {Who sees this screen, when, and what they expect to do}
 
-COMPONENTS:
-- {Component 1}: {description and behavior}
-- {Component 2}: {description and behavior}
+LAYOUT (top to bottom — be specific with exact spacing and sizing):
+- Status bar: {transparent/themed}
+- Top app bar: {title text, leading icon, trailing actions — specify each icon by name}
+- Body: {main content — describe every visual element, their arrangement, padding, and visual weight}
+- Bottom: {FAB position, bottom bar items, safe area}
 
-STATES:
-- Default: {description}
-- Empty: {what shows when no data}
-- Loading: {skeleton or spinner}
-- Error: {error message display}
+COMPONENTS (describe EVERY UI element):
+- {Component 1}: {exact appearance: background color, corner radius, padding, icon name, text style, elevation}
+- {Component 2}: {exact appearance}
+- ... {list ALL components visible on screen}
+
+TYPOGRAPHY:
+- Headlines: {font, weight, size — e.g. "Plus Jakarta Sans Bold 22sp"}
+- Body: {font, weight, size}
+- Labels/Captions: {font, weight, size}
+
+COLOR USAGE:
+- Background: {surface/surfaceContainerLow + hex}
+- Cards: {surfaceContainerLowest + hex}
+- Primary actions: {primary color + hex}
+- Secondary text: {onSurfaceVariant + hex}
+- Dividers/outlines: {outlineVariant + hex}
+
+STATES (describe ALL possible states):
+- Default/Loaded: {exact layout with sample data — include realistic example content}
+- Empty: {centered icon + title + subtitle + CTA button}
+- Loading: {skeleton shimmer pattern or circular indicator}
+- Error: {error icon + message + retry button}
 
 INTERACTIONS:
-- Tap {element}: {action}
-- Swipe {element}: {action}
-- Long press {element}: {action}
+- Tap {element}: {exactly what happens — navigation target, dialog, animation}
+- Swipe {element}: {action and visual feedback}
+- Long press {element}: {action if applicable}
+- Scroll behavior: {app bar collapse? sticky headers?}
 
-DESIGN TOKENS:
-- Follow Material 3 color system
-- Primary actions use primary color
-- Completed items use muted/secondary styling
-- Typography: Material 3 type scale
+SAMPLE DATA (provide realistic example content for the design):
+- {Item 1}: {realistic text/values}
+- {Item 2}: {realistic text/values}
+- {Item 3}: {realistic text/values}
+
+ACCESSIBILITY:
+- Minimum touch target: 48dp
+- Content descriptions for icons
+- Sufficient color contrast (WCAG AA)
 ```
 
 ### Step 3: Generate via Stitch
-1. Create or reuse a Stitch project via `mcp_stitch_create_project` (title: "Convy").
+1. Use the existing Stitch project ID: `5694262812667273070` (title: "Convy — Household Coordination App").
 2. Generate the screen via `mcp_stitch_generate_screen_from_text` with:
-   - `projectId`: the Stitch project ID
-   - `prompt`: the structured prompt from Step 2
+   - `projectId`: `5694262812667273070`
+   - `prompt`: the structured prompt from Step 2 (MUST include all sections)
    - `deviceType`: `MOBILE`
-   - `modelId`: `GEMINI_3_FLASH` (or `GEMINI_3_1_PRO` for higher quality)
+   - `modelId`: `GEMINI_3_1_PRO` (**MANDATORY** — never use FLASH or default)
 3. Retrieve the result via `mcp_stitch_get_screen` if needed.
+4. **Ask the user** via `vscode_askQuestions` if the design meets their expectations before proceeding.
 
-### Step 4: Review and Iterate
+### Step 4: Generate Dark Mode Variant (MANDATORY)
+After the light mode screen is accepted:
+1. Generate a dark mode variant via `mcp_stitch_generate_variants` with:
+   - `selectedScreenIds`: [the screen ID from Step 3]
+   - `variantOptions`: `{ "variantCount": 1, "creativeRange": "EXPLORE", "aspects": ["COLOR_SCHEME"] }`
+2. Confirm with user via `vscode_askQuestions` that dark mode looks correct.
+
+### Step 5: Review and Iterate
 - Verify alignment with product principles (speed, one-hand use, clarity).
 - Check all states are designed.
-- Generate variants via `mcp_stitch_generate_variants` with:
-  - `selectedScreenIds`: IDs of screens to vary
-  - `variantOptions`: `{ "variantCount": 3, "creativeRange": "EXPLORE", "aspects": ["COLOR_SCHEME"] }` for dark mode
-  - Use `"aspects": ["LAYOUT"]` to explore alternative layouts.
+- For additional layout alternatives, use `mcp_stitch_generate_variants` with `"aspects": ["LAYOUT"]`.
 
-### Step 5: Document
+### Step 6: Document
 Save the design reference and key decisions for the mobile developer.
 
 ## Screen Template Library

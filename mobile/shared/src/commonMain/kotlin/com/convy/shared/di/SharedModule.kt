@@ -55,9 +55,9 @@ val networkModule = module {
 }
 
 val repositoryModule = module {
-    single { StubAuthRepository() }
-    single<AuthRepository> { get<StubAuthRepository>() }
-    single<TokenProvider> { get<StubAuthRepository>() }
+    single { FirebaseAuthRepository() }
+    single<AuthRepository> { get<FirebaseAuthRepository>() }
+    single<TokenProvider> { get<FirebaseAuthRepository>() }
     single<UserRepository> { UserRepositoryImpl(get()) }
     single<HouseholdRepository> { HouseholdRepositoryImpl(get()) }
     single<ListRepository> { ListRepositoryImpl(get()) }

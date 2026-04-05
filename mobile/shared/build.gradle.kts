@@ -26,6 +26,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.gitlive.firebase.auth)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

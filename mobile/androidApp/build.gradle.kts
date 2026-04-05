@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -8,7 +9,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.convy"
+        applicationId = "com.monkeydluisi.convy"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
@@ -35,4 +36,6 @@ android {
 dependencies {
     implementation(project(":composeApp"))
     implementation(project(":shared"))
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
 }

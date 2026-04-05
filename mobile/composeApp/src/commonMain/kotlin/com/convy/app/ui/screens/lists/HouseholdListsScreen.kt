@@ -1,8 +1,10 @@
 package com.convy.app.ui.screens.lists
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
@@ -74,7 +76,12 @@ fun HouseholdListsContent(
             }
         },
     ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceContainerLow),
+        ) {
             when {
                 state.isLoading -> LoadingContent()
                 state.error != null -> ErrorContent(
@@ -124,12 +131,17 @@ private fun CreateListDialog(
         title = { Text("New list") },
         text = {
             Column {
-                OutlinedTextField(
+                TextField(
                     value = name,
                     onValueChange = onNameChange,
                     label = { Text("List name") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = TextFieldDefaults.colors(
+                        unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                        focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                    ),
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(

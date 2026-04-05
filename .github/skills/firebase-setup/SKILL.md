@@ -4,6 +4,13 @@ description: "Setup and verification checklist for Firebase Authentication in Co
 ---
 # Firebase Setup Workflow
 
+## MANDATORY RULES — DO NOT SKIP
+
+1. **Never assume Firebase is configured.** Always run the verification checklist (Step 5) before proceeding with any auth feature.
+2. **Use questionnaires.** Every piece of information needed from the user (project ID, package name, file placement confirmation) MUST be requested via `vscode_askQuestions`. Never guess values.
+3. **Existing project.** Convy's Firebase project is `convy-6520d` with package `com.monkeydluisi.convy`. If this project already exists, verify — don't recreate.
+4. **SHA keys.** Debug and release SHA-1/SHA-256 must be registered in Firebase Console for Google Sign-In to work. Guide the user to generate them via `./gradlew.bat signingReport`.
+
 ## When to Use
 - First-time Firebase project setup for Convy
 - Implementing/modifying any authentication feature
@@ -17,12 +24,22 @@ description: "Setup and verification checklist for Firebase Authentication in Co
 ## Procedure
 
 ### Step 1: Firebase Console Setup
-1. Go to [Firebase Console](https://console.firebase.google.com/).
-2. Create a project named **"Convy"** (or reuse an existing one).
+**Ask the user via `vscode_askQuestions`:**
+- Do you already have a Firebase project? What is the Project ID?
+- Is Authentication enabled? Which sign-in methods?
+- What is the Android package name registered in Firebase?
+
+If the project exists (expected: `convy-6520d`):
+1. Verify via questionnaire that **Authentication** is enabled with Email/Password + Google.
+2. Note the **Project ID** — needed for backend config.
+
+If new setup is needed:
+1. Ask the user to go to [Firebase Console](https://console.firebase.google.com/).
+2. Create a project named **"Convy"**.
 3. Enable **Authentication** → Sign-in method:
    - **Email/Password**: Enable
    - **Google**: Enable (provides `google-services.json` client ID)
-4. Note the **Project ID** (e.g., `convy-12345`) — needed for backend config.
+4. Ask the user for the **Project ID** via `vscode_askQuestions`.
 
 ### Step 2: Backend Configuration
 The backend validates Firebase JWT tokens. Configuration is in `backend/src/Convy.API/Program.cs`.
@@ -43,11 +60,15 @@ The backend validates Firebase JWT tokens. Configuration is in `backend/src/Conv
 4. **Environment variables** (production): Set `Firebase__ProjectId` as environment variable.
 
 ### Step 3: Mobile Configuration (Android)
-1. In Firebase Console → Project Settings → Add Android App:
-   - Package name: `com.convy.app` (check `mobile/androidApp/build.gradle.kts`)
-   - Download `google-services.json`
-2. Place `google-services.json` in `mobile/androidApp/`.
-3. Verify `mobile/androidApp/build.gradle.kts` has the Google Services plugin:
+**Ask the user via `vscode_askQuestions`:**
+- Have you added the Android app in Firebase Console with package `com.monkeydluisi.convy`?
+- Have you added the SHA-1 and SHA-256 debug keys? (Guide them to use `./gradlew.bat signingReport`)
+- Have you downloaded the `google-services.json` file?
+
+1. Ask the user to place `google-services.json` in `mobile/androidApp/`.
+2. **Verify** the file exists via `Test-Path` or `read_file`.
+3. **Verify** the `package_name` and `project_id` inside the JSON match the expected values.
+4. Verify `mobile/androidApp/build.gradle.kts` has the Google Services plugin:
    ```kotlin
    plugins {
        id("com.google.gms.google-services")

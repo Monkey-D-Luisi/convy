@@ -1,6 +1,6 @@
 package com.convy.app.ui.screens.listdetail
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -70,7 +70,12 @@ fun ListDetailContent(
             }
         },
     ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceContainerLow),
+        ) {
             when {
                 state.isLoading -> LoadingContent()
                 state.error != null -> ErrorContent(

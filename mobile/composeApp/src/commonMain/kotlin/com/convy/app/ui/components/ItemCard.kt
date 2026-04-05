@@ -20,14 +20,24 @@ fun ItemCard(
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (item.isCompleted) {
+                MaterialTheme.colorScheme.surface
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerLowest
+            },
+        ),
     ) {
         Row(
-            modifier = Modifier.padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+            modifier = Modifier.padding(start = 4.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Checkbox(
                 checked = item.isCompleted,
                 onCheckedChange = { onToggleComplete() },
+                colors = CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.primary,
+                ),
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -52,6 +62,7 @@ fun ItemCard(
                     }
                 }
                 if (details.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = details.joinToString(" · "),
                         style = MaterialTheme.typography.bodySmall,
@@ -60,14 +71,15 @@ fun ItemCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = if (item.isCompleted) {
-                        "Done by ${item.completedByName ?: "unknown"}"
+                        "Completed by ${item.completedByName ?: "unknown"}"
                     } else {
                         "Added by ${item.createdByName}"
                     },
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.outline,
                 )
             }
         }

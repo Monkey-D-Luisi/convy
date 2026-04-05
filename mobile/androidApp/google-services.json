@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "863271144614",
+    "project_id": "convy-6520d",
+    "storage_bucket": "convy-6520d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:863271144614:android:2cd313431e3a30b4fbb867",
+        "android_client_info": {
+          "package_name": "com.monkeydluisi.convy"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "863271144614-rmn67cp4sp36ftqkcu4kilcepsl826b7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.monkeydluisi.convy",
+            "certificate_hash": "1515b7e916421cb8d91c97d50433a2acabda49c3"
+          }
+        },
+        {
+          "client_id": "863271144614-imh4s3gkfr8p53l6r1vdasop33mo5quo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCIWhAcq1Z6mOHNy9AWIMXSw8eaJXUZ98g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "863271144614-imh4s3gkfr8p53l6r1vdasop33mo5quo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
