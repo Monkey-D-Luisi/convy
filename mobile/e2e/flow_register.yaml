@@ -1,0 +1,29 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Register a new user account
+- launchApp
+
+# Auth screen should be visible
+- assertVisible: "Convy"
+- assertVisible: "Coordinate your home effortlessly"
+
+# Switch to sign-up mode if needed
+- tapOn:
+    text: "Don't have an account? Create one"
+    optional: true
+
+# Fill sign-up form
+- tapOn: "Display name"
+- inputText: "Test User"
+- tapOn: "Email"
+- inputText: "testuser_${TIMESTAMP}@example.com"
+- tapOn: "Password"
+- inputText: "Test1234!"
+
+# Submit
+- tapOn: "Create account"
+
+# Should navigate to household setup
+- assertVisible:
+    text: "Set up your home"
+    timeout: 10000

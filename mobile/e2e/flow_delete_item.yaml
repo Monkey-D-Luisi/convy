@@ -1,0 +1,30 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Delete an item from a list
+# Precondition: user has a list open with at least one item
+- launchApp
+- assertVisible:
+    text: ".*"
+    timeout: 10000
+
+# Navigate to list if needed
+- tapOn:
+    text: "Weekly Groceries"
+    optional: true
+
+# Tap item card to open edit form
+- tapOn: "Whole Milk"
+
+# Should see edit form
+- assertVisible:
+    text: "Edit item"
+    timeout: 5000
+
+# Tap delete icon in top bar
+- tapOn:
+    id: "Delete"
+
+# Item should be removed, back to list
+- assertNotVisible:
+    text: "Whole Milk"
+    timeout: 5000

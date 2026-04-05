@@ -1,0 +1,39 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Edit an existing item
+# Precondition: user has a list open with at least one item
+- launchApp
+- assertVisible:
+    text: ".*"
+    timeout: 10000
+
+# Navigate to list if needed
+- tapOn:
+    text: "Weekly Groceries"
+    optional: true
+
+# Tap item card to edit (onClick navigates to edit)
+- tapOn: "Milk"
+
+# Edit form should appear
+- assertVisible:
+    text: "Edit item"
+    timeout: 5000
+
+# Clear and update title
+- tapOn: "Title *"
+- clearText
+- inputText: "Whole Milk"
+
+# Update quantity
+- tapOn: "Qty"
+- clearText
+- inputText: "3"
+
+# Save
+- tapOn: "Save changes"
+
+# Updated item should be visible
+- assertVisible:
+    text: "Whole Milk"
+    timeout: 5000

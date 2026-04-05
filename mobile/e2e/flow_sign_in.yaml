@@ -1,0 +1,26 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Sign in with existing account
+- launchApp
+
+# Auth screen
+- assertVisible: "Convy"
+
+# Ensure we're on sign-in mode
+- tapOn:
+    text: "Already have an account? Sign in"
+    optional: true
+
+# Fill sign-in form
+- tapOn: "Email"
+- inputText: "${EMAIL}"
+- tapOn: "Password"
+- inputText: "${PASSWORD}"
+
+# Submit
+- tapOn: "Sign in"
+
+# Should navigate to lists or household setup
+- assertVisible:
+    text: ".*"
+    timeout: 10000

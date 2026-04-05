@@ -1,0 +1,29 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Settings and sign out
+# Precondition: user is on HouseholdLists screen
+- launchApp
+- assertVisible:
+    text: ".*"
+    timeout: 10000
+
+# Tap Settings icon
+- tapOn:
+    id: "Settings"
+
+# Settings screen
+- assertVisible:
+    text: "Settings"
+    timeout: 5000
+- assertVisible: "App version"
+- assertVisible: "0.1.0"
+- assertVisible: "Sign out"
+
+# Sign out
+- tapOn: "Sign out"
+
+# Should return to auth screen
+- assertVisible:
+    text: "Convy"
+    timeout: 10000
+- assertVisible: "Sign in"

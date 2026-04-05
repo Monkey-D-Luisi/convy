@@ -1,0 +1,30 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Create a shopping list
+# Precondition: user is on HouseholdLists screen
+- launchApp
+- assertVisible:
+    text: ".*"
+    timeout: 10000
+
+# Tap FAB to create list
+- tapOn:
+    id: "Create list"
+
+# Dialog should appear
+- assertVisible: "New list"
+
+# Enter list name
+- tapOn: "List name"
+- inputText: "Weekly Groceries"
+
+# Select Shopping type (should be default)
+- assertVisible: "Shopping"
+
+# Confirm
+- tapOn: "Create"
+
+# New list should appear
+- assertVisible:
+    text: "Weekly Groceries"
+    timeout: 5000

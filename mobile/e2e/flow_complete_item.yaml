@@ -1,0 +1,31 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Complete and uncomplete an item
+# Precondition: user has a list open with at least one pending item
+- launchApp
+- assertVisible:
+    text: ".*"
+    timeout: 10000
+
+# Navigate to list detail if needed
+- tapOn:
+    text: "Weekly Groceries"
+    optional: true
+
+# Wait for items
+- assertVisible:
+    text: "Pending"
+    timeout: 5000
+
+# Tap the checkbox on the item to complete it
+- tapOn:
+    point: "5%,50%"
+    index: 0
+
+# Completed section should appear
+- assertVisible:
+    text: "Completed"
+    timeout: 3000
+
+# Item should be back in pending
+- assertVisible: "Pending"

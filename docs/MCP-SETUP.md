@@ -2,7 +2,7 @@
 
 ## Overview
 
-MCP (Model Context Protocol) servers extend AI agent capabilities. This project uses 4 MCP servers.
+MCP (Model Context Protocol) servers extend AI agent capabilities. This project uses 5 MCP servers.
 
 ## Prerequisites
 
@@ -74,6 +74,34 @@ MCP (Model Context Protocol) servers extend AI agent capabilities. This project 
 | `mcp_stitch_get_project` | Get details of a specific project |
 
 **Usage in workflows**: The `/design-ui` prompt and `.github/skills/design-screen/SKILL.md` skill use Stitch to generate designs before mobile implementation.
+
+### 5. Maestro MCP Server
+
+**Purpose**: Mobile E2E testing automation — run flows, take screenshots, inspect UI hierarchy, tap elements, and assert visibility.
+
+**Setup**:
+1. Clone the repo: `git clone https://github.com/slapglif/maestro-mcp.git` (outside the Convy workspace)
+2. Build: `cd maestro-mcp/mcp && pnpm install && pnpm build`
+3. The server is preconfigured in `.vscode/settings.json` pointing to `C:\Users\luiss\source\repos\maestro-mcp\mcp\dist\index.js`
+
+**Prerequisites**: Maestro CLI 2.4.0+ installed, Android emulator running with the app.
+
+**Verify**: Ask the AI to call `maestro_list_devices` or `adb_devices`.
+
+**Tools available**:
+| Tool | Purpose |
+|------|---------|
+| `maestro_list_devices` | List available emulators/simulators |
+| `maestro_screenshot` | Capture device screenshot |
+| `maestro_hierarchy` | Get UI element tree with coordinates |
+| `maestro_tap` | Tap element by text or ID |
+| `maestro_input_text` | Type text into focused field |
+| `maestro_launch_app` | Launch app on device |
+| `maestro_run_flow` | Execute YAML flow commands |
+| `adb_devices` | List connected Android devices via ADB |
+| `adb_tap_element` | Find and tap element by text/ID |
+| `adb_screenshot` | Take screenshot via ADB |
+| `adb_hierarchy` | Get UI hierarchy via uiautomator |
 
 ## Configuration Files
 
