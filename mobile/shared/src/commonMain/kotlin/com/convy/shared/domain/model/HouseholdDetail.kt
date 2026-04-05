@@ -1,0 +1,9 @@
+package com.convy.shared.domain.model
+
+data class HouseholdDetail(
+    val id: String,
+    val name: String,
+    val createdBy: String,
+    val createdAt: String,
+    val members: List<HouseholdMember>,
+)
