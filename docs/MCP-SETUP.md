@@ -9,6 +9,7 @@ MCP (Model Context Protocol) servers extend AI agent capabilities. This project 
 - Node.js 18+ (for `npx`)
 - Docker running (for PostgreSQL MCP)
 - GitHub personal access token (for GitHub MCP)
+- VS Code with Stitch extension (for Stitch MCP)
 
 ## Server Setup
 
@@ -24,7 +25,9 @@ MCP (Model Context Protocol) servers extend AI agent capabilities. This project 
    [Environment]::SetEnvironmentVariable("GITHUB_TOKEN", "ghp_your_token_here", "User")
    ```
 
-**Verify**: The AI can list issues, create PRs, and search code.
+**Verify**: Ask the AI to list repository issues or create a branch.
+
+**Tools available**: `mcp_io_github_git_*` — issue management, PR creation, code search, branch management.
 
 ### 2. PostgreSQL MCP Server
 
@@ -34,7 +37,9 @@ MCP (Model Context Protocol) servers extend AI agent capabilities. This project 
 1. Start the database: `docker compose -f docker/docker-compose.yml up db -d`
 2. The connection string is preconfigured for local dev.
 
-**Verify**: The AI can run `SELECT version()` and list tables.
+**Verify**: Ask the AI to run `SELECT version()` or list tables with `\dt`.
+
+**Tools available**: Direct SQL query execution against the Convy database.
 
 ### 3. Context7 MCP Server
 
@@ -42,15 +47,33 @@ MCP (Model Context Protocol) servers extend AI agent capabilities. This project 
 
 **Setup**: No configuration needed. Works out of the box with `npx`.
 
-**Verify**: Ask the AI to look up docs for a library (e.g., "MediatR pipeline behaviors").
+**Verify**: Ask the AI to look up docs for a library (e.g., "MediatR pipeline behaviors", "FluentValidation rules", "Ktor auth plugin").
 
-### 4. Stitch MCP Server (Copilot only)
+**Tools available**: Documentation lookup for any npm/NuGet/Maven package.
 
-**Purpose**: Generate UI mockups and design screens.
+### 4. Stitch MCP Server
 
-**Setup**: Configure in VS Code settings or use the `@ui-designer` agent which has Stitch tools enabled.
+**Purpose**: Generate UI mockups, screen designs, and design variants for mobile screens.
 
-**Note**: Stitch is available as a VS Code extension/MCP. Check the [Stitch docs](https://stitch.withgoogle.com/) for latest setup.
+**Setup**:
+1. Install the **Stitch** extension in VS Code (provided by Google).
+2. The MCP tools are automatically available once the extension is installed — no additional configuration needed in `.vscode/settings.json`.
+
+**Verify**: Ask the AI to list Stitch projects (`mcp_stitch_list_projects`). If it returns results (or an empty list), Stitch is working.
+
+**Tools available**:
+| Tool | Purpose |
+|------|---------|
+| `mcp_stitch_create_project` | Create a new design project |
+| `mcp_stitch_generate_screen_from_text` | Generate a screen design from a text prompt |
+| `mcp_stitch_generate_variants` | Generate design variants (dark mode, layout alternatives) |
+| `mcp_stitch_edit_screens` | Edit existing screens with a prompt |
+| `mcp_stitch_list_projects` | List all Stitch projects |
+| `mcp_stitch_list_screens` | List screens in a project |
+| `mcp_stitch_get_screen` | Get details of a specific screen |
+| `mcp_stitch_get_project` | Get details of a specific project |
+
+**Usage in workflows**: The `/design-ui` prompt and `.github/skills/design-screen/SKILL.md` skill use Stitch to generate designs before mobile implementation.
 
 ## Configuration Files
 
@@ -59,8 +82,14 @@ MCP (Model Context Protocol) servers extend AI agent capabilities. This project 
 | VS Code (Copilot) | `.vscode/settings.json` | `mcp.servers` |
 | Claude Code | `.claude/settings.json` | `mcpServers` |
 
+Note: Stitch MCP is provided by the VS Code extension and does not need an entry in `settings.json`.
+
 ## Troubleshooting
 
-- **"npx not found"**: Ensure Node.js is installed and `npx` is on PATH
-- **PostgreSQL connection refused**: Ensure Docker is running and `docker compose up db` has started
-- **GitHub 401**: Check that `GITHUB_TOKEN` is set and has the right scopes (repo, read:org)
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `npx not found` | Node.js not installed | Install Node.js 18+ and ensure `npx` is on PATH |
+| PostgreSQL connection refused | Docker not running | Run `docker compose -f docker/docker-compose.yml up db -d` |
+| GitHub 401 Unauthorized | Token not set or expired | Check `GITHUB_TOKEN` env var has correct value and scopes (`repo`, `read:org`) |
+| `mcp_stitch_*` tools not found | Stitch extension not installed | Install the Stitch extension from VS Code marketplace |
+| Context7 timeout | Network issue | Retry — Context7 runs via `npx` and needs internet access |

@@ -62,12 +62,21 @@ DESIGN TOKENS:
 ```
 
 ### Step 3: Generate via Stitch
-Send the prompt to the Stitch MCP `#tool:stitch/generate_screen_from_text`.
+1. Create or reuse a Stitch project via `mcp_stitch_create_project` (title: "Convy").
+2. Generate the screen via `mcp_stitch_generate_screen_from_text` with:
+   - `projectId`: the Stitch project ID
+   - `prompt`: the structured prompt from Step 2
+   - `deviceType`: `MOBILE`
+   - `modelId`: `GEMINI_3_FLASH` (or `GEMINI_3_1_PRO` for higher quality)
+3. Retrieve the result via `mcp_stitch_get_screen` if needed.
 
 ### Step 4: Review and Iterate
 - Verify alignment with product principles (speed, one-hand use, clarity).
 - Check all states are designed.
-- Generate variants if needed via `#tool:stitch/generate_variants`.
+- Generate variants via `mcp_stitch_generate_variants` with:
+  - `selectedScreenIds`: IDs of screens to vary
+  - `variantOptions`: `{ "variantCount": 3, "creativeRange": "EXPLORE", "aspects": ["COLOR_SCHEME"] }` for dark mode
+  - Use `"aspects": ["LAYOUT"]` to explore alternative layouts.
 
 ### Step 5: Document
 Save the design reference and key decisions for the mobile developer.
