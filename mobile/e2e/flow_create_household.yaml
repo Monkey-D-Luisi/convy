@@ -2,12 +2,12 @@ appId: com.monkeydluisi.convy
 ---
 # Flow: Create a new household
 # Precondition: user is authenticated and on HouseholdSetup screen
-- launchApp
+- launchApp:
+    clearState: false
 
 # Wait for household setup screen
 - assertVisible:
     text: "Set up your home"
-    timeout: 10000
 
 # Should be in create mode by default
 - assertVisible: "Create a new household to get started"
@@ -22,7 +22,6 @@ appId: com.monkeydluisi.convy
 # Should navigate to lists screen
 - assertVisible:
     text: "Test Home"
-    timeout: 10000
 
 # Verify empty state
 - assertVisible: "No lists yet. Tap + to create one!"

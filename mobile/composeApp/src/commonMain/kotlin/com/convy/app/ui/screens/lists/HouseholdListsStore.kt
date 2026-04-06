@@ -3,7 +3,9 @@ package com.convy.app.ui.screens.lists
 import com.convy.shared.data.remote.HouseholdEvent
 import com.convy.shared.data.remote.HouseholdRealtimeService
 import com.convy.shared.domain.model.ListType
+import com.convy.shared.domain.model.HouseholdList
 import com.convy.shared.domain.repository.HouseholdRepository
+import com.convy.shared.domain.repository.ItemRepository
 import com.convy.shared.domain.repository.ListRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +16,7 @@ class HouseholdListsStore(
     private val householdId: String,
     private val householdRepository: HouseholdRepository,
     private val listRepository: ListRepository,
+    private val itemRepository: ItemRepository,
     private val realtimeService: HouseholdRealtimeService,
 ) {
     private val scope = CoroutineScope(Dispatchers.Main)
@@ -55,6 +58,17 @@ class HouseholdListsStore(
             is HouseholdListsIntent.OpenSettings -> scope.launch {
                 _sideEffects.emit(HouseholdListsSideEffect.NavigateToSettings)
             }
+            is HouseholdListsIntent.ShowRenameDialog -> _state.update {
+                it.copy(showRenameDialog = true, renameListId = intent.listId, renameListName = intent.currentName)
+            }
+            is HouseholdListsIntent.DismissRenameDialog -> _state.update { it.copy(showRenameDialog = false) }
+            is HouseholdListsIntent.UpdateRenameListName -> _state.update { it.copy(renameListName = intent.name) }
+            is HouseholdListsIntent.ConfirmRenameList -> renameList()
+            is HouseholdListsIntent.ShowArchiveConfirmation -> _state.update {
+                it.copy(showArchiveConfirmation = true, archiveListId = intent.listId, archiveListName = intent.listName)
+            }
+            is HouseholdListsIntent.DismissArchiveConfirmation -> _state.update { it.copy(showArchiveConfirmation = false) }
+            is HouseholdListsIntent.ConfirmArchiveList -> archiveList()
         }
     }
 
@@ -71,6 +85,7 @@ class HouseholdListsStore(
             listRepository.getByHousehold(householdId).fold(
                 onSuccess = { lists ->
                     _state.update { it.copy(lists = lists, isLoading = false) }
+                    loadPendingCounts(lists)
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to load lists") }
@@ -91,6 +106,49 @@ class HouseholdListsStore(
                 },
                 onFailure = { error ->
                     _sideEffects.emit(HouseholdListsSideEffect.ShowError(error.message ?: "Failed to create list"))
+                },
+            )
+        }
+    }
+
+    private fun loadPendingCounts(lists: List<HouseholdList>) {
+        scope.launch {
+            val counts = mutableMapOf<String, Int>()
+            for (list in lists) {
+                itemRepository.getByList(list.id).onSuccess { items ->
+                    counts[list.id] = items.count { !it.isCompleted }
+                }
+            }
+            _state.update { it.copy(pendingCounts = counts) }
+        }
+    }
+
+    private fun renameList() {
+        val current = _state.value
+        if (current.renameListName.isBlank()) return
+        scope.launch {
+            listRepository.rename(householdId, current.renameListId, current.renameListName).fold(
+                onSuccess = {
+                    _state.update { it.copy(showRenameDialog = false) }
+                    loadData()
+                },
+                onFailure = { error ->
+                    _sideEffects.emit(HouseholdListsSideEffect.ShowError(error.message ?: "Failed to rename list"))
+                },
+            )
+        }
+    }
+
+    private fun archiveList() {
+        val current = _state.value
+        scope.launch {
+            listRepository.archive(householdId, current.archiveListId).fold(
+                onSuccess = {
+                    _state.update { it.copy(showArchiveConfirmation = false) }
+                    loadData()
+                },
+                onFailure = { error ->
+                    _sideEffects.emit(HouseholdListsSideEffect.ShowError(error.message ?: "Failed to archive list"))
                 },
             )
         }

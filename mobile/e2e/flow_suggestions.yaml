@@ -2,19 +2,21 @@ appId: com.monkeydluisi.convy
 ---
 # Flow: Verify item suggestions appear while typing
 # Precondition: user has previously added items (e.g., "Milk")
-- launchApp
-- assertVisible:
-    text: ".*"
-    timeout: 10000
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
 
 # Navigate to list
-- tapOn:
-    text: "Weekly Groceries"
-    optional: true
+- tapOn: "Weekly Groceries"
+
+# Wait for list detail
+- assertVisible: "Back"
 
 # Open add item form
-- tapOn:
-    id: "Add item"
+- tapOn: "Add item"
 - assertVisible: "New item"
 
 # Type partial text that matches a frequent item
@@ -24,7 +26,6 @@ appId: com.monkeydluisi.convy
 # Suggestions should appear as chips
 - assertVisible:
     text: "Milk"
-    timeout: 5000
 
 # Tap suggestion to autofill
 - tapOn: "Milk"
@@ -33,5 +34,4 @@ appId: com.monkeydluisi.convy
 - assertVisible: "Milk"
 
 # Go back without saving
-- tapOn:
-    id: "Back"
+- tapOn: "Back"

@@ -33,6 +33,18 @@ class StubAuthRepository : AuthRepository, TokenProvider {
         return Result.success(user)
     }
 
+    override suspend fun signInWithGoogle(): Result<User> {
+        val user = User(
+            id = "stub-google-user-id",
+            displayName = "Google User",
+            email = "google@example.com",
+            createdAt = "",
+        )
+        currentUser = user
+        token = "stub-google-token"
+        return Result.success(user)
+    }
+
     override suspend fun signOut() {
         currentUser = null
         token = null

@@ -4,6 +4,7 @@ import com.convy.shared.data.remote.TokenProvider
 import com.convy.shared.domain.model.User
 import com.convy.shared.domain.repository.AuthRepository
 import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.auth.GoogleAuthProvider
 import dev.gitlive.firebase.auth.auth
 
 class FirebaseAuthRepository : AuthRepository, TokenProvider {
@@ -29,6 +30,10 @@ class FirebaseAuthRepository : AuthRepository, TokenProvider {
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    override suspend fun signInWithGoogle(): Result<User> {
+        return Result.failure(Exception("Google Sign-In is not available yet. Please use email and password."))
     }
 
     override suspend fun signOut() {

@@ -2,3 +2,19 @@ appId: com.monkeydluisi.convy
 tags:
   - convy
   - e2e
+executionOrder:
+  continueOnFailure: true
+  flowsOrder:
+    - flow_register
+    - flow_create_household
+    - flow_create_list
+    - flow_add_item
+    - flow_edit_item
+    - flow_complete_item
+    - flow_delete_item
+    - flow_duplicate_warning
+    - flow_suggestions
+    - flow_invite
+    - flow_activity
+    - flow_settings
+    - flow_sign_in

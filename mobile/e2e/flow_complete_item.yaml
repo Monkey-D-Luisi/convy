@@ -1,31 +1,36 @@
 appId: com.monkeydluisi.convy
 ---
-# Flow: Complete and uncomplete an item
-# Precondition: user has a list open with at least one pending item
-- launchApp
-- assertVisible:
-    text: ".*"
+# Flow: Complete an item by tapping its checkbox
+# Precondition: user has "Whole Milk" in "Weekly Groceries"
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
+
+# Navigate to list detail
+- tapOn: "Weekly Groceries"
+
+# Wait for list detail and the item
+- extendedWaitUntil:
+    visible:
+      text: "Whole Milk"
     timeout: 10000
 
-# Navigate to list detail if needed
+# The item card has checkbox at left, text at right.
+# Tapping text navigates to edit. We need the checkbox.
+# The checkbox is at the very left edge of the card.
+# Using a very specific strategy: tap the checkbox area only.
+# On a standard phone: checkbox center is about 5% from left, 18% from top.
 - tapOn:
-    text: "Weekly Groceries"
-    optional: true
+    point: "5%,18%"
 
-# Wait for items
-- assertVisible:
-    text: "Pending"
-    timeout: 5000
+# After completing the only item, "Completed" section should appear
+- extendedWaitUntil:
+    visible:
+      text: "Completed.*"
+    timeout: 10000
 
-# Tap the checkbox on the item to complete it
-- tapOn:
-    point: "5%,50%"
-    index: 0
-
-# Completed section should appear
-- assertVisible:
-    text: "Completed"
-    timeout: 3000
-
-# Item should be back in pending
-- assertVisible: "Pending"
+# Navigate back to household list for next flow
+- tapOn: "Back"

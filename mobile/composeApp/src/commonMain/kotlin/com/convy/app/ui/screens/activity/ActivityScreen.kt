@@ -12,6 +12,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.convy.app.ui.components.EmptyContent
@@ -49,7 +50,10 @@ fun ActivityContent(
             TopAppBar(
                 title = { Text("Activity") },
                 navigationIcon = {
-                    IconButton(onClick = { onIntent(ActivityIntent.NavigateBack) }) {
+                    IconButton(
+                        onClick = { onIntent(ActivityIntent.NavigateBack) },
+                        modifier = Modifier.testTag("Back"),
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },

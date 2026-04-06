@@ -30,7 +30,7 @@ fun HouseholdMemberDto.toDomain(): HouseholdMember = HouseholdMember(
     displayName = displayName,
     email = email,
     role = when (role) {
-        0 -> HouseholdRole.Owner
+        "Owner" -> HouseholdRole.Owner
         else -> HouseholdRole.Member
     },
     joinedAt = joinedAt,
@@ -40,7 +40,7 @@ fun HouseholdListDto.toDomain(): HouseholdList = HouseholdList(
     id = id,
     name = name,
     type = when (type) {
-        0 -> ListType.Shopping
+        "Shopping" -> ListType.Shopping
         else -> ListType.Tasks
     },
     householdId = householdId,

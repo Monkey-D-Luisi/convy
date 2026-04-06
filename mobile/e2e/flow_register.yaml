@@ -16,14 +16,19 @@ appId: com.monkeydluisi.convy
 - tapOn: "Display name"
 - inputText: "Test User"
 - tapOn: "Email"
-- inputText: "testuser_${TIMESTAMP}@example.com"
+- inputText: "${EMAIL}"
 - tapOn: "Password"
 - inputText: "Test1234!"
+
+# Dismiss keyboard by tapping header area
+- tapOn:
+    point: "50%,5%"
 
 # Submit
 - tapOn: "Create account"
 
 # Should navigate to household setup
-- assertVisible:
-    text: "Set up your home"
-    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      text: "Set up your home"
+    timeout: 30000

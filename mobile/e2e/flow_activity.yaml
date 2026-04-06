@@ -2,26 +2,24 @@ appId: com.monkeydluisi.convy
 ---
 # Flow: View activity feed
 # Precondition: user is on HouseholdLists screen, some activity exists
-- launchApp
-- assertVisible:
-    text: ".*"
-    timeout: 10000
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
 
 # Tap Activity icon in top bar
-- tapOn:
-    id: "Activity"
+- tapOn: "Activity"
 
 # Activity screen should appear
 - assertVisible:
     text: "Activity"
-    timeout: 5000
 
-# If activity exists, should see at least one entry
-# If empty, should see empty state
+# If activity exists, should see at least one entry with action text
+# After our test actions, there should be "Created" entries (items, lists, etc.)
 - assertVisible:
-    text: "Created|Updated|Completed|Deleted|Archived|Renamed|Joined|No activity yet"
-    timeout: 5000
+    text: "Created.*"
 
 # Go back
-- tapOn:
-    id: "Back"
+- tapOn: "Back"

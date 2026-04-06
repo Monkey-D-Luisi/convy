@@ -7,11 +7,18 @@ data class HouseholdListsState(
     val householdId: String = "",
     val householdName: String = "",
     val lists: List<HouseholdList> = emptyList(),
+    val pendingCounts: Map<String, Int> = emptyMap(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val showCreateDialog: Boolean = false,
     val newListName: String = "",
     val newListType: ListType = ListType.Shopping,
+    val showRenameDialog: Boolean = false,
+    val renameListId: String = "",
+    val renameListName: String = "",
+    val showArchiveConfirmation: Boolean = false,
+    val archiveListId: String = "",
+    val archiveListName: String = "",
 )
 
 sealed interface HouseholdListsIntent {
@@ -25,6 +32,13 @@ sealed interface HouseholdListsIntent {
     data object OpenMembers : HouseholdListsIntent
     data object OpenActivity : HouseholdListsIntent
     data object OpenSettings : HouseholdListsIntent
+    data class ShowRenameDialog(val listId: String, val currentName: String) : HouseholdListsIntent
+    data object DismissRenameDialog : HouseholdListsIntent
+    data class UpdateRenameListName(val name: String) : HouseholdListsIntent
+    data object ConfirmRenameList : HouseholdListsIntent
+    data class ShowArchiveConfirmation(val listId: String, val listName: String) : HouseholdListsIntent
+    data object DismissArchiveConfirmation : HouseholdListsIntent
+    data object ConfirmArchiveList : HouseholdListsIntent
 }
 
 sealed interface HouseholdListsSideEffect {

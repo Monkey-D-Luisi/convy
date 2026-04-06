@@ -2,24 +2,25 @@ appId: com.monkeydluisi.convy
 ---
 # Flow: Add an item with all fields
 # Precondition: user has a list open
-- launchApp
-- assertVisible:
-    text: ".*"
-    timeout: 10000
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
 
 # Open a list (tap on it)
 - tapOn:
     text: "Weekly Groceries"
-    optional: true
 
-# Wait for list detail
-- assertVisible:
-    text: "Add item"
-    timeout: 5000
+# Wait for list detail to fully load (back arrow indicates detail screen)
+- extendedWaitUntil:
+    visible:
+      text: "Add item"
+    timeout: 10000
 
 # Tap FAB to add item
-- tapOn:
-    id: "Add item"
+- tapOn: "Add item"
 
 # Item form should show
 - assertVisible: "New item"
@@ -40,11 +41,22 @@ appId: com.monkeydluisi.convy
 - tapOn: "Note"
 - inputText: "Semi-skimmed"
 
+# Dismiss keyboard by tapping on the form title bar area, then scroll to save button
+- tapOn:
+    point: "50%,5%"
+
+- scrollUntilVisible:
+    element:
+      text: "Add item"
+    direction: DOWN
+    timeout: 5000
+
 # Save
 - tapOn: "Add item"
 
 # Should return to list with item visible
 - assertVisible:
     text: "Milk"
-    timeout: 5000
-- assertVisible: "2liters"
+
+- assertVisible:
+    text: "2 liters.*"

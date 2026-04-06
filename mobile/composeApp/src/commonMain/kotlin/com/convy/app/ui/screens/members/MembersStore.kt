@@ -27,6 +27,12 @@ class MembersStore(
         when (intent) {
             is MembersIntent.Refresh -> loadMembers()
             is MembersIntent.GenerateInvite -> generateInvite()
+            is MembersIntent.CopyInviteCode -> scope.launch {
+                val invite = _state.value.invite
+                if (invite != null) {
+                    _sideEffects.emit(MembersSideEffect.ShareInviteCode(invite.code))
+                }
+            }
             is MembersIntent.NavigateBack -> scope.launch {
                 _sideEffects.emit(MembersSideEffect.NavigateBack)
             }

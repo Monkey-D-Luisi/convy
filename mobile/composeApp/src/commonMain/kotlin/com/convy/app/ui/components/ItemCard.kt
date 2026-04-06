@@ -74,9 +74,9 @@ fun ItemCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = if (item.isCompleted) {
-                        "Completed by ${item.completedByName ?: "unknown"}"
+                        "Completed by ${item.completedByName ?: "unknown"}${item.completedAt?.let { " \u00B7 ${formatTimestamp(it)}" } ?: ""}"
                     } else {
-                        "Added by ${item.createdByName}"
+                        "Added by ${item.createdByName} \u00B7 ${formatTimestamp(item.createdAt)}"
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,
@@ -84,4 +84,8 @@ fun ItemCard(
             }
         }
     }
+}
+
+private fun formatTimestamp(iso: String): String {
+    return iso.take(16).replace("T", " ")
 }

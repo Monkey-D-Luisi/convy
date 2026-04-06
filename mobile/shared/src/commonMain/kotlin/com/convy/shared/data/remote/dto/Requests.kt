@@ -18,7 +18,7 @@ data class CreateHouseholdRequest(
 @Serializable
 data class CreateListRequest(
     @SerialName("name") val name: String,
-    @SerialName("type") val type: Int,
+    @SerialName("type") val type: String,
 )
 
 @Serializable

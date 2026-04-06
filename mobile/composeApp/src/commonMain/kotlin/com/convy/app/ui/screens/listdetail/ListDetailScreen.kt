@@ -16,6 +16,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.convy.app.ui.components.EmptyContent
 import com.convy.app.ui.components.ErrorContent
@@ -65,7 +66,10 @@ fun ListDetailContent(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onIntent(ListDetailIntent.AddItem) }) {
+            FloatingActionButton(
+                onClick = { onIntent(ListDetailIntent.AddItem) },
+                modifier = Modifier.testTag("Add item"),
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "Add item")
             }
         },

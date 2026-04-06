@@ -16,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.convy.app.ui.components.EmptyContent
 import com.convy.app.ui.components.ErrorContent
@@ -65,20 +66,32 @@ fun HouseholdListsContent(
                     Text(state.householdName.ifEmpty { "My Home" })
                 },
                 actions = {
-                    IconButton(onClick = { onIntent(HouseholdListsIntent.OpenActivity) }) {
+                    IconButton(
+                        onClick = { onIntent(HouseholdListsIntent.OpenActivity) },
+                        modifier = Modifier.testTag("Activity"),
+                    ) {
                         Icon(Icons.Default.Notifications, contentDescription = "Activity")
                     }
-                    IconButton(onClick = { onIntent(HouseholdListsIntent.OpenMembers) }) {
+                    IconButton(
+                        onClick = { onIntent(HouseholdListsIntent.OpenMembers) },
+                        modifier = Modifier.testTag("Members"),
+                    ) {
                         Icon(Icons.Default.Person, contentDescription = "Members")
                     }
-                    IconButton(onClick = { onIntent(HouseholdListsIntent.OpenSettings) }) {
+                    IconButton(
+                        onClick = { onIntent(HouseholdListsIntent.OpenSettings) },
+                        modifier = Modifier.testTag("Settings"),
+                    ) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                 },
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onIntent(HouseholdListsIntent.ShowCreateDialog) }) {
+            FloatingActionButton(
+                onClick = { onIntent(HouseholdListsIntent.ShowCreateDialog) },
+                modifier = Modifier.testTag("Create list"),
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "Create list")
             }
         },
@@ -103,8 +116,10 @@ fun HouseholdListsContent(
                     items(state.lists, key = { it.id }) { list ->
                         ListCard(
                             list = list,
-                            pendingCount = 0,
+                            pendingCount = state.pendingCounts[list.id] ?: 0,
                             onClick = { onIntent(HouseholdListsIntent.OpenList(list.id, list.name)) },
+                            onRenameClick = { onIntent(HouseholdListsIntent.ShowRenameDialog(list.id, list.name)) },
+                            onArchiveClick = { onIntent(HouseholdListsIntent.ShowArchiveConfirmation(list.id, list.name)) },
                         )
                     }
                 }
@@ -119,6 +134,48 @@ fun HouseholdListsContent(
                 onTypeChange = { onIntent(HouseholdListsIntent.UpdateNewListType(it)) },
                 onConfirm = { onIntent(HouseholdListsIntent.CreateList) },
                 onDismiss = { onIntent(HouseholdListsIntent.DismissCreateDialog) },
+            )
+        }
+
+        if (state.showRenameDialog) {
+            AlertDialog(
+                onDismissRequest = { onIntent(HouseholdListsIntent.DismissRenameDialog) },
+                title = { Text("Rename list") },
+                text = {
+                    TextField(
+                        value = state.renameListName,
+                        onValueChange = { onIntent(HouseholdListsIntent.UpdateRenameListName(it)) },
+                        label = { Text("List name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { onIntent(HouseholdListsIntent.ConfirmRenameList) },
+                        enabled = state.renameListName.isNotBlank(),
+                    ) { Text("Rename") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { onIntent(HouseholdListsIntent.DismissRenameDialog) }) { Text("Cancel") }
+                },
+            )
+        }
+
+        if (state.showArchiveConfirmation) {
+            AlertDialog(
+                onDismissRequest = { onIntent(HouseholdListsIntent.DismissArchiveConfirmation) },
+                title = { Text("Archive list") },
+                text = { Text("Are you sure you want to archive \"${state.archiveListName}\"? It will no longer appear in your lists.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = { onIntent(HouseholdListsIntent.ConfirmArchiveList) },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    ) { Text("Archive") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { onIntent(HouseholdListsIntent.DismissArchiveConfirmation) }) { Text("Cancel") }
+                },
             )
         }
     }

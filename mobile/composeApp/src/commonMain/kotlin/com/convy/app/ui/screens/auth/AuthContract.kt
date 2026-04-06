@@ -7,6 +7,9 @@ data class AuthState(
     val isSignUp: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
+    val emailError: String? = null,
+    val passwordError: String? = null,
+    val nameError: String? = null,
 )
 
 sealed interface AuthIntent {
@@ -15,6 +18,7 @@ sealed interface AuthIntent {
     data class UpdateDisplayName(val name: String) : AuthIntent
     data object ToggleMode : AuthIntent
     data object Submit : AuthIntent
+    data object GoogleSignIn : AuthIntent
 }
 
 sealed interface AuthSideEffect {

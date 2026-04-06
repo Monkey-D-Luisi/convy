@@ -14,11 +14,11 @@ class ListRepositoryImpl(
 
     override suspend fun create(householdId: String, name: String, type: ListType): Result<String> =
         runCatching {
-            val typeInt = when (type) {
-                ListType.Shopping -> 0
-                ListType.Tasks -> 1
+            val typeString = when (type) {
+                ListType.Shopping -> "Shopping"
+                ListType.Tasks -> "Tasks"
             }
-            api.createList(householdId, CreateListRequest(name, typeInt)).id
+            api.createList(householdId, CreateListRequest(name, typeString)).id
         }
 
     override suspend fun getByHousehold(householdId: String, includeArchived: Boolean): Result<List<HouseholdList>> =

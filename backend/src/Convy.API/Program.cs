@@ -7,6 +7,7 @@ using Convy.Infrastructure;
 using Convy.Infrastructure.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +18,17 @@ builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi();
 
 // SignalR
-builder.Services.AddSignalR();
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options =>
+    {
+        options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
+
+// JSON serialization — serialize enums as strings
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 // Authentication — Firebase JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

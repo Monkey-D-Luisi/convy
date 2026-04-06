@@ -2,32 +2,41 @@ appId: com.monkeydluisi.convy
 ---
 # Flow: Add a duplicate item and verify warning
 # Precondition: user has a list open with "Milk" already added
-- launchApp
-- assertVisible:
-    text: ".*"
-    timeout: 10000
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
 
 # Navigate to list
-- tapOn:
-    text: "Weekly Groceries"
-    optional: true
+- tapOn: "Weekly Groceries"
+
+# Wait for list detail
+- assertVisible: "Back"
 
 # Add first item if not already present
-- tapOn:
-    id: "Add item"
+- tapOn: "Add item"
 - assertVisible: "New item"
 - tapOn: "Title *"
 - inputText: "Milk"
+
+# Dismiss keyboard and scroll to save button
+- tapOn:
+    point: "50%,5%"
+- scrollUntilVisible:
+    element:
+      text: "Add item"
+    direction: DOWN
+    timeout: 5000
 - tapOn: "Add item"
 
 # Wait for list
 - assertVisible:
     text: "Milk"
-    timeout: 5000
 
 # Now add duplicate
-- tapOn:
-    id: "Add item"
+- tapOn: "Add item"
 - assertVisible: "New item"
 - tapOn: "Title *"
 - inputText: "Milk"
@@ -35,10 +44,18 @@ appId: com.monkeydluisi.convy
 # Duplicate warning should appear
 - assertVisible:
     text: "Possible duplicates found:"
-    timeout: 5000
 
 # User can dismiss and still add
 - tapOn: "Dismiss"
+
+# Dismiss keyboard and scroll to save button
+- tapOn:
+    point: "50%,5%"
+- scrollUntilVisible:
+    element:
+      text: "Add item"
+    direction: DOWN
+    timeout: 5000
 
 # Add the item anyway
 - tapOn: "Add item"
@@ -46,4 +63,3 @@ appId: com.monkeydluisi.convy
 # Should be back on list
 - assertVisible:
     text: "Milk"
-    timeout: 5000

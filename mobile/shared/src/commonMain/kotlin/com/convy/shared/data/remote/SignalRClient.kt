@@ -14,7 +14,7 @@ class SignalRClient(
     private val tokenProvider: TokenProvider,
     private val json: Json,
     private val baseHost: String = "10.0.2.2",
-    private val basePort: Int = 5000
+    private val basePort: Int = 5062
 ) {
     private val wsClient = HttpClient {
         install(WebSockets)

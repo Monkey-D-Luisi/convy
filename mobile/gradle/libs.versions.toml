@@ -10,6 +10,7 @@ kotlinx-datetime = "0.6.1"
 firebase-bom = "33.12.0"
 google-services = "4.4.2"
 gitlive-firebase = "2.1.0"
+activity-compose = "1.9.3"
 
 [libraries]
 # Ktor Client
@@ -40,6 +41,7 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-auth = { module = "com.google.firebase:firebase-auth" }
 gitlive-firebase-auth = { module = "dev.gitlive:firebase-auth", version.ref = "gitlive-firebase" }
+activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -47,5 +49,6 @@ android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }

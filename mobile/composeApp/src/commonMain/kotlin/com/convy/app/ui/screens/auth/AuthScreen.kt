@@ -107,6 +107,8 @@ fun AuthContent(
                         focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
                     ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    isError = state.nameError != null,
+                    supportingText = state.nameError?.let { error -> { Text(error) } },
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -129,6 +131,8 @@ fun AuthContent(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next,
                 ),
+                isError = state.emailError != null,
+                supportingText = state.emailError?.let { error -> { Text(error) } },
             )
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -151,6 +155,8 @@ fun AuthContent(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done,
                 ),
+                isError = state.passwordError != null,
+                supportingText = state.passwordError?.let { error -> { Text(error) } },
             )
 
             if (state.error != null) {
@@ -179,6 +185,23 @@ fun AuthContent(
                 } else {
                     Text(if (state.isSignUp) "Create account" else "Sign in")
                 }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedButton(
+                onClick = { onIntent(AuthIntent.GoogleSignIn) },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                enabled = !state.isLoading,
+                shape = RoundedCornerShape(28.dp),
+            ) {
+                Text(
+                    text = "G",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Sign in with Google")
             }
 
             Spacer(modifier = Modifier.height(12.dp))

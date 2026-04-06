@@ -77,6 +77,25 @@ $RECYCLE.BIN/
 # Docker
 # =====================
 docker-compose.override.yml
+docker/.env
+
+# =====================
+# Secrets / Environment
+# =====================
+.env
+.env.local
+*.env.local
+
+# =====================
+# Firebase (contains project config)
+# =====================
+google-services.json
+GoogleService-Info.plist
+
+# =====================
+# E2E Screenshots
+# =====================
+mobile/e2e/screenshots/
 
 # =====================
 # Environment

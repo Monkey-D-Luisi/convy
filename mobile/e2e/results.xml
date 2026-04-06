@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="Pixel_9_Pro" tests="2" failures="1" time="57.0">
+    <testcase id="flow_register" name="flow_register" classname="flow_register" time="27.0" status="SUCCESS"/>
+    <testcase id="flow_create_household" name="flow_create_household" classname="flow_create_household" time="30.0" status="ERROR">
+      <failure>Assertion is false: "No lists yet. Tap + to create one!" is visible</failure>
+    </testcase>
+  </testsuite>
+</testsuites>

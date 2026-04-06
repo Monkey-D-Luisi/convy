@@ -1,8 +1,17 @@
 package com.convy.app
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import com.convy.app.navigation.AppNavigator
 import com.convy.app.navigation.NavRoute
 import com.convy.app.ui.screens.activity.ActivityScreen
@@ -22,6 +31,8 @@ import com.convy.app.ui.screens.members.MembersStore
 import com.convy.app.ui.screens.settings.SettingsScreen
 import com.convy.app.ui.screens.settings.SettingsStore
 import com.convy.app.ui.theme.ConvyTheme
+import com.convy.shared.domain.repository.AuthRepository
+import com.convy.shared.domain.repository.HouseholdRepository
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
@@ -29,7 +40,33 @@ import org.koin.core.parameter.parametersOf
 fun App() {
     ConvyTheme {
         val navigator = koinInject<AppNavigator>()
+        val authRepository = koinInject<AuthRepository>()
+        val householdRepository = koinInject<HouseholdRepository>()
         val currentRoute by navigator.currentRoute.collectAsState()
+        var isCheckingAuth by remember { mutableStateOf(true) }
+
+        LaunchedEffect(Unit) {
+            val user = authRepository.getCurrentUser()
+            if (user != null) {
+                val households = householdRepository.getMyHouseholds().getOrNull()
+                if (!households.isNullOrEmpty()) {
+                    navigator.replaceWith(NavRoute.HouseholdLists(households.first().id))
+                } else {
+                    navigator.replaceWith(NavRoute.HouseholdSetup)
+                }
+            }
+            isCheckingAuth = false
+        }
+
+        if (isCheckingAuth) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+            return@ConvyTheme
+        }
 
         when (val route = currentRoute) {
             is NavRoute.Auth -> {
@@ -131,6 +168,7 @@ fun App() {
                 SettingsScreen(
                     store = store,
                     onNavigateToAuth = { navigator.replaceWith(NavRoute.Auth) },
+                    onNavigateToHouseholdSetup = { navigator.replaceWith(NavRoute.HouseholdSetup) },
                     onNavigateBack = { navigator.navigateBack() },
                 )
             }

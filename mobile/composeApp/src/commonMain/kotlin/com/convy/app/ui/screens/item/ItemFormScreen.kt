@@ -17,6 +17,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -52,7 +53,10 @@ fun ItemFormContent(
             TopAppBar(
                 title = { Text(if (state.isEditing) "Edit item" else "New item") },
                 navigationIcon = {
-                    IconButton(onClick = { onIntent(ItemFormIntent.NavigateBack) }) {
+                    IconButton(
+                        onClick = { onIntent(ItemFormIntent.NavigateBack) },
+                        modifier = Modifier.testTag("Back"),
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
@@ -61,6 +65,7 @@ fun ItemFormContent(
                         IconButton(
                             onClick = { onIntent(ItemFormIntent.Delete) },
                             enabled = !state.isSaving,
+                            modifier = Modifier.testTag("Delete"),
                         ) {
                             Icon(
                                 Icons.Default.Delete,

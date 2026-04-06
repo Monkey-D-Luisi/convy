@@ -33,7 +33,7 @@ data class HouseholdMemberDto(
     @SerialName("userId") val userId: String,
     @SerialName("displayName") val displayName: String,
     @SerialName("email") val email: String,
-    @SerialName("role") val role: Int,
+    @SerialName("role") val role: String,
     @SerialName("joinedAt") val joinedAt: String,
 )
 
@@ -41,7 +41,7 @@ data class HouseholdMemberDto(
 data class HouseholdListDto(
     @SerialName("id") val id: String,
     @SerialName("name") val name: String,
-    @SerialName("type") val type: Int,
+    @SerialName("type") val type: String,
     @SerialName("householdId") val householdId: String,
     @SerialName("createdBy") val createdBy: String,
     @SerialName("createdAt") val createdAt: String,

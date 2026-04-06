@@ -22,17 +22,44 @@ class AuthStore(
 
     fun processIntent(intent: AuthIntent) {
         when (intent) {
-            is AuthIntent.UpdateEmail -> _state.update { it.copy(email = intent.email) }
-            is AuthIntent.UpdatePassword -> _state.update { it.copy(password = intent.password) }
-            is AuthIntent.UpdateDisplayName -> _state.update { it.copy(displayName = intent.name) }
+            is AuthIntent.UpdateEmail -> _state.update { it.copy(email = intent.email, emailError = null) }
+            is AuthIntent.UpdatePassword -> _state.update { it.copy(password = intent.password, passwordError = null) }
+            is AuthIntent.UpdateDisplayName -> _state.update { it.copy(displayName = intent.name, nameError = null) }
             is AuthIntent.ToggleMode -> _state.update { it.copy(isSignUp = !it.isSignUp, error = null) }
             is AuthIntent.Submit -> submit()
+            is AuthIntent.GoogleSignIn -> signInWithGoogle()
         }
+    }
+
+    private fun validate(): Boolean {
+        val current = _state.value
+
+        val emailError = when {
+            current.email.isBlank() -> "Email is required"
+            !current.email.contains("@") -> "Invalid email format"
+            else -> null
+        }
+
+        val passwordError = when {
+            current.password.isBlank() -> "Password is required"
+            current.password.length < 6 -> "Password must be at least 6 characters"
+            else -> null
+        }
+
+        val nameError = if (current.isSignUp && current.displayName.isBlank()) {
+            "Display name is required"
+        } else {
+            null
+        }
+
+        _state.update { it.copy(emailError = emailError, passwordError = passwordError, nameError = nameError) }
+        return emailError == null && passwordError == null && nameError == null
     }
 
     private fun submit() {
         val current = _state.value
         if (current.isLoading) return
+        if (!validate()) return
 
         _state.update { it.copy(isLoading = true, error = null) }
 
@@ -45,10 +72,7 @@ class AuthStore(
 
             result.fold(
                 onSuccess = { user ->
-                    val token = authRepository.getIdToken()
-                    if (token != null) {
-                        userRepository.register(token, user.displayName, user.email)
-                    }
+                    userRepository.register(user.id, user.displayName, user.email)
                     val households = householdRepository.getMyHouseholds().getOrNull()
                     _state.update { it.copy(isLoading = false) }
                     if (households.isNullOrEmpty()) {
@@ -59,6 +83,32 @@ class AuthStore(
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isLoading = false, error = error.message ?: "Authentication failed") }
+                },
+            )
+        }
+    }
+
+    private fun signInWithGoogle() {
+        if (_state.value.isLoading) return
+
+        _state.update { it.copy(isLoading = true, error = null) }
+
+        scope.launch {
+            val result = authRepository.signInWithGoogle()
+
+            result.fold(
+                onSuccess = { user ->
+                    userRepository.register(user.id, user.displayName, user.email)
+                    val households = householdRepository.getMyHouseholds().getOrNull()
+                    _state.update { it.copy(isLoading = false) }
+                    if (households.isNullOrEmpty()) {
+                        _sideEffects.emit(AuthSideEffect.NavigateToHouseholdSetup(user.id))
+                    } else {
+                        _sideEffects.emit(AuthSideEffect.NavigateToLists(households.first().id))
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(isLoading = false, error = error.message ?: "Google sign-in failed") }
                 },
             )
         }

@@ -47,7 +47,7 @@ val networkModule = module {
                 url {
                     protocol = URLProtocol.HTTP
                     host = "10.0.2.2"
-                    port = 5000
+                    port = 5062
                 }
             }
         }

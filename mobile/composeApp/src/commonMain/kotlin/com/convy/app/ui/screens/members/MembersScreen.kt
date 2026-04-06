@@ -13,6 +13,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.convy.app.ui.components.ErrorContent
@@ -26,12 +29,15 @@ fun MembersScreen(
     onNavigateBack: () -> Unit,
 ) {
     val state by store.state.collectAsState()
+    val clipboardManager = LocalClipboardManager.current
 
     LaunchedEffect(Unit) {
         store.sideEffects.collect { effect ->
             when (effect) {
                 is MembersSideEffect.NavigateBack -> onNavigateBack()
-                is MembersSideEffect.ShareInviteCode -> {}
+                is MembersSideEffect.ShareInviteCode -> {
+                    clipboardManager.setText(AnnotatedString(effect.code))
+                }
                 is MembersSideEffect.ShowError -> {}
             }
         }
@@ -51,7 +57,10 @@ fun MembersContent(
             TopAppBar(
                 title = { Text("Members") },
                 navigationIcon = {
-                    IconButton(onClick = { onIntent(MembersIntent.NavigateBack) }) {
+                    IconButton(
+                        onClick = { onIntent(MembersIntent.NavigateBack) },
+                        modifier = Modifier.testTag("Back"),
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
@@ -83,6 +92,7 @@ fun MembersContent(
                         invite = state.invite,
                         isGenerating = state.isGeneratingInvite,
                         onGenerateInvite = { onIntent(MembersIntent.GenerateInvite) },
+                        onCopyCode = { state.invite?.let { onIntent(MembersIntent.CopyInviteCode) } },
                     )
                 }
             }
@@ -143,6 +153,7 @@ private fun InviteSection(
     invite: com.convy.shared.domain.model.Invite?,
     isGenerating: Boolean,
     onGenerateInvite: () -> Unit,
+    onCopyCode: () -> Unit,
 ) {
     Card(
         colors = CardDefaults.cardColors(
@@ -181,12 +192,20 @@ private fun InviteSection(
                         )
                     }
                 }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = onCopyCode,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Copy code")
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = onGenerateInvite,
                 enabled = !isGenerating,
+                modifier = Modifier.testTag("Generate invite code"),
             ) {
                 if (isGenerating) {
                     CircularProgressIndicator(

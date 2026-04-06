@@ -2,19 +2,19 @@ appId: com.monkeydluisi.convy
 ---
 # Flow: Generate invite and join from another perspective
 # Precondition: user is on HouseholdLists screen
-- launchApp
-- assertVisible:
-    text: ".*"
-    timeout: 10000
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
 
 # Go to Members screen
-- tapOn:
-    id: "Members"
+- tapOn: "Members"
 
 # Should see Members screen
 - assertVisible:
     text: "Members"
-    timeout: 5000
 
 # Should see invite section
 - assertVisible: "Invite someone"
@@ -25,8 +25,6 @@ appId: com.monkeydluisi.convy
 # Invite code should be visible
 - assertVisible:
     text: "Invite code:"
-    timeout: 5000
 
 # Go back
-- tapOn:
-    id: "Back"
+- tapOn: "Back"
