@@ -9,5 +9,7 @@ public enum ActivityActionType
     Deleted = 4,
     Archived = 5,
     Renamed = 6,
-    MemberJoined = 7
+    MemberJoined = 7,
+    MemberLeft = 8,
+    Revoked = 9
 }

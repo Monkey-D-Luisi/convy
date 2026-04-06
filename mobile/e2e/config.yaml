@@ -14,6 +14,12 @@ executionOrder:
     - flow_delete_item
     - flow_duplicate_warning
     - flow_suggestions
+    - flow_search_items
+    - flow_filter_items
+    - flow_recurring_item
+    - flow_shopping_mode
+    - flow_item_history
+    - flow_rename_household
     - flow_invite
     - flow_activity
     - flow_settings

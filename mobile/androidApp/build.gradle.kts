@@ -43,6 +43,7 @@ dependencies {
     implementation(project(":shared"))
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.messaging)
     implementation(libs.activity.compose)
     implementation(libs.koin.android)
 }

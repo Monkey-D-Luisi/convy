@@ -1,5 +1,6 @@
 using Convy.Domain.Entities;
 using Convy.Domain.Exceptions;
+using Convy.Domain.ValueObjects;
 using FluentAssertions;
 
 namespace Convy.Domain.Tests.Entities;
@@ -181,5 +182,77 @@ public class ListItemTests
 
         act.Should().Throw<DomainException>()
             .WithMessage("Item is not completed.");
+    }
+
+    [Fact]
+    public void SetRecurrence_WithValidData_SetsProperties()
+    {
+        var item = new ListItem("Milk", _listId, _creatorId);
+
+        item.SetRecurrence(RecurrenceFrequency.Weekly, 2);
+
+        item.RecurrenceFrequency.Should().Be(RecurrenceFrequency.Weekly);
+        item.RecurrenceInterval.Should().Be(2);
+        item.NextDueDate.Should().NotBeNull();
+        item.NextDueDate.Should().BeCloseTo(DateTime.UtcNow.AddDays(14), TimeSpan.FromSeconds(5));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void SetRecurrence_WithZeroOrNegativeInterval_ThrowsArgumentException(int interval)
+    {
+        var item = new ListItem("Milk", _listId, _creatorId);
+
+        var act = () => item.SetRecurrence(RecurrenceFrequency.Daily, interval);
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void ClearRecurrence_WhenSet_ClearsProperties()
+    {
+        var item = new ListItem("Milk", _listId, _creatorId);
+        item.SetRecurrence(RecurrenceFrequency.Daily, 1);
+
+        item.ClearRecurrence();
+
+        item.RecurrenceFrequency.Should().BeNull();
+        item.RecurrenceInterval.Should().BeNull();
+        item.NextDueDate.Should().BeNull();
+    }
+
+    [Fact]
+    public void AdvanceRecurrence_WhenNoRecurrence_ThrowsDomainException()
+    {
+        var item = new ListItem("Milk", _listId, _creatorId);
+
+        var act = () => item.AdvanceRecurrence();
+
+        act.Should().Throw<DomainException>()
+            .WithMessage("Item does not have a recurrence rule.");
+    }
+
+    [Fact]
+    public void AdvanceRecurrence_WhenSet_UpdatesNextDueDate()
+    {
+        var item = new ListItem("Milk", _listId, _creatorId);
+        item.SetRecurrence(RecurrenceFrequency.Daily, 3);
+        var previousDueDate = item.NextDueDate;
+
+        item.AdvanceRecurrence();
+
+        item.NextDueDate.Should().NotBeNull();
+        item.NextDueDate.Should().BeCloseTo(DateTime.UtcNow.AddDays(3), TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public void SetRecurrence_WithMonthlyFrequency_CalculatesCorrectDueDate()
+    {
+        var item = new ListItem("Milk", _listId, _creatorId);
+
+        item.SetRecurrence(RecurrenceFrequency.Monthly, 1);
+
+        item.NextDueDate.Should().BeCloseTo(DateTime.UtcNow.AddMonths(1), TimeSpan.FromSeconds(5));
     }
 }

@@ -23,7 +23,7 @@ data class HouseholdListsState(
 
 sealed interface HouseholdListsIntent {
     data object Refresh : HouseholdListsIntent
-    data class OpenList(val listId: String, val listName: String) : HouseholdListsIntent
+    data class OpenList(val listId: String, val listName: String, val listType: String) : HouseholdListsIntent
     data object ShowCreateDialog : HouseholdListsIntent
     data object DismissCreateDialog : HouseholdListsIntent
     data class UpdateNewListName(val name: String) : HouseholdListsIntent
@@ -42,7 +42,7 @@ sealed interface HouseholdListsIntent {
 }
 
 sealed interface HouseholdListsSideEffect {
-    data class NavigateToList(val householdId: String, val listId: String, val listName: String) : HouseholdListsSideEffect
+    data class NavigateToList(val householdId: String, val listId: String, val listName: String, val listType: String) : HouseholdListsSideEffect
     data class NavigateToMembers(val householdId: String) : HouseholdListsSideEffect
     data class NavigateToActivity(val householdId: String) : HouseholdListsSideEffect
     data object NavigateToSettings : HouseholdListsSideEffect

@@ -16,6 +16,11 @@ data class CreateHouseholdRequest(
 )
 
 @Serializable
+data class RenameHouseholdRequest(
+    @SerialName("newName") val newName: String,
+)
+
+@Serializable
 data class CreateListRequest(
     @SerialName("name") val name: String,
     @SerialName("type") val type: String,
@@ -32,6 +37,8 @@ data class CreateItemRequest(
     @SerialName("quantity") val quantity: Int? = null,
     @SerialName("unit") val unit: String? = null,
     @SerialName("note") val note: String? = null,
+    @SerialName("recurrenceFrequency") val recurrenceFrequency: Int? = null,
+    @SerialName("recurrenceInterval") val recurrenceInterval: Int? = null,
 )
 
 @Serializable
@@ -40,6 +47,8 @@ data class UpdateItemRequest(
     @SerialName("quantity") val quantity: Int? = null,
     @SerialName("unit") val unit: String? = null,
     @SerialName("note") val note: String? = null,
+    @SerialName("recurrenceFrequency") val recurrenceFrequency: Int? = null,
+    @SerialName("recurrenceInterval") val recurrenceInterval: Int? = null,
 )
 
 @Serializable
@@ -50,4 +59,15 @@ data class CreateInviteRequest(
 @Serializable
 data class JoinHouseholdRequest(
     @SerialName("inviteCode") val inviteCode: String,
+)
+
+@Serializable
+data class RegisterDeviceRequest(
+    @SerialName("token") val token: String,
+    @SerialName("platform") val platform: String,
+)
+
+@Serializable
+data class ParseVoiceInputRequest(
+    @SerialName("transcribedText") val transcribedText: String,
 )

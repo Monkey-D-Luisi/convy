@@ -37,7 +37,7 @@ class HouseholdListsStore(
             is HouseholdListsIntent.Refresh -> loadData()
             is HouseholdListsIntent.OpenList -> scope.launch {
                 _sideEffects.emit(
-                    HouseholdListsSideEffect.NavigateToList(householdId, intent.listId, intent.listName)
+                    HouseholdListsSideEffect.NavigateToList(householdId, intent.listId, intent.listName, intent.listType)
                 )
             }
             is HouseholdListsIntent.ShowCreateDialog -> _state.update {

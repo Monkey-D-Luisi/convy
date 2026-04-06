@@ -1,0 +1,60 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Create a recurring item
+# Precondition: user is signed in, "Weekly Groceries" list exists
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
+
+# Navigate to list
+- tapOn: "Weekly Groceries"
+
+# Wait for list detail
+- extendedWaitUntil:
+    visible:
+      text: "Add item"
+    timeout: 10000
+
+# Add new item
+- tapOn: "Add item"
+- assertVisible: "New item"
+
+# Fill title
+- tapOn: "Title *"
+- inputText: "Eggs"
+
+# Enable recurring
+- scrollUntilVisible:
+    element:
+      text: "Recurring"
+    direction: DOWN
+    timeout: 5000
+
+- tapOn: "Recurring"
+
+# Frequency options should appear
+- assertVisible: "Every"
+- assertVisible: "Weekly"
+
+# Change frequency to Daily
+- tapOn: "Weekly"
+- tapOn: "Daily"
+
+# Dismiss keyboard and save
+- tapOn:
+    point: "50%,5%"
+- scrollUntilVisible:
+    element:
+      text: "Add item"
+    direction: DOWN
+    timeout: 5000
+- tapOn: "Add item"
+
+# Item should appear in list
+- assertVisible: "Eggs"
+
+# Go back
+- tapOn: "Back"

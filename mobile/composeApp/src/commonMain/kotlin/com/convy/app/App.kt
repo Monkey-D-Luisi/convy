@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
 import com.convy.app.navigation.AppNavigator
 import com.convy.app.navigation.NavRoute
 import com.convy.app.ui.screens.activity.ActivityScreen
@@ -33,6 +34,7 @@ import com.convy.app.ui.screens.settings.SettingsStore
 import com.convy.app.ui.theme.ConvyTheme
 import com.convy.shared.domain.repository.AuthRepository
 import com.convy.shared.domain.repository.HouseholdRepository
+import com.convy.shared.data.remote.DeviceTokenManager
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
@@ -42,12 +44,14 @@ fun App() {
         val navigator = koinInject<AppNavigator>()
         val authRepository = koinInject<AuthRepository>()
         val householdRepository = koinInject<HouseholdRepository>()
+        val deviceTokenManager = koinInject<DeviceTokenManager>()
         val currentRoute by navigator.currentRoute.collectAsState()
         var isCheckingAuth by remember { mutableStateOf(true) }
 
         LaunchedEffect(Unit) {
             val user = authRepository.getCurrentUser()
             if (user != null) {
+                launch { deviceTokenManager.registerCurrentToken() }
                 val households = householdRepository.getMyHouseholds().getOrNull()
                 if (!households.isNullOrEmpty()) {
                     navigator.replaceWith(NavRoute.HouseholdLists(households.first().id))
@@ -96,8 +100,8 @@ fun App() {
                 val store = koinInject<HouseholdListsStore> { parametersOf(route.householdId) }
                 HouseholdListsScreen(
                     store = store,
-                    onNavigateToList = { householdId, listId, listName ->
-                        navigator.navigateTo(NavRoute.ListDetail(householdId, listId, listName))
+                    onNavigateToList = { householdId, listId, listName, listType ->
+                        navigator.navigateTo(NavRoute.ListDetail(householdId, listId, listName, listType))
                     },
                     onNavigateToMembers = { householdId ->
                         navigator.navigateTo(NavRoute.Members(householdId))
@@ -113,7 +117,7 @@ fun App() {
 
             is NavRoute.ListDetail -> {
                 val store = koinInject<ListDetailStore> {
-                    parametersOf(route.householdId, route.listId, route.listName)
+                    parametersOf(route.householdId, route.listId, route.listName, route.listType)
                 }
                 ListDetailScreen(
                     store = store,

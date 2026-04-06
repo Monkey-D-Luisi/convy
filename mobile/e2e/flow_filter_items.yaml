@@ -1,0 +1,57 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Filter items using filter chips
+# Precondition: user is signed in, list has pending and completed items
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
+
+# Navigate to list
+- tapOn: "Weekly Groceries"
+
+# Wait for list detail
+- extendedWaitUntil:
+    visible:
+      text: "Add item"
+    timeout: 10000
+
+# Complete Bread so we have both pending and completed items
+- tapOn:
+    point: "5%,18%"
+
+# Wait for completed section
+- extendedWaitUntil:
+    visible:
+      text: "Completed.*"
+    timeout: 5000
+
+# Filter chips should be visible - "All" should be active by default
+- assertVisible: "All"
+- assertVisible: "Pending"
+- assertVisible: "Completed"
+
+# Tap "Pending" filter
+- tapOn:
+    text: "Pending"
+
+# Should show only pending items, no completed section
+- assertNotVisible:
+    text: "Completed.*"
+
+# Tap "Completed" filter
+- tapOn:
+    text: "Completed"
+
+# Should show only completed items
+- assertVisible:
+    text: "Bread"
+
+# Tap "All" to reset
+- tapOn:
+    text: "All"
+
+# Go back
+- tapOn: "Back"

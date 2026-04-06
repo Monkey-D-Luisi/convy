@@ -1,6 +1,7 @@
 using Convy.Application.Common.Models;
 using Convy.Application.Features.Items.Commands;
 using Convy.Application.Features.Items.Queries;
+using Convy.Domain.ValueObjects;
 using MediatR;
 
 namespace Convy.API.Endpoints;
@@ -18,7 +19,7 @@ public static class ItemEndpoints
             CreateItemRequest request,
             IMediator mediator) =>
         {
-            var command = new CreateItemCommand(listId, request.Title, request.Quantity, request.Unit, request.Note);
+            var command = new CreateItemCommand(listId, request.Title, request.Quantity, request.Unit, request.Note, request.RecurrenceFrequency, request.RecurrenceInterval);
             var result = await mediator.Send(command);
 
             return result.IsSuccess
@@ -28,10 +29,13 @@ public static class ItemEndpoints
 
         group.MapGet("/", async (
             Guid listId,
-            bool? includeCompleted,
+            string? status,
+            Guid? createdBy,
+            DateTime? fromDate,
+            DateTime? toDate,
             IMediator mediator) =>
         {
-            var query = new GetListItemsQuery(listId, includeCompleted ?? true);
+            var query = new GetListItemsQuery(listId, status, createdBy, fromDate, toDate);
             var result = await mediator.Send(query);
 
             return result.IsSuccess
@@ -45,7 +49,7 @@ public static class ItemEndpoints
             UpdateItemRequest request,
             IMediator mediator) =>
         {
-            var command = new UpdateItemCommand(itemId, request.Title, request.Quantity, request.Unit, request.Note);
+            var command = new UpdateItemCommand(itemId, request.Title, request.Quantity, request.Unit, request.Note, request.RecurrenceFrequency, request.RecurrenceInterval);
             var result = await mediator.Send(command);
 
             return result.IsSuccess
@@ -122,6 +126,18 @@ public static class ItemEndpoints
                 ? Results.Ok(result.Value)
                 : MapError(result.Error!);
         });
+
+        group.MapPost("/parse-voice", async (
+            Guid listId,
+            ParseVoiceInputRequest request,
+            IMediator mediator) =>
+        {
+            var command = new ParseVoiceInputCommand(listId, request.TranscribedText);
+            var result = await mediator.Send(command);
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : MapError(result.Error!);
+        });
     }
 
     private static IResult MapError(Error error) => error.Code switch
@@ -134,5 +150,6 @@ public static class ItemEndpoints
     };
 }
 
-public record CreateItemRequest(string Title, int? Quantity, string? Unit, string? Note);
-public record UpdateItemRequest(string Title, int? Quantity, string? Unit, string? Note);
+public record CreateItemRequest(string Title, int? Quantity, string? Unit, string? Note, RecurrenceFrequency? RecurrenceFrequency, int? RecurrenceInterval);
+public record UpdateItemRequest(string Title, int? Quantity, string? Unit, string? Note, RecurrenceFrequency? RecurrenceFrequency, int? RecurrenceInterval);
+public record ParseVoiceInputRequest(string TranscribedText);

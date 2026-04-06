@@ -1,0 +1,58 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: View item history from edit form
+# Precondition: user is signed in, list has an item with some history
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
+
+# Navigate to list
+- tapOn: "Weekly Groceries"
+
+# Wait for list detail
+- extendedWaitUntil:
+    visible:
+      text: "Add item"
+    timeout: 10000
+
+# Tap on an item to edit
+- tapOn: "Eggs"
+
+# Should see edit form
+- assertVisible: "Edit item"
+
+# Scroll down to find history button
+- scrollUntilVisible:
+    element:
+      text: "View history"
+    direction: DOWN
+    timeout: 5000
+
+# Tap view history
+- tapOn: "View history"
+
+# History bottom sheet should appear
+- extendedWaitUntil:
+    visible:
+      text: "History:.*"
+    timeout: 5000
+
+# Should show at least the creation entry
+- assertVisible:
+    text: "Created.*"
+    optional: true
+
+# Swipe down to dismiss the bottom sheet
+- swipe:
+    direction: DOWN
+    from: "50%,50%"
+    duration: 300
+
+# Go back from edit form
+- tapOn: "Back"
+
+# Go back from list
+- tapOn: "Back"

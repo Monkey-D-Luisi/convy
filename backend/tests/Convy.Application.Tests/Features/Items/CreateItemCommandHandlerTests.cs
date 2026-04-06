@@ -38,7 +38,7 @@ public class CreateItemCommandHandlerTests
         _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
         _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
 
-        var command = new CreateItemCommand(list.Id, "Milk", 2, "liters", "Semi-skimmed");
+        var command = new CreateItemCommand(list.Id, "Milk", 2, "liters", "Semi-skimmed", null, null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -60,7 +60,7 @@ public class CreateItemCommandHandlerTests
         _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
         _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
 
-        var command = new CreateItemCommand(list.Id, "Bread", null, null, null);
+        var command = new CreateItemCommand(list.Id, "Bread", null, null, null, null, null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -76,7 +76,7 @@ public class CreateItemCommandHandlerTests
         _listRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((HouseholdList?)null);
 
-        var command = new CreateItemCommand(Guid.NewGuid(), "Milk", null, null, null);
+        var command = new CreateItemCommand(Guid.NewGuid(), "Milk", null, null, null, null, null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -97,7 +97,7 @@ public class CreateItemCommandHandlerTests
         _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
         _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
 
-        var command = new CreateItemCommand(list.Id, "Milk", null, null, null);
+        var command = new CreateItemCommand(list.Id, "Milk", null, null, null, null, null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);

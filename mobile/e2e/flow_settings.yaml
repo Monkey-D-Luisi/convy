@@ -1,6 +1,6 @@
 appId: com.monkeydluisi.convy
 ---
-# Flow: Settings and sign out
+# Flow: Settings — verify elements and sign out
 # Precondition: user is on HouseholdLists screen
 - launchApp:
     clearState: false
@@ -15,6 +15,12 @@ appId: com.monkeydluisi.convy
 # Settings screen
 - assertVisible:
     text: "Settings"
+
+# Verify household section with rename button
+- assertVisible: "Household"
+
+# Verify leave household button
+- assertVisible: "Leave household"
 
 - assertVisible: "App version"
 - assertVisible: "0.1.0"

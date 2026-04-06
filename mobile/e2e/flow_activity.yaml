@@ -1,6 +1,6 @@
 appId: com.monkeydluisi.convy
 ---
-# Flow: View activity feed
+# Flow: View activity feed with date grouping
 # Precondition: user is on HouseholdLists screen, some activity exists
 - launchApp:
     clearState: false
@@ -16,7 +16,10 @@ appId: com.monkeydluisi.convy
 - assertVisible:
     text: "Activity"
 
-# If activity exists, should see at least one entry with action text
+# Date grouping should show "Today" header since all activity is recent
+- assertVisible:
+    text: "Today"
+
 # After our test actions, there should be "Created" entries (items, lists, etc.)
 - assertVisible:
     text: "Created.*"

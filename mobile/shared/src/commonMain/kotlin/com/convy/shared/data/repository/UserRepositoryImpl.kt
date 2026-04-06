@@ -17,4 +17,9 @@ class UserRepositoryImpl(
             )
             response.toDomain()
         }
+
+    override suspend fun getProfile(): Result<User> =
+        runCatching {
+            api.getUserProfile().toDomain()
+        }
 }

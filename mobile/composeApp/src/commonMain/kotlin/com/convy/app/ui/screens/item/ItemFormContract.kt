@@ -1,5 +1,6 @@
 package com.convy.app.ui.screens.item
 
+import com.convy.shared.domain.model.ActivityLogEntry
 import com.convy.shared.domain.model.DuplicateItem
 
 data class ItemFormState(
@@ -16,6 +17,11 @@ data class ItemFormState(
     val error: String? = null,
     val duplicateWarning: List<DuplicateItem> = emptyList(),
     val suggestions: List<String> = emptyList(),
+    val recurrenceFrequency: Int? = null,
+    val recurrenceInterval: Int? = null,
+    val showHistory: Boolean = false,
+    val historyEntries: List<ActivityLogEntry> = emptyList(),
+    val isLoadingHistory: Boolean = false,
 )
 
 sealed interface ItemFormIntent {
@@ -28,6 +34,10 @@ sealed interface ItemFormIntent {
     data object Delete : ItemFormIntent
     data object NavigateBack : ItemFormIntent
     data object DismissDuplicateWarning : ItemFormIntent
+    data class UpdateRecurrenceFrequency(val frequency: Int?) : ItemFormIntent
+    data class UpdateRecurrenceInterval(val interval: Int?) : ItemFormIntent
+    data object ShowHistory : ItemFormIntent
+    data object DismissHistory : ItemFormIntent
 }
 
 sealed interface ItemFormSideEffect {

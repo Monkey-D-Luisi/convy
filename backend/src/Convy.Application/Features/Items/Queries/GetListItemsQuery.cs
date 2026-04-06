@@ -4,4 +4,10 @@ using MediatR;
 
 namespace Convy.Application.Features.Items.Queries;
 
-public record GetListItemsQuery(Guid ListId, bool IncludeCompleted = true) : IRequest<Result<IReadOnlyList<ListItemDto>>>;
+public record GetListItemsQuery(
+    Guid ListId,
+    string? Status = null,
+    Guid? CreatedBy = null,
+    DateTime? FromDate = null,
+    DateTime? ToDate = null
+) : IRequest<Result<IReadOnlyList<ListItemDto>>>;

@@ -41,7 +41,7 @@ public class GetListItemsQueryHandlerTests
 
         _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
         _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
-        _itemRepository.GetByListIdAsync(list.Id, true, Arg.Any<CancellationToken>()).Returns(items);
+        _itemRepository.GetByListIdAsync(list.Id, null, null, null, null, Arg.Any<CancellationToken>()).Returns(items);
 
         var query = new GetListItemsQuery(list.Id);
 

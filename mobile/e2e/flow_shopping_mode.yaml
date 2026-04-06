@@ -1,0 +1,36 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Toggle shopping mode on a shopping list
+# Precondition: user is signed in, "Weekly Groceries" is a Shopping list with items
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
+
+# Navigate to list
+- tapOn: "Weekly Groceries"
+
+# Wait for list detail
+- extendedWaitUntil:
+    visible:
+      text: "Add item"
+    timeout: 10000
+
+# Tap shopping cart icon to enter shopping mode
+- tapOn: "Shopping mode"
+
+# Shopping mode view should show progress
+- assertVisible:
+    text: ".*of.*done"
+
+# Go back to list mode
+- tapOn: "Shopping mode"
+
+# Should return to normal view
+- assertVisible:
+    text: "Pending.*"
+
+# Go back
+- tapOn: "Back"

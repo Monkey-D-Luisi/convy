@@ -4,4 +4,8 @@ using MediatR;
 
 namespace Convy.Application.Features.Activity.Queries;
 
-public record GetHouseholdActivityQuery(Guid HouseholdId, int Limit = 50) : IRequest<Result<IReadOnlyList<ActivityLogDto>>>;
+public record GetHouseholdActivityQuery(
+    Guid HouseholdId,
+    int Limit = 50,
+    DateTime? Before = null
+) : IRequest<Result<IReadOnlyList<ActivityLogDto>>>;

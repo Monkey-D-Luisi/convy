@@ -123,4 +123,63 @@ public class HouseholdTests
         // Assert
         act.Should().Throw<ArgumentException>();
     }
+
+    [Fact]
+    public void RemoveMember_WithExistingMember_RemovesMembership()
+    {
+        // Arrange
+        var creatorId = Guid.NewGuid();
+        var household = new Household("Home", creatorId);
+        var memberId = Guid.NewGuid();
+        household.AddMember(memberId);
+
+        // Act
+        household.RemoveMember(memberId);
+
+        // Assert
+        household.Memberships.Should().HaveCount(1);
+        household.IsMember(memberId).Should().BeFalse();
+    }
+
+    [Fact]
+    public void RemoveMember_WithEmptyId_ThrowsArgumentException()
+    {
+        // Arrange
+        var household = new Household("Home", Guid.NewGuid());
+
+        // Act
+        var act = () => household.RemoveMember(Guid.Empty);
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void RemoveMember_WhenNotMember_ThrowsDomainException()
+    {
+        // Arrange
+        var household = new Household("Home", Guid.NewGuid());
+
+        // Act
+        var act = () => household.RemoveMember(Guid.NewGuid());
+
+        // Assert
+        act.Should().Throw<DomainException>()
+            .WithMessage("*not a member*");
+    }
+
+    [Fact]
+    public void RemoveMember_WhenSoleOwner_ThrowsDomainException()
+    {
+        // Arrange
+        var creatorId = Guid.NewGuid();
+        var household = new Household("Home", creatorId);
+
+        // Act
+        var act = () => household.RemoveMember(creatorId);
+
+        // Assert
+        act.Should().Throw<DomainException>()
+            .WithMessage("*sole owner*");
+    }
 }

@@ -6,11 +6,27 @@ data class ListDetailState(
     val listId: String = "",
     val householdId: String = "",
     val listName: String = "",
+    val listType: String = "",
+    val isShoppingMode: Boolean = false,
     val pendingItems: List<ListItem> = emptyList(),
     val completedItems: List<ListItem> = emptyList(),
     val showCompleted: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
+    val searchQuery: String = "",
+    val isSearching: Boolean = false,
+    val activeFilter: String = "All",
+    val isVoiceListening: Boolean = false,
+    val voiceTranscription: String = "",
+    val parsedVoiceItems: List<ParsedVoiceItem> = emptyList(),
+    val showVoiceSheet: Boolean = false,
+)
+
+data class ParsedVoiceItem(
+    val title: String,
+    val quantity: Int?,
+    val unit: String?,
+    val isSelected: Boolean = true,
 )
 
 sealed interface ListDetailIntent {
@@ -20,6 +36,17 @@ sealed interface ListDetailIntent {
     data object AddItem : ListDetailIntent
     data object ToggleCompletedVisibility : ListDetailIntent
     data object NavigateBack : ListDetailIntent
+    data class DeleteItem(val itemId: String) : ListDetailIntent
+    data class UpdateSearchQuery(val query: String) : ListDetailIntent
+    data object ToggleSearch : ListDetailIntent
+    data class SetFilter(val filter: String) : ListDetailIntent
+    data object ToggleShoppingMode : ListDetailIntent
+    data object StartVoiceInput : ListDetailIntent
+    data object StopVoiceInput : ListDetailIntent
+    data class VoiceTranscriptionReceived(val text: String) : ListDetailIntent
+    data object DismissVoiceSheet : ListDetailIntent
+    data class ToggleVoiceItem(val index: Int) : ListDetailIntent
+    data object ConfirmVoiceItems : ListDetailIntent
 }
 
 sealed interface ListDetailSideEffect {

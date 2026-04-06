@@ -35,7 +35,7 @@ public class GetHouseholdActivityQueryHandler : IRequestHandler<GetHouseholdActi
         if (!household.IsMember(_currentUser.UserId))
             return Result<IReadOnlyList<ActivityLogDto>>.Failure(Error.Forbidden("You are not a member of this household."));
 
-        var logs = await _activityRepository.GetByHouseholdIdAsync(request.HouseholdId, request.Limit, cancellationToken);
+        var logs = await _activityRepository.GetByHouseholdIdAsync(request.HouseholdId, request.Limit, request.Before, cancellationToken);
 
         var performerIds = logs.Select(l => l.PerformedBy).Distinct().ToList();
         var users = new Dictionary<Guid, string>();

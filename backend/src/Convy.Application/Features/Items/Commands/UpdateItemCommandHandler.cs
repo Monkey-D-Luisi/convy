@@ -51,6 +51,11 @@ public class UpdateItemCommandHandler : IRequestHandler<UpdateItemCommand, Resul
 
         item.Update(request.Title, request.Quantity, request.Unit, request.Note);
 
+        if (request.RecurrenceFrequency.HasValue && request.RecurrenceInterval.HasValue)
+            item.SetRecurrence(request.RecurrenceFrequency.Value, request.RecurrenceInterval.Value);
+        else
+            item.ClearRecurrence();
+
         await _itemRepository.SaveChangesAsync(cancellationToken);
 
         var userIds = new[] { item.CreatedBy }.Concat(
@@ -61,7 +66,8 @@ public class UpdateItemCommandHandler : IRequestHandler<UpdateItemCommand, Resul
             item.ListId, item.CreatedBy, userNames.GetValueOrDefault(item.CreatedBy, "Unknown"), item.CreatedAt,
             item.IsCompleted, item.CompletedBy,
             item.CompletedBy.HasValue ? userNames.GetValueOrDefault(item.CompletedBy.Value, "Unknown") : null,
-            item.CompletedAt);
+            item.CompletedAt,
+            item.RecurrenceFrequency?.ToString(), item.RecurrenceInterval, item.NextDueDate);
         await _notifications.NotifyItemUpdated(list.HouseholdId, dto, cancellationToken);
         await _activityLogger.LogAsync(list.HouseholdId, ActivityEntityType.Item, item.Id, ActivityActionType.Updated, _currentUser.UserId, item.Title, cancellationToken);
 

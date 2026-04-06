@@ -1,5 +1,6 @@
 using Convy.Domain.Common;
 using Convy.Domain.Exceptions;
+using Convy.Domain.ValueObjects;
 
 namespace Convy.Domain.Entities;
 
@@ -15,6 +16,9 @@ public class ListItem : Entity
     public bool IsCompleted { get; private set; }
     public Guid? CompletedBy { get; private set; }
     public DateTime? CompletedAt { get; private set; }
+    public RecurrenceFrequency? RecurrenceFrequency { get; private set; }
+    public int? RecurrenceInterval { get; private set; }
+    public DateTime? NextDueDate { get; private set; }
 
     private ListItem() { } // EF Core
 
@@ -72,5 +76,41 @@ public class ListItem : Entity
         IsCompleted = false;
         CompletedBy = null;
         CompletedAt = null;
+    }
+
+    public void SetRecurrence(RecurrenceFrequency frequency, int interval)
+    {
+        if (interval <= 0)
+            throw new ArgumentException("Recurrence interval must be greater than zero.", nameof(interval));
+
+        RecurrenceFrequency = frequency;
+        RecurrenceInterval = interval;
+        NextDueDate = CalculateNextDueDate(DateTime.UtcNow, frequency, interval);
+    }
+
+    public void ClearRecurrence()
+    {
+        RecurrenceFrequency = null;
+        RecurrenceInterval = null;
+        NextDueDate = null;
+    }
+
+    public void AdvanceRecurrence()
+    {
+        if (RecurrenceFrequency is null || RecurrenceInterval is null)
+            throw new DomainException("Item does not have a recurrence rule.");
+
+        NextDueDate = CalculateNextDueDate(DateTime.UtcNow, RecurrenceFrequency.Value, RecurrenceInterval.Value);
+    }
+
+    private static DateTime CalculateNextDueDate(DateTime from, RecurrenceFrequency frequency, int interval)
+    {
+        return frequency switch
+        {
+            ValueObjects.RecurrenceFrequency.Daily => from.AddDays(interval),
+            ValueObjects.RecurrenceFrequency.Weekly => from.AddDays(7 * interval),
+            ValueObjects.RecurrenceFrequency.Monthly => from.AddMonths(interval),
+            _ => throw new ArgumentOutOfRangeException(nameof(frequency)),
+        };
     }
 }

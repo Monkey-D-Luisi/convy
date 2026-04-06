@@ -14,4 +14,7 @@ data class ListItem(
     val completedBy: String?,
     val completedByName: String?,
     val completedAt: String?,
+    val recurrenceFrequency: String?,
+    val recurrenceInterval: Int?,
+    val nextDueDate: String?,
 )

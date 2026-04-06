@@ -52,10 +52,24 @@ public class ListItemConfiguration : IEntityTypeConfiguration<ListItem>
         builder.Property(i => i.CompletedAt)
             .HasColumnName("completed_at");
 
+        builder.Property(i => i.RecurrenceFrequency)
+            .HasColumnName("recurrence_frequency")
+            .HasConversion<int?>();
+
+        builder.Property(i => i.RecurrenceInterval)
+            .HasColumnName("recurrence_interval");
+
+        builder.Property(i => i.NextDueDate)
+            .HasColumnName("next_due_date");
+
         builder.HasIndex(i => i.ListId)
             .HasDatabaseName("ix_list_items_list_id");
 
         builder.HasIndex(i => new { i.ListId, i.IsCompleted })
             .HasDatabaseName("ix_list_items_list_id_is_completed");
+
+        builder.HasIndex(i => i.NextDueDate)
+            .HasDatabaseName("ix_list_items_next_due_date")
+            .HasFilter("\"next_due_date\" IS NOT NULL");
     }
 }

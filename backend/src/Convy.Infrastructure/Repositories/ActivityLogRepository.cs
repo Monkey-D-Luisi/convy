@@ -14,10 +14,24 @@ public class ActivityLogRepository : IActivityLogRepository
         _context = context;
     }
 
-    public async Task<IReadOnlyList<ActivityLog>> GetByHouseholdIdAsync(Guid householdId, int limit = 50, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ActivityLog>> GetByHouseholdIdAsync(Guid householdId, int limit = 50, DateTime? before = null, CancellationToken cancellationToken = default)
+    {
+        var query = _context.ActivityLogs.Where(a => a.HouseholdId == householdId);
+
+        if (before.HasValue)
+            query = query.Where(a => a.CreatedAt < before.Value);
+
+        return await query
+            .OrderByDescending(a => a.CreatedAt)
+            .Take(limit)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ActivityLog>> GetByEntityIdAsync(Guid entityId, int limit = 50, CancellationToken cancellationToken = default)
     {
         return await _context.ActivityLogs
-            .Where(a => a.HouseholdId == householdId)
+            .Where(a => a.EntityId == entityId)
             .OrderByDescending(a => a.CreatedAt)
             .Take(limit)
             .AsNoTracking()

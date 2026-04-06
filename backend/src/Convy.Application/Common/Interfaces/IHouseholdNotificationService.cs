@@ -13,6 +13,8 @@ public interface IHouseholdNotificationService
     Task NotifyListCreated(Guid householdId, Guid listId, string listName, CancellationToken cancellationToken = default);
     Task NotifyListRenamed(Guid householdId, Guid listId, string newName, CancellationToken cancellationToken = default);
     Task NotifyListArchived(Guid householdId, Guid listId, CancellationToken cancellationToken = default);
+    Task NotifyHouseholdRenamed(Guid householdId, string newName, CancellationToken cancellationToken = default);
+    Task NotifyMemberLeft(Guid householdId, Guid userId, string displayName, CancellationToken cancellationToken = default);
     Task NotifyMemberJoined(Guid householdId, string userId, string displayName, CancellationToken cancellationToken = default);
     Task NotifyActivityLogged(Guid householdId, ActivityLogDto activity, CancellationToken cancellationToken = default);
 }

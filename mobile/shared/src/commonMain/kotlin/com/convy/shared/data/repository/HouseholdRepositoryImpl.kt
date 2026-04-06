@@ -2,6 +2,7 @@ package com.convy.shared.data.repository
 
 import com.convy.shared.data.remote.ConvyApi
 import com.convy.shared.data.remote.dto.CreateHouseholdRequest
+import com.convy.shared.data.remote.dto.RenameHouseholdRequest
 import com.convy.shared.data.remote.toDomain
 import com.convy.shared.domain.model.Household
 import com.convy.shared.domain.model.HouseholdDetail
@@ -24,5 +25,15 @@ class HouseholdRepositoryImpl(
     override suspend fun getById(id: String): Result<HouseholdDetail> =
         runCatching {
             api.getHousehold(id).toDomain()
+        }
+
+    override suspend fun rename(id: String, newName: String): Result<Unit> =
+        runCatching {
+            api.renameHousehold(id, RenameHouseholdRequest(newName))
+        }
+
+    override suspend fun leave(id: String): Result<Unit> =
+        runCatching {
+            api.leaveHousehold(id)
         }
 }

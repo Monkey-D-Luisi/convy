@@ -1,0 +1,55 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Rename household from settings
+# Precondition: user is signed in with "Test Home" household
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
+
+# Go to Settings
+- tapOn: "Settings"
+- assertVisible:
+    text: "Settings"
+
+# Tap rename icon (pencil)
+- tapOn: "Rename"
+
+# Rename dialog should appear
+- assertVisible: "Rename household"
+
+# Clear existing name and type new one
+- tapOn: "Household name"
+- eraseText: 20
+- inputText: "My Home"
+
+# Confirm rename
+- tapOn:
+    text: "Rename"
+
+# Should update on settings screen
+- extendedWaitUntil:
+    visible:
+      text: "My Home"
+    timeout: 5000
+
+# Go back to verify it updated on lists screen too
+- tapOn: "Back"
+- assertVisible:
+    text: "My Home"
+
+# Rename back to original for other tests
+- tapOn: "Settings"
+- tapOn: "Rename"
+- tapOn: "Household name"
+- eraseText: 20
+- inputText: "Test Home"
+- tapOn:
+    text: "Rename"
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 5000
+- tapOn: "Back"

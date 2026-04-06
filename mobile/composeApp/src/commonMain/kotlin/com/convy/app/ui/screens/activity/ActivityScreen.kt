@@ -1,5 +1,6 @@
 package com.convy.app.ui.screens.activity
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -39,7 +40,7 @@ fun ActivityScreen(
     ActivityContent(state = state, onIntent = store::processIntent)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ActivityContent(
     state: ActivityState,
@@ -67,7 +68,7 @@ fun ActivityContent(
                 onRetry = { onIntent(ActivityIntent.Refresh) },
                 modifier = Modifier.padding(padding),
             )
-            state.entries.isEmpty() -> EmptyContent(
+            state.groupedEntries.isEmpty() -> EmptyContent(
                 message = "No activity yet",
                 modifier = Modifier.padding(padding),
             )
@@ -79,8 +80,40 @@ fun ActivityContent(
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(state.entries, key = { it.id }) { entry ->
-                    ActivityEntryCard(entry)
+                state.groupedEntries.forEach { group ->
+                    stickyHeader {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.surface,
+                        ) {
+                            Text(
+                                text = group.date,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(vertical = 8.dp),
+                            )
+                        }
+                    }
+                    items(group.entries, key = { it.id }) { entry ->
+                        ActivityEntryCard(entry)
+                    }
+                }
+                if (state.hasMore) {
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (state.isLoadingMore) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            } else {
+                                TextButton(onClick = { onIntent(ActivityIntent.LoadMore) }) {
+                                    Text("Load more")
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

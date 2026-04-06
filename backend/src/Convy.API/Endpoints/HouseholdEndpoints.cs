@@ -43,6 +43,26 @@ public static class HouseholdEndpoints
                 ? Results.Ok(result.Value)
                 : MapError(result.Error!);
         });
+
+        group.MapPut("/{id:guid}/name", async (Guid id, RenameHouseholdRequest request, IMediator mediator) =>
+        {
+            var command = new RenameHouseholdCommand(id, request.NewName);
+            var result = await mediator.Send(command);
+
+            return result.IsSuccess
+                ? Results.NoContent()
+                : MapError(result.Error!);
+        });
+
+        group.MapPost("/{id:guid}/leave", async (Guid id, IMediator mediator) =>
+        {
+            var command = new LeaveHouseholdCommand(id);
+            var result = await mediator.Send(command);
+
+            return result.IsSuccess
+                ? Results.NoContent()
+                : MapError(result.Error!);
+        });
     }
 
     private static IResult MapError(Error error) => error.Code switch
@@ -56,3 +76,4 @@ public static class HouseholdEndpoints
 }
 
 public record CreateHouseholdRequest(string Name);
+public record RenameHouseholdRequest(string NewName);

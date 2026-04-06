@@ -5,6 +5,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -115,7 +116,23 @@ fun SettingsContent(
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Household", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(state.householdName, style = MaterialTheme.typography.titleMedium)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(state.householdName, style = MaterialTheme.typography.titleMedium)
+                            IconButton(
+                                onClick = { onIntent(SettingsIntent.ShowRenameDialog) },
+                                modifier = Modifier.testTag("Rename household"),
+                            ) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription = "Rename",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -184,6 +201,31 @@ fun SettingsContent(
                     },
                     dismissButton = {
                         TextButton(onClick = { onIntent(SettingsIntent.DismissLeaveConfirmation) }) { Text("Cancel") }
+                    },
+                )
+            }
+
+            if (state.showRenameDialog) {
+                AlertDialog(
+                    onDismissRequest = { onIntent(SettingsIntent.DismissRenameDialog) },
+                    title = { Text("Rename household") },
+                    text = {
+                        OutlinedTextField(
+                            value = state.renameText,
+                            onValueChange = { onIntent(SettingsIntent.UpdateRenameText(it)) },
+                            label = { Text("Household name") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth().testTag("Rename household input"),
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = { onIntent(SettingsIntent.ConfirmRename) },
+                            enabled = state.renameText.isNotBlank() && !state.isRenaming,
+                        ) { Text("Rename") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { onIntent(SettingsIntent.DismissRenameDialog) }) { Text("Cancel") }
                     },
                 )
             }

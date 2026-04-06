@@ -1,6 +1,7 @@
 using Convy.Application.Common.Models;
 using Convy.Application.Features.Users.Commands;
 using Convy.Application.Features.Users.DTOs;
+using Convy.Application.Features.Users.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 
@@ -22,6 +23,15 @@ public static class UserEndpoints
 
             return result.IsSuccess
                 ? Results.Created($"/api/v1/users/{result.Value!.Id}", result.Value)
+                : MapError(result.Error!);
+        });
+
+        group.MapGet("/me", [Authorize] async (IMediator mediator) =>
+        {
+            var result = await mediator.Send(new GetUserProfileQuery());
+
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
                 : MapError(result.Error!);
         });
     }

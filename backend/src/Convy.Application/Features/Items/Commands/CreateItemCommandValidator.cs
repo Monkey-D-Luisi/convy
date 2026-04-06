@@ -24,5 +24,13 @@ public class CreateItemCommandValidator : AbstractValidator<CreateItemCommand>
         RuleFor(x => x.Note)
             .MaximumLength(500).When(x => x.Note is not null)
             .WithMessage("Note must not exceed 500 characters.");
+
+        RuleFor(x => x.RecurrenceInterval)
+            .GreaterThan(0).When(x => x.RecurrenceInterval.HasValue)
+            .WithMessage("Recurrence interval must be greater than zero.");
+
+        RuleFor(x => x.RecurrenceFrequency)
+            .IsInEnum().When(x => x.RecurrenceFrequency.HasValue)
+            .WithMessage("Invalid recurrence frequency.");
     }
 }

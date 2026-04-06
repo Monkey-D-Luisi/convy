@@ -1,6 +1,7 @@
 package com.convy.shared.di
 
 import com.convy.shared.data.remote.ConvyApi
+import com.convy.shared.data.remote.DeviceTokenManager
 import com.convy.shared.data.remote.HouseholdRealtimeService
 import com.convy.shared.data.remote.SignalRClient
 import com.convy.shared.data.remote.TokenProvider
@@ -54,6 +55,8 @@ val networkModule = module {
     }
 
     single { ConvyApi(get()) }
+
+    single { DeviceTokenManager(get(), get()) }
 
     single { SignalRClient(get<TokenProvider>(), get<Json>()) }
     single { HouseholdRealtimeService(get(), get<Json>()) }

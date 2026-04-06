@@ -27,7 +27,7 @@ import com.convy.shared.domain.model.ListType
 @Composable
 fun HouseholdListsScreen(
     store: HouseholdListsStore,
-    onNavigateToList: (String, String, String) -> Unit,
+    onNavigateToList: (String, String, String, String) -> Unit,
     onNavigateToMembers: (String) -> Unit,
     onNavigateToActivity: (String) -> Unit,
     onNavigateToSettings: () -> Unit,
@@ -38,7 +38,7 @@ fun HouseholdListsScreen(
         store.sideEffects.collect { effect ->
             when (effect) {
                 is HouseholdListsSideEffect.NavigateToList ->
-                    onNavigateToList(effect.householdId, effect.listId, effect.listName)
+                    onNavigateToList(effect.householdId, effect.listId, effect.listName, effect.listType)
                 is HouseholdListsSideEffect.NavigateToMembers ->
                     onNavigateToMembers(effect.householdId)
                 is HouseholdListsSideEffect.NavigateToActivity ->
@@ -117,7 +117,7 @@ fun HouseholdListsContent(
                         ListCard(
                             list = list,
                             pendingCount = state.pendingCounts[list.id] ?: 0,
-                            onClick = { onIntent(HouseholdListsIntent.OpenList(list.id, list.name)) },
+                            onClick = { onIntent(HouseholdListsIntent.OpenList(list.id, list.name, list.type.name)) },
                             onRenameClick = { onIntent(HouseholdListsIntent.ShowRenameDialog(list.id, list.name)) },
                             onArchiveClick = { onIntent(HouseholdListsIntent.ShowArchiveConfirmation(list.id, list.name)) },
                         )

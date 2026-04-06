@@ -6,15 +6,16 @@ import com.convy.shared.data.remote.dto.UpdateItemRequest
 import com.convy.shared.data.remote.toDomain
 import com.convy.shared.domain.model.DuplicateCheck
 import com.convy.shared.domain.model.ListItem
+import com.convy.shared.domain.model.ParsedItem
 import com.convy.shared.domain.repository.ItemRepository
 
 class ItemRepositoryImpl(
     private val api: ConvyApi,
 ) : ItemRepository {
 
-    override suspend fun getByList(listId: String, includeCompleted: Boolean): Result<List<ListItem>> =
+    override suspend fun getByList(listId: String, status: String?, createdBy: String?): Result<List<ListItem>> =
         runCatching {
-            api.getListItems(listId, includeCompleted).map { it.toDomain() }
+            api.getListItems(listId, status, createdBy).map { it.toDomain() }
         }
 
     override suspend fun create(
@@ -23,9 +24,11 @@ class ItemRepositoryImpl(
         quantity: Int?,
         unit: String?,
         note: String?,
+        recurrenceFrequency: Int?,
+        recurrenceInterval: Int?,
     ): Result<String> =
         runCatching {
-            api.createItem(listId, CreateItemRequest(title, quantity, unit, note)).id
+            api.createItem(listId, CreateItemRequest(title, quantity, unit, note, recurrenceFrequency, recurrenceInterval)).id
         }
 
     override suspend fun update(
@@ -35,9 +38,11 @@ class ItemRepositoryImpl(
         quantity: Int?,
         unit: String?,
         note: String?,
+        recurrenceFrequency: Int?,
+        recurrenceInterval: Int?,
     ): Result<Unit> =
         runCatching {
-            api.updateItem(listId, itemId, UpdateItemRequest(title, quantity, unit, note))
+            api.updateItem(listId, itemId, UpdateItemRequest(title, quantity, unit, note, recurrenceFrequency, recurrenceInterval))
         }
 
     override suspend fun delete(listId: String, itemId: String): Result<Unit> =
@@ -63,5 +68,12 @@ class ItemRepositoryImpl(
     override suspend fun getSuggestions(householdId: String, query: String?): Result<List<String>> =
         runCatching {
             api.getItemSuggestions(householdId, query).suggestions
+        }
+
+    override suspend fun parseVoiceInput(listId: String, text: String): Result<List<ParsedItem>> =
+        runCatching {
+            api.parseVoiceInput(listId, text).map {
+                ParsedItem(it.title, it.quantity, it.unit)
+            }
         }
 }

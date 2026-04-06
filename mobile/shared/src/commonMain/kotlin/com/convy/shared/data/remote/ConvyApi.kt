@@ -15,6 +15,9 @@ class ConvyApi(private val client: HttpClient) {
             setBody(request)
         }.body()
 
+    suspend fun getUserProfile(): UserDto =
+        client.get("api/v1/users/me").body()
+
     // Households
     suspend fun createHousehold(request: CreateHouseholdRequest): IdResponse =
         client.post("api/v1/households") {
@@ -27,6 +30,17 @@ class ConvyApi(private val client: HttpClient) {
 
     suspend fun getHousehold(id: String): HouseholdDetailDto =
         client.get("api/v1/households/$id").body()
+
+    suspend fun renameHousehold(id: String, request: RenameHouseholdRequest) {
+        client.put("api/v1/households/$id/name") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+    }
+
+    suspend fun leaveHousehold(id: String) {
+        client.post("api/v1/households/$id/leave")
+    }
 
     // Lists
     suspend fun createList(householdId: String, request: CreateListRequest): IdResponse =
@@ -58,9 +72,14 @@ class ConvyApi(private val client: HttpClient) {
             setBody(request)
         }.body()
 
-    suspend fun getListItems(listId: String, includeCompleted: Boolean = true): List<ListItemDto> =
+    suspend fun getListItems(
+        listId: String,
+        status: String? = null,
+        createdBy: String? = null,
+    ): List<ListItemDto> =
         client.get("api/v1/lists/$listId/items") {
-            parameter("includeCompleted", includeCompleted)
+            status?.let { parameter("status", it) }
+            createdBy?.let { parameter("createdBy", it) }
         }.body()
 
     suspend fun updateItem(listId: String, itemId: String, request: UpdateItemRequest) {
@@ -105,9 +124,39 @@ class ConvyApi(private val client: HttpClient) {
             setBody(request)
         }.body()
 
+    suspend fun getHouseholdInvites(householdId: String): List<InviteDto> =
+        client.get("api/v1/households/$householdId/invites").body()
+
+    suspend fun revokeInvite(inviteId: String) {
+        client.post("api/v1/invites/$inviteId/revoke")
+    }
+
     // Activity
-    suspend fun getHouseholdActivity(householdId: String, limit: Int = 50): List<ActivityLogEntryDto> =
+    suspend fun getHouseholdActivity(householdId: String, limit: Int = 50, before: String? = null): List<ActivityLogEntryDto> =
         client.get("api/v1/households/$householdId/activity") {
             parameter("limit", limit)
+            before?.let { parameter("before", it) }
         }.body()
+
+    suspend fun getItemHistory(itemId: String): List<ActivityLogEntryDto> =
+        client.get("api/v1/items/$itemId/history").body()
+
+    // Voice
+    suspend fun parseVoiceInput(listId: String, transcribedText: String): List<ParsedItemDto> =
+        client.post("api/v1/lists/$listId/items/parse-voice") {
+            contentType(ContentType.Application.Json)
+            setBody(ParseVoiceInputRequest(transcribedText))
+        }.body()
+
+    // Devices
+    suspend fun registerDevice(token: String, platform: String) {
+        client.post("api/v1/devices/register") {
+            contentType(ContentType.Application.Json)
+            setBody(RegisterDeviceRequest(token, platform))
+        }
+    }
+
+    suspend fun unregisterDevice(token: String) {
+        client.delete("api/v1/devices/$token")
+    }
 }

@@ -1,5 +1,6 @@
 package com.convy.app.ui.screens.item
 
+import com.convy.shared.domain.repository.ActivityRepository
 import com.convy.shared.domain.repository.ItemRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +14,7 @@ class ItemFormStore(
     private val listId: String,
     private val itemId: String?,
     private val itemRepository: ItemRepository,
+    private val activityRepository: ActivityRepository,
 ) {
     private val scope = CoroutineScope(Dispatchers.Main)
     private val _state = MutableStateFlow(
@@ -60,6 +62,14 @@ class ItemFormStore(
             is ItemFormIntent.DismissDuplicateWarning -> _state.update {
                 it.copy(duplicateWarning = emptyList())
             }
+            is ItemFormIntent.UpdateRecurrenceFrequency -> _state.update {
+                it.copy(recurrenceFrequency = intent.frequency)
+            }
+            is ItemFormIntent.UpdateRecurrenceInterval -> _state.update {
+                it.copy(recurrenceInterval = intent.interval)
+            }
+            is ItemFormIntent.ShowHistory -> loadHistory()
+            is ItemFormIntent.DismissHistory -> _state.update { it.copy(showHistory = false) }
         }
     }
 
@@ -70,6 +80,14 @@ class ItemFormStore(
                 onSuccess = { items ->
                     val item = items.find { it.id == itemId }
                     if (item != null) {
+                        val recurrenceFreq = item.recurrenceFrequency?.let {
+                            when (it) {
+                                "Daily" -> 0
+                                "Weekly" -> 1
+                                "Monthly" -> 2
+                                else -> null
+                            }
+                        }
                         _state.update {
                             it.copy(
                                 title = item.title,
@@ -77,6 +95,8 @@ class ItemFormStore(
                                 unit = item.unit ?: "",
                                 note = item.note ?: "",
                                 isLoading = false,
+                                recurrenceFrequency = recurrenceFreq,
+                                recurrenceInterval = item.recurrenceInterval,
                             )
                         }
                     } else {
@@ -136,12 +156,14 @@ class ItemFormStore(
         val quantity = current.quantity.toIntOrNull()
         val unit = current.unit.ifBlank { null }
         val note = current.note.ifBlank { null }
+        val recurrenceFrequency = current.recurrenceFrequency
+        val recurrenceInterval = current.recurrenceInterval
 
         scope.launch {
             val result = if (current.isEditing && current.itemId != null) {
-                itemRepository.update(listId, current.itemId, current.title, quantity, unit, note)
+                itemRepository.update(listId, current.itemId, current.title, quantity, unit, note, recurrenceFrequency, recurrenceInterval)
             } else {
-                itemRepository.create(listId, current.title, quantity, unit, note).map { }
+                itemRepository.create(listId, current.title, quantity, unit, note, recurrenceFrequency, recurrenceInterval).map { }
             }
 
             result.fold(
@@ -169,6 +191,21 @@ class ItemFormStore(
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isSaving = false, error = error.message ?: "Failed to delete item") }
+                },
+            )
+        }
+    }
+
+    private fun loadHistory() {
+        val id = _state.value.itemId ?: return
+        _state.update { it.copy(showHistory = true, isLoadingHistory = true) }
+        scope.launch {
+            activityRepository.getItemHistory(id).fold(
+                onSuccess = { entries ->
+                    _state.update { it.copy(historyEntries = entries, isLoadingHistory = false) }
+                },
+                onFailure = {
+                    _state.update { it.copy(isLoadingHistory = false) }
                 },
             )
         }

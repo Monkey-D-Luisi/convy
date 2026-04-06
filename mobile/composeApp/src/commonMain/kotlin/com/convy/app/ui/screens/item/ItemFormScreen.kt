@@ -16,11 +16,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.convy.app.ui.components.ItemHistorySheet
 import com.convy.app.ui.components.LoadingContent
 
 @Composable
@@ -40,6 +42,15 @@ fun ItemFormScreen(
     }
 
     ItemFormContent(state = state, onIntent = store::processIntent)
+
+    if (state.showHistory) {
+        ItemHistorySheet(
+            itemTitle = state.title,
+            entries = state.historyEntries,
+            isLoading = state.isLoadingHistory,
+            onDismiss = { store.processIntent(ItemFormIntent.DismissHistory) },
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -201,6 +212,59 @@ fun ItemFormContent(
                 maxLines = 4,
             )
 
+            // Recurrence section
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Recurring", style = MaterialTheme.typography.bodyLarge)
+                Switch(
+                    checked = state.recurrenceFrequency != null,
+                    onCheckedChange = { enabled ->
+                        if (enabled) {
+                            onIntent(ItemFormIntent.UpdateRecurrenceFrequency(1))
+                            onIntent(ItemFormIntent.UpdateRecurrenceInterval(1))
+                        } else {
+                            onIntent(ItemFormIntent.UpdateRecurrenceFrequency(null))
+                            onIntent(ItemFormIntent.UpdateRecurrenceInterval(null))
+                        }
+                    },
+                )
+            }
+
+            if (state.recurrenceFrequency != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedTextField(
+                        value = (state.recurrenceInterval ?: 1).toString(),
+                        onValueChange = { value ->
+                            val interval = value.toIntOrNull()
+                            if (interval != null && interval > 0) {
+                                onIntent(ItemFormIntent.UpdateRecurrenceInterval(interval))
+                            }
+                        },
+                        label = { Text("Every") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    )
+
+                    val frequencies = listOf("Daily", "Weekly", "Monthly")
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.weight(2f)) {
+                        frequencies.forEachIndexed { index, label ->
+                            SegmentedButton(
+                                selected = state.recurrenceFrequency == index,
+                                onClick = { onIntent(ItemFormIntent.UpdateRecurrenceFrequency(index)) },
+                                shape = SegmentedButtonDefaults.itemShape(index, frequencies.size),
+                            ) { Text(label, style = MaterialTheme.typography.labelSmall) }
+                        }
+                    }
+                }
+            }
+
             if (state.error != null) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
@@ -211,6 +275,13 @@ fun ItemFormContent(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+
+            if (state.isEditing) {
+                TextButton(onClick = { onIntent(ItemFormIntent.ShowHistory) }) {
+                    Text("View history")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             Button(
                 onClick = { onIntent(ItemFormIntent.Save) },

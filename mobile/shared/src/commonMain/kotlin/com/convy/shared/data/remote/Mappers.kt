@@ -64,6 +64,9 @@ fun ListItemDto.toDomain(): ListItem = ListItem(
     completedBy = completedBy,
     completedByName = completedByName,
     completedAt = completedAt,
+    recurrenceFrequency = recurrenceFrequency,
+    recurrenceInterval = recurrenceInterval,
+    nextDueDate = nextDueDate,
 )
 
 fun InviteDto.toDomain(): Invite = Invite(

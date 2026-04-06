@@ -38,7 +38,13 @@ public class GetListItemsQueryHandler : IRequestHandler<GetListItemsQuery, Resul
         if (household is null || !household.IsMember(_currentUser.UserId))
             return Result<IReadOnlyList<ListItemDto>>.Failure(Error.Forbidden("You are not a member of this household."));
 
-        var items = await _itemRepository.GetByListIdAsync(request.ListId, request.IncludeCompleted, cancellationToken);
+        var items = await _itemRepository.GetByListIdAsync(
+            request.ListId,
+            request.Status,
+            request.CreatedBy,
+            request.FromDate,
+            request.ToDate,
+            cancellationToken);
 
         var userIds = items.Select(i => i.CreatedBy)
             .Concat(items.Where(i => i.CompletedBy.HasValue).Select(i => i.CompletedBy!.Value))
@@ -59,7 +65,10 @@ public class GetListItemsQueryHandler : IRequestHandler<GetListItemsQuery, Resul
             i.IsCompleted,
             i.CompletedBy,
             i.CompletedBy.HasValue ? userNames.GetValueOrDefault(i.CompletedBy.Value, "Unknown") : null,
-            i.CompletedAt)).ToList();
+            i.CompletedAt,
+            i.RecurrenceFrequency?.ToString(),
+            i.RecurrenceInterval,
+            i.NextDueDate)).ToList();
 
         return Result<IReadOnlyList<ListItemDto>>.Success(dtos);
     }

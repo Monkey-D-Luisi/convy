@@ -9,9 +9,18 @@ class ActivityRepositoryImpl(
     private val api: ConvyApi
 ) : ActivityRepository {
 
-    override suspend fun getByHousehold(householdId: String, limit: Int): Result<List<ActivityLogEntry>> {
+    override suspend fun getByHousehold(householdId: String, limit: Int, before: String?): Result<List<ActivityLogEntry>> {
         return try {
-            val dtos = api.getHouseholdActivity(householdId, limit)
+            val dtos = api.getHouseholdActivity(householdId, limit, before)
+            Result.success(dtos.map { it.toDomain() })
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getItemHistory(itemId: String): Result<List<ActivityLogEntry>> {
+        return try {
+            val dtos = api.getItemHistory(itemId)
             Result.success(dtos.map { it.toDomain() })
         } catch (e: Exception) {
             Result.failure(e)

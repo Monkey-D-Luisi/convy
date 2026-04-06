@@ -13,4 +13,7 @@ public record ListItemDto(
     bool IsCompleted,
     Guid? CompletedBy,
     string? CompletedByName,
-    DateTime? CompletedAt);
+    DateTime? CompletedAt,
+    string? RecurrenceFrequency,
+    int? RecurrenceInterval,
+    DateTime? NextDueDate);

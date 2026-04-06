@@ -64,6 +64,9 @@ data class ListItemDto(
     @SerialName("completedBy") val completedBy: String?,
     @SerialName("completedByName") val completedByName: String?,
     @SerialName("completedAt") val completedAt: String?,
+    @SerialName("recurrenceFrequency") val recurrenceFrequency: String? = null,
+    @SerialName("recurrenceInterval") val recurrenceInterval: Int? = null,
+    @SerialName("nextDueDate") val nextDueDate: String? = null,
 )
 
 @Serializable
@@ -93,6 +96,13 @@ data class DuplicateItemDto(
 @Serializable
 data class ItemSuggestionsDto(
     @SerialName("suggestions") val suggestions: List<String>,
+)
+
+@Serializable
+data class ParsedItemDto(
+    @SerialName("title") val title: String,
+    @SerialName("quantity") val quantity: Int?,
+    @SerialName("unit") val unit: String?,
 )
 
 @Serializable

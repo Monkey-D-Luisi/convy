@@ -14,6 +14,8 @@ sealed interface HouseholdEvent {
     data class ListRenamed(val listId: String, val newName: String) : HouseholdEvent
     data class ListArchived(val listId: String) : HouseholdEvent
     data class MemberJoined(val userId: String, val displayName: String) : HouseholdEvent
+    data class HouseholdRenamed(val householdId: String, val newName: String) : HouseholdEvent
+    data class MemberLeft(val userId: String, val displayName: String) : HouseholdEvent
 }
 
 class HouseholdRealtimeService(
@@ -78,6 +80,20 @@ class HouseholdRealtimeService(
                 "MemberJoined" -> {
                     val obj = message.arguments[0].jsonObject
                     HouseholdEvent.MemberJoined(
+                        userId = obj["userId"]!!.jsonPrimitive.content,
+                        displayName = obj["displayName"]!!.jsonPrimitive.content
+                    )
+                }
+                "HouseholdRenamed" -> {
+                    val obj = message.arguments[0].jsonObject
+                    HouseholdEvent.HouseholdRenamed(
+                        householdId = obj["householdId"]!!.jsonPrimitive.content,
+                        newName = obj["newName"]!!.jsonPrimitive.content
+                    )
+                }
+                "MemberLeft" -> {
+                    val obj = message.arguments[0].jsonObject
+                    HouseholdEvent.MemberLeft(
                         userId = obj["userId"]!!.jsonPrimitive.content,
                         displayName = obj["displayName"]!!.jsonPrimitive.content
                     )

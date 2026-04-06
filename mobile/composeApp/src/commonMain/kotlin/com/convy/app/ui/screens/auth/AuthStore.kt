@@ -1,5 +1,6 @@
 package com.convy.app.ui.screens.auth
 
+import com.convy.shared.data.remote.DeviceTokenManager
 import com.convy.shared.domain.repository.AuthRepository
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.UserRepository
@@ -12,6 +13,7 @@ class AuthStore(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
     private val householdRepository: HouseholdRepository,
+    private val deviceTokenManager: DeviceTokenManager,
 ) {
     private val scope = CoroutineScope(Dispatchers.Main)
     private val _state = MutableStateFlow(AuthState())
@@ -73,6 +75,7 @@ class AuthStore(
             result.fold(
                 onSuccess = { user ->
                     userRepository.register(user.id, user.displayName, user.email)
+                    launch { deviceTokenManager.registerCurrentToken() }
                     val households = householdRepository.getMyHouseholds().getOrNull()
                     _state.update { it.copy(isLoading = false) }
                     if (households.isNullOrEmpty()) {
@@ -99,6 +102,7 @@ class AuthStore(
             result.fold(
                 onSuccess = { user ->
                     userRepository.register(user.id, user.displayName, user.email)
+                    launch { deviceTokenManager.registerCurrentToken() }
                     val households = householdRepository.getMyHouseholds().getOrNull()
                     _state.update { it.copy(isLoading = false) }
                     if (households.isNullOrEmpty()) {

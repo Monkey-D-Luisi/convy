@@ -22,8 +22,12 @@ public static class DependencyInjection
         services.AddScoped<IHouseholdListRepository, HouseholdListRepository>();
         services.AddScoped<IListItemRepository, ListItemRepository>();
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+        services.AddScoped<IDeviceTokenRepository, DeviceTokenRepository>();
         services.AddScoped<IHouseholdNotificationService, HouseholdNotificationService>();
+        services.AddScoped<IPushNotificationService, PushNotificationService>();
         services.AddScoped<IActivityLogger, ActivityLogger>();
+
+        services.AddHostedService<RecurringItemService>();
 
         return services;
     }

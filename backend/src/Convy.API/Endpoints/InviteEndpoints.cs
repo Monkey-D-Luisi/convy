@@ -1,5 +1,6 @@
 using Convy.Application.Common.Models;
 using Convy.Application.Features.Invites.Commands;
+using Convy.Application.Features.Invites.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 
@@ -34,6 +35,31 @@ public static class InviteEndpoints
 
             return result.IsSuccess
                 ? Results.Ok(new { householdId = result.Value })
+                : MapError(result.Error!);
+        });
+
+        group.MapPost("/{id:guid}/revoke", async (Guid id, IMediator mediator) =>
+        {
+            var command = new RevokeInviteCommand(id);
+            var result = await mediator.Send(command);
+
+            return result.IsSuccess
+                ? Results.NoContent()
+                : MapError(result.Error!);
+        });
+
+        // Household invites listing is at /api/v1/households/{householdId}/invites
+        // registered via separate route to keep RESTful grouping
+        var householdGroup = routes.MapGroup("/api/v1/households/{householdId:guid}/invites")
+            .WithTags("Invites")
+            .RequireAuthorization();
+
+        householdGroup.MapGet("/", async (Guid householdId, IMediator mediator) =>
+        {
+            var result = await mediator.Send(new GetHouseholdInvitesQuery(householdId));
+
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
                 : MapError(result.Error!);
         });
     }

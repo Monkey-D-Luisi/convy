@@ -48,13 +48,17 @@ public class CreateItemCommandHandler : IRequestHandler<CreateItemCommand, Resul
 
         var item = new ListItem(request.Title, request.ListId, _currentUser.UserId, request.Quantity, request.Unit, request.Note);
 
+        if (request.RecurrenceFrequency.HasValue && request.RecurrenceInterval.HasValue)
+            item.SetRecurrence(request.RecurrenceFrequency.Value, request.RecurrenceInterval.Value);
+
         await _itemRepository.AddAsync(item, cancellationToken);
         await _itemRepository.SaveChangesAsync(cancellationToken);
 
         var user = await _userRepository.GetByIdAsync(_currentUser.UserId, cancellationToken);
         var dto = new ListItemDto(item.Id, item.Title, item.Quantity, item.Unit, item.Note,
             item.ListId, item.CreatedBy, user?.DisplayName ?? "Unknown", item.CreatedAt,
-            item.IsCompleted, item.CompletedBy, null, item.CompletedAt);
+            item.IsCompleted, item.CompletedBy, null, item.CompletedAt,
+            item.RecurrenceFrequency?.ToString(), item.RecurrenceInterval, item.NextDueDate);
         await _notifications.NotifyItemCreated(list.HouseholdId, dto, cancellationToken);
         await _activityLogger.LogAsync(list.HouseholdId, ActivityEntityType.Item, item.Id, ActivityActionType.Created, _currentUser.UserId, item.Title, cancellationToken);
 

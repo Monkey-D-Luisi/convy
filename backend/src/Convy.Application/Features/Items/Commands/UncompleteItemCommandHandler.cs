@@ -56,7 +56,8 @@ public class UncompleteItemCommandHandler : IRequestHandler<UncompleteItemComman
         var user = await _userRepository.GetByIdAsync(item.CreatedBy, cancellationToken);
         var dto = new ListItemDto(item.Id, item.Title, item.Quantity, item.Unit, item.Note,
             item.ListId, item.CreatedBy, user?.DisplayName ?? "Unknown", item.CreatedAt,
-            item.IsCompleted, item.CompletedBy, null, item.CompletedAt);
+            item.IsCompleted, item.CompletedBy, null, item.CompletedAt,
+            item.RecurrenceFrequency?.ToString(), item.RecurrenceInterval, item.NextDueDate);
         await _notifications.NotifyItemUncompleted(list.HouseholdId, dto, cancellationToken);
         await _activityLogger.LogAsync(list.HouseholdId, ActivityEntityType.Item, item.Id, ActivityActionType.Uncompleted, _currentUser.UserId, item.Title, cancellationToken);
 

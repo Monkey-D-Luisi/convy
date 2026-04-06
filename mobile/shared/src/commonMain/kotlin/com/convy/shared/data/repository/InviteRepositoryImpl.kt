@@ -20,4 +20,14 @@ class InviteRepositoryImpl(
         runCatching {
             api.joinHousehold(JoinHouseholdRequest(inviteCode)).householdId
         }
+
+    override suspend fun getByHousehold(householdId: String): Result<List<Invite>> =
+        runCatching {
+            api.getHouseholdInvites(householdId).map { it.toDomain() }
+        }
+
+    override suspend fun revoke(inviteId: String): Result<Unit> =
+        runCatching {
+            api.revokeInvite(inviteId)
+        }
 }

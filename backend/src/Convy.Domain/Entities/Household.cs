@@ -51,4 +51,20 @@ public class Household : Entity
     }
 
     public bool IsMember(Guid userId) => _memberships.Any(m => m.UserId == userId);
+
+    public void RemoveMember(Guid userId)
+    {
+        if (userId == Guid.Empty)
+            throw new ArgumentException("User ID is required.", nameof(userId));
+
+        var membership = _memberships.FirstOrDefault(m => m.UserId == userId);
+
+        if (membership is null)
+            throw new DomainException("User is not a member of this household.");
+
+        if (membership.Role == HouseholdRole.Owner && _memberships.Count(m => m.Role == HouseholdRole.Owner) == 1)
+            throw new DomainException("The sole owner cannot leave the household.");
+
+        _memberships.Remove(membership);
+    }
 }

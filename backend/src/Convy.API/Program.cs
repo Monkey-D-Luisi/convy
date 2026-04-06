@@ -79,6 +79,7 @@ app.MapInviteEndpoints();
 app.MapListEndpoints();
 app.MapItemEndpoints();
 app.MapActivityEndpoints();
+app.MapDeviceEndpoints();
 
 // SignalR hub
 app.MapHub<HouseholdHub>("/hubs/household");

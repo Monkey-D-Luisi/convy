@@ -4,13 +4,21 @@ import com.convy.shared.domain.model.ActivityLogEntry
 
 data class ActivityState(
     val householdId: String = "",
-    val entries: List<ActivityLogEntry> = emptyList(),
+    val groupedEntries: List<DateGroup> = emptyList(),
     val isLoading: Boolean = false,
+    val isLoadingMore: Boolean = false,
+    val hasMore: Boolean = true,
     val error: String? = null,
+)
+
+data class DateGroup(
+    val date: String,
+    val entries: List<ActivityLogEntry>,
 )
 
 sealed interface ActivityIntent {
     data object Refresh : ActivityIntent
+    data object LoadMore : ActivityIntent
     data object NavigateBack : ActivityIntent
 }
 

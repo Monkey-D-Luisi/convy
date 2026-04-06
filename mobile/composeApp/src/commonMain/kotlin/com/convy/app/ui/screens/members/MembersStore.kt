@@ -21,11 +21,15 @@ class MembersStore(
 
     init {
         loadMembers()
+        loadInvites()
     }
 
     fun processIntent(intent: MembersIntent) {
         when (intent) {
-            is MembersIntent.Refresh -> loadMembers()
+            is MembersIntent.Refresh -> {
+                loadMembers()
+                loadInvites()
+            }
             is MembersIntent.GenerateInvite -> generateInvite()
             is MembersIntent.CopyInviteCode -> scope.launch {
                 val invite = _state.value.invite
@@ -33,6 +37,7 @@ class MembersStore(
                     _sideEffects.emit(MembersSideEffect.ShareInviteCode(invite.code))
                 }
             }
+            is MembersIntent.RevokeInvite -> revokeInvite(intent.inviteId)
             is MembersIntent.NavigateBack -> scope.launch {
                 _sideEffects.emit(MembersSideEffect.NavigateBack)
             }
@@ -53,6 +58,14 @@ class MembersStore(
         }
     }
 
+    private fun loadInvites() {
+        scope.launch {
+            inviteRepository.getByHousehold(householdId).onSuccess { invites ->
+                _state.update { it.copy(activeInvites = invites) }
+            }
+        }
+    }
+
     private fun generateInvite() {
         _state.update { it.copy(isGeneratingInvite = true) }
         scope.launch {
@@ -60,10 +73,22 @@ class MembersStore(
                 onSuccess = { invite ->
                     _state.update { it.copy(invite = invite, isGeneratingInvite = false) }
                     _sideEffects.emit(MembersSideEffect.ShareInviteCode(invite.code))
+                    loadInvites()
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isGeneratingInvite = false) }
                     _sideEffects.emit(MembersSideEffect.ShowError(error.message ?: "Failed to generate invite"))
+                },
+            )
+        }
+    }
+
+    private fun revokeInvite(inviteId: String) {
+        scope.launch {
+            inviteRepository.revoke(inviteId).fold(
+                onSuccess = { loadInvites() },
+                onFailure = { error ->
+                    _sideEffects.emit(MembersSideEffect.ShowError(error.message ?: "Failed to revoke invite"))
                 },
             )
         }

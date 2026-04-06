@@ -40,7 +40,7 @@ public class UpdateItemCommandHandlerTests
         _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
         _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
 
-        var command = new UpdateItemCommand(item.Id, "Bread", 1, "loaf", "Whole wheat");
+        var command = new UpdateItemCommand(item.Id, "Bread", 1, "loaf", "Whole wheat", null, null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -58,7 +58,7 @@ public class UpdateItemCommandHandlerTests
         _itemRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((ListItem?)null);
 
-        var command = new UpdateItemCommand(Guid.NewGuid(), "Bread", null, null, null);
+        var command = new UpdateItemCommand(Guid.NewGuid(), "Bread", null, null, null, null, null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -81,7 +81,7 @@ public class UpdateItemCommandHandlerTests
         _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
         _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
 
-        var command = new UpdateItemCommand(item.Id, "Bread", null, null, null);
+        var command = new UpdateItemCommand(item.Id, "Bread", null, null, null, null, null);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);

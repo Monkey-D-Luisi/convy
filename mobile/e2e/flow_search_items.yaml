@@ -1,0 +1,59 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Search items within a list
+# Precondition: user is signed in, "Weekly Groceries" list has items (Milk at minimum)
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
+
+# Navigate to list
+- tapOn: "Weekly Groceries"
+
+# Wait for list detail
+- extendedWaitUntil:
+    visible:
+      text: "Add item"
+    timeout: 10000
+
+# Add a second item so we can filter
+- tapOn: "Add item"
+- assertVisible: "New item"
+- tapOn: "Title *"
+- inputText: "Bread"
+- tapOn:
+    point: "50%,5%"
+- scrollUntilVisible:
+    element:
+      text: "Add item"
+    direction: DOWN
+    timeout: 5000
+- tapOn: "Add item"
+
+# Both items should be visible
+- assertVisible: "Bread"
+
+# Tap search icon
+- tapOn: "Search"
+
+# Search field should appear
+- assertVisible: "Search items..."
+
+# Type search query
+- tapOn: "Search items..."
+- inputText: "Bre"
+
+# Should show Bread, hide Milk
+- assertVisible: "Bread"
+- assertNotVisible: "Milk"
+
+# Clear search
+- tapOn: "Close search"
+
+# Both items should be visible again
+- assertVisible: "Bread"
+
+# Go back
+- tapOn: "Back"

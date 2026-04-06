@@ -19,13 +19,29 @@ public class ListItemRepository : IListItemRepository
         return await _context.ListItems.FindAsync([id], cancellationToken);
     }
 
-    public async Task<IReadOnlyList<ListItem>> GetByListIdAsync(Guid listId, bool includeCompleted = true, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ListItem>> GetByListIdAsync(
+        Guid listId,
+        string? status = null,
+        Guid? createdBy = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        CancellationToken cancellationToken = default)
     {
-        var query = _context.ListItems
-            .Where(i => i.ListId == listId);
+        var query = _context.ListItems.Where(i => i.ListId == listId);
 
-        if (!includeCompleted)
+        if (status is "Pending")
             query = query.Where(i => !i.IsCompleted);
+        else if (status is "Completed")
+            query = query.Where(i => i.IsCompleted);
+
+        if (createdBy.HasValue)
+            query = query.Where(i => i.CreatedBy == createdBy.Value);
+
+        if (fromDate.HasValue)
+            query = query.Where(i => i.CreatedAt >= fromDate.Value);
+
+        if (toDate.HasValue)
+            query = query.Where(i => i.CreatedAt <= toDate.Value);
 
         return await query
             .OrderByDescending(i => i.CreatedAt)
@@ -76,6 +92,13 @@ public class ListItemRepository : IListItemRepository
     public void Remove(ListItem item)
     {
         _context.ListItems.Remove(item);
+    }
+
+    public async Task<List<ListItem>> GetDueRecurringItemsAsync(DateTime asOf, CancellationToken cancellationToken = default)
+    {
+        return await _context.ListItems
+            .Where(i => i.NextDueDate != null && i.NextDueDate <= asOf && i.IsCompleted)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
