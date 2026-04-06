@@ -4,6 +4,7 @@ import com.convy.shared.data.remote.dto.*
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
 import io.ktor.http.*
 
 class ConvyApi(private val client: HttpClient) {
@@ -142,11 +143,16 @@ class ConvyApi(private val client: HttpClient) {
         client.get("api/v1/items/$itemId/history").body()
 
     // Voice
-    suspend fun parseVoiceInput(listId: String, transcribedText: String): List<ParsedItemDto> =
-        client.post("api/v1/lists/$listId/items/parse-voice") {
-            contentType(ContentType.Application.Json)
-            setBody(ParseVoiceInputRequest(transcribedText))
-        }.body()
+    suspend fun parseVoiceAudio(listId: String, audioData: ByteArray): VoiceParseResponseDto =
+        client.submitFormWithBinaryData(
+            url = "api/v1/lists/$listId/items/parse-voice",
+            formData = formData {
+                append("audio", audioData, Headers.build {
+                    append(HttpHeaders.ContentType, "audio/mp4")
+                    append(HttpHeaders.ContentDisposition, "filename=\"recording.m4a\"")
+                })
+            },
+        ).body()
 
     // Devices
     suspend fun registerDevice(token: String, platform: String) {

@@ -7,6 +7,7 @@ import com.convy.shared.data.remote.toDomain
 import com.convy.shared.domain.model.DuplicateCheck
 import com.convy.shared.domain.model.ListItem
 import com.convy.shared.domain.model.ParsedItem
+import com.convy.shared.domain.model.VoiceParseResult
 import com.convy.shared.domain.repository.ItemRepository
 
 class ItemRepositoryImpl(
@@ -70,10 +71,14 @@ class ItemRepositoryImpl(
             api.getItemSuggestions(householdId, query).suggestions
         }
 
-    override suspend fun parseVoiceInput(listId: String, text: String): Result<List<ParsedItem>> =
+    override suspend fun parseVoiceAudio(listId: String, audioData: ByteArray): Result<VoiceParseResult> =
         runCatching {
-            api.parseVoiceInput(listId, text).map {
-                ParsedItem(it.title, it.quantity, it.unit)
-            }
+            val response = api.parseVoiceAudio(listId, audioData)
+            VoiceParseResult(
+                transcription = response.transcription,
+                items = response.items.map {
+                    ParsedItem(it.title, it.quantity, it.unit, it.matchedExistingItem)
+                },
+            )
         }
 }

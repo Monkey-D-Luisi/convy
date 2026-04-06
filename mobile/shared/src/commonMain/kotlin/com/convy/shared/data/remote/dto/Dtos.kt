@@ -103,6 +103,13 @@ data class ParsedItemDto(
     @SerialName("title") val title: String,
     @SerialName("quantity") val quantity: Int?,
     @SerialName("unit") val unit: String?,
+    @SerialName("matchedExistingItem") val matchedExistingItem: String? = null,
+)
+
+@Serializable
+data class VoiceParseResponseDto(
+    @SerialName("transcription") val transcription: String,
+    @SerialName("items") val items: List<ParsedItemDto>,
 )
 
 @Serializable

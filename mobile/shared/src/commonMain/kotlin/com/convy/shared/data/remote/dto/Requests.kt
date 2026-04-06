@@ -66,8 +66,3 @@ data class RegisterDeviceRequest(
     @SerialName("token") val token: String,
     @SerialName("platform") val platform: String,
 )
-
-@Serializable
-data class ParseVoiceInputRequest(
-    @SerialName("transcribedText") val transcribedText: String,
-)

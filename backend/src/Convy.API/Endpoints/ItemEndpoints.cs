@@ -129,15 +129,17 @@ public static class ItemEndpoints
 
         group.MapPost("/parse-voice", async (
             Guid listId,
-            ParseVoiceInputRequest request,
+            IFormFile audio,
             IMediator mediator) =>
         {
-            var command = new ParseVoiceInputCommand(listId, request.TranscribedText);
+            await using var stream = audio.OpenReadStream();
+            var command = new ParseVoiceAudioCommand(listId, stream, audio.FileName);
             var result = await mediator.Send(command);
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : MapError(result.Error!);
-        });
+        })
+        .DisableAntiforgery();
     }
 
     private static IResult MapError(Error error) => error.Code switch
@@ -152,4 +154,3 @@ public static class ItemEndpoints
 
 public record CreateItemRequest(string Title, int? Quantity, string? Unit, string? Note, RecurrenceFrequency? RecurrenceFrequency, int? RecurrenceInterval);
 public record UpdateItemRequest(string Title, int? Quantity, string? Unit, string? Note, RecurrenceFrequency? RecurrenceFrequency, int? RecurrenceInterval);
-public record ParseVoiceInputRequest(string TranscribedText);

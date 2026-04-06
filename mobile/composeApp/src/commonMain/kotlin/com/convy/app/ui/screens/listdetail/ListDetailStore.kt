@@ -3,7 +3,7 @@ package com.convy.app.ui.screens.listdetail
 import com.convy.shared.data.remote.HouseholdEvent
 import com.convy.shared.data.remote.HouseholdRealtimeService
 import com.convy.shared.domain.repository.ItemRepository
-import com.convy.shared.platform.SpeechRecognizer
+import com.convy.shared.platform.AudioRecorder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -16,7 +16,7 @@ class ListDetailStore(
     private val listType: String,
     private val itemRepository: ItemRepository,
     private val realtimeService: HouseholdRealtimeService,
-    private val speechRecognizer: SpeechRecognizer,
+    private val audioRecorder: AudioRecorder,
 ) {
     private val scope = CoroutineScope(Dispatchers.Main)
     private val _state = MutableStateFlow(
@@ -65,9 +65,8 @@ class ListDetailStore(
             is ListDetailIntent.ToggleShoppingMode -> _state.update {
                 it.copy(isShoppingMode = !it.isShoppingMode)
             }
-            is ListDetailIntent.StartVoiceInput -> startVoiceInput()
-            is ListDetailIntent.StopVoiceInput -> stopVoiceInput()
-            is ListDetailIntent.VoiceTranscriptionReceived -> processVoiceTranscription(intent.text)
+            is ListDetailIntent.StartRecording -> startRecording()
+            is ListDetailIntent.StopRecording -> stopRecording()
             is ListDetailIntent.DismissVoiceSheet -> _state.update {
                 it.copy(showVoiceSheet = false, parsedVoiceItems = emptyList(), voiceTranscription = "")
             }
@@ -138,39 +137,44 @@ class ListDetailStore(
         }
     }
 
-    private fun startVoiceInput() {
-        _state.update { it.copy(isVoiceListening = true) }
-        speechRecognizer.startListening(
-            onResult = { text ->
-                _state.update { it.copy(isVoiceListening = false) }
-                processIntent(ListDetailIntent.VoiceTranscriptionReceived(text))
-            },
-            onError = { error ->
-                _state.update { it.copy(isVoiceListening = false) }
-                scope.launch { _sideEffects.emit(ListDetailSideEffect.ShowError(error)) }
-            },
-        )
+    private fun startRecording() {
+        try {
+            audioRecorder.startRecording()
+            _state.update { it.copy(isRecording = true) }
+        } catch (e: Exception) {
+            scope.launch {
+                _sideEffects.emit(ListDetailSideEffect.ShowError(e.message ?: "Failed to start recording"))
+            }
+        }
     }
 
-    private fun stopVoiceInput() {
-        speechRecognizer.stopListening()
-        _state.update { it.copy(isVoiceListening = false) }
-    }
+    private fun stopRecording() {
+        val audioData = audioRecorder.stopRecording()
+        _state.update { it.copy(isRecording = false, isProcessingVoice = true) }
 
-    private fun processVoiceTranscription(text: String) {
-        _state.update { it.copy(voiceTranscription = text) }
+        if (audioData == null || audioData.isEmpty()) {
+            _state.update { it.copy(isProcessingVoice = false) }
+            scope.launch { _sideEffects.emit(ListDetailSideEffect.ShowError("No audio recorded")) }
+            return
+        }
+
         scope.launch {
-            itemRepository.parseVoiceInput(listId, text).fold(
-                onSuccess = { items ->
+            itemRepository.parseVoiceAudio(listId, audioData).fold(
+                onSuccess = { result ->
                     _state.update {
                         it.copy(
-                            parsedVoiceItems = items.map { p -> ParsedVoiceItem(p.title, p.quantity, p.unit) },
+                            isProcessingVoice = false,
+                            voiceTranscription = result.transcription,
+                            parsedVoiceItems = result.items.map { p ->
+                                ParsedVoiceItem(p.title, p.quantity, p.unit, p.matchedExistingItem)
+                            },
                             showVoiceSheet = true,
                         )
                     }
                 },
                 onFailure = { error ->
-                    _sideEffects.emit(ListDetailSideEffect.ShowError(error.message ?: "Failed to parse voice input"))
+                    _state.update { it.copy(isProcessingVoice = false) }
+                    _sideEffects.emit(ListDetailSideEffect.ShowError(error.message ?: "Failed to process voice input"))
                 },
             )
         }

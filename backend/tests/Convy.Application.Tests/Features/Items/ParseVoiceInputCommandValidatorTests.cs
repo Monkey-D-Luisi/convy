@@ -3,14 +3,14 @@ using FluentValidation.TestHelper;
 
 namespace Convy.Application.Tests.Features.Items;
 
-public class ParseVoiceInputCommandValidatorTests
+public class ParseVoiceAudioCommandValidatorTests
 {
-    private readonly ParseVoiceInputCommandValidator _validator = new();
+    private readonly ParseVoiceAudioCommandValidator _validator = new();
 
     [Fact]
     public void Validate_WithValidData_PassesValidation()
     {
-        var command = new ParseVoiceInputCommand(Guid.NewGuid(), "milk and bread");
+        var command = new ParseVoiceAudioCommand(Guid.NewGuid(), new MemoryStream([1, 2, 3]), "recording.m4a");
         var result = _validator.TestValidate(command);
         result.ShouldNotHaveAnyValidationErrors();
     }
@@ -18,24 +18,46 @@ public class ParseVoiceInputCommandValidatorTests
     [Fact]
     public void Validate_WithEmptyListId_FailsValidation()
     {
-        var command = new ParseVoiceInputCommand(Guid.Empty, "milk");
+        var command = new ParseVoiceAudioCommand(Guid.Empty, new MemoryStream([1]), "test.m4a");
         var result = _validator.TestValidate(command);
         result.ShouldHaveValidationErrorFor(x => x.ListId);
     }
 
     [Fact]
-    public void Validate_WithEmptyText_FailsValidation()
+    public void Validate_WithNullAudio_FailsValidation()
     {
-        var command = new ParseVoiceInputCommand(Guid.NewGuid(), "");
+        var command = new ParseVoiceAudioCommand(Guid.NewGuid(), null!, "test.m4a");
         var result = _validator.TestValidate(command);
-        result.ShouldHaveValidationErrorFor(x => x.TranscribedText);
+        result.ShouldHaveValidationErrorFor(x => x.Audio);
     }
 
     [Fact]
-    public void Validate_WithLongText_FailsValidation()
+    public void Validate_WithEmptyFileName_FailsValidation()
     {
-        var command = new ParseVoiceInputCommand(Guid.NewGuid(), new string('a', 2001));
+        var command = new ParseVoiceAudioCommand(Guid.NewGuid(), new MemoryStream([1]), "");
         var result = _validator.TestValidate(command);
-        result.ShouldHaveValidationErrorFor(x => x.TranscribedText);
+        result.ShouldHaveValidationErrorFor(x => x.FileName);
+    }
+
+    [Fact]
+    public void Validate_WithUnsupportedFormat_FailsValidation()
+    {
+        var command = new ParseVoiceAudioCommand(Guid.NewGuid(), new MemoryStream([1]), "test.txt");
+        var result = _validator.TestValidate(command);
+        result.ShouldHaveValidationErrorFor(x => x.FileName);
+    }
+
+    [Theory]
+    [InlineData("audio.mp3")]
+    [InlineData("audio.mp4")]
+    [InlineData("audio.m4a")]
+    [InlineData("audio.wav")]
+    [InlineData("audio.webm")]
+    [InlineData("audio.ogg")]
+    public void Validate_WithSupportedFormats_PassesValidation(string fileName)
+    {
+        var command = new ParseVoiceAudioCommand(Guid.NewGuid(), new MemoryStream([1]), fileName);
+        var result = _validator.TestValidate(command);
+        result.ShouldNotHaveValidationErrorFor(x => x.FileName);
     }
 }

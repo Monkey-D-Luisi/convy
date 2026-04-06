@@ -6,6 +6,9 @@ using Convy.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OpenAI;
+using OpenAI.Audio;
+using OpenAI.Chat;
 
 namespace Convy.Infrastructure;
 
@@ -29,6 +32,26 @@ public static class DependencyInjection
 
         services.AddHostedService<RecurringItemService>();
 
+        AddOpenAiServices(services, configuration);
+
         return services;
+    }
+
+    private static void AddOpenAiServices(IServiceCollection services, IConfiguration configuration)
+    {
+        var apiKey = configuration["OPENAI_API_KEY"]
+                     ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+
+        if (string.IsNullOrWhiteSpace(apiKey))
+            return;
+
+        var transcriptionModel = configuration["OpenAI:TranscriptionModel"] ?? "gpt-4o-mini-transcribe";
+        var parsingModel = configuration["OpenAI:ParsingModel"] ?? "gpt-5.4-nano";
+
+        var openAiClient = new OpenAIClient(apiKey);
+
+        services.AddSingleton(openAiClient.GetAudioClient(transcriptionModel));
+        services.AddSingleton(openAiClient.GetChatClient(parsingModel));
+        services.AddScoped<IAiVoiceParsingService, OpenAiVoiceParsingService>();
     }
 }

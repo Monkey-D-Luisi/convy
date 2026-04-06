@@ -66,6 +66,13 @@ fun VoiceInputSheet(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
+                            if (item.matchedExistingItem != null) {
+                                Text(
+                                    "Matches: ${item.matchedExistingItem}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                )
+                            }
                         }
                     }
                 }

@@ -8,85 +8,61 @@ using NSubstitute;
 
 namespace Convy.Application.Tests.Features.Items;
 
-public class ParseVoiceInputCommandHandlerTests
+public class ParseVoiceAudioCommandHandlerTests
 {
     private readonly IHouseholdListRepository _listRepository = Substitute.For<IHouseholdListRepository>();
     private readonly IHouseholdRepository _householdRepository = Substitute.For<IHouseholdRepository>();
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
-    private readonly ParseVoiceInputCommandHandler _handler;
+    private readonly IAiVoiceParsingService _voiceParsingService = Substitute.For<IAiVoiceParsingService>();
+    private readonly ParseVoiceAudioCommandHandler _handler;
     private readonly Guid _userId = Guid.NewGuid();
 
-    public ParseVoiceInputCommandHandlerTests()
+    public ParseVoiceAudioCommandHandlerTests()
     {
         _currentUser.UserId.Returns(_userId);
-        _handler = new ParseVoiceInputCommandHandler(
+        _handler = new ParseVoiceAudioCommandHandler(
             _listRepository,
             _householdRepository,
-            _currentUser);
+            _currentUser,
+            _voiceParsingService);
     }
 
-    private void SetupValidListAndHousehold(out Guid listId)
+    private Guid SetupValidListAndHousehold()
     {
         var household = new Household("Home", _userId);
         var list = new HouseholdList("Shopping", ListType.Shopping, household.Id, _userId);
-        listId = list.Id;
 
         _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>())
             .Returns(list);
         _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>())
             .Returns(household);
+
+        return list.Id;
     }
 
     [Fact]
-    public async Task Handle_WithValidText_ReturnsParsedItems()
+    public async Task Handle_WithValidAudio_ReturnsVoiceParsingResult()
     {
         // Arrange
-        SetupValidListAndHousehold(out var listId);
-        var command = new ParseVoiceInputCommand(listId, "milk");
+        var listId = SetupValidListAndHousehold();
+        var audio = new MemoryStream([1, 2, 3]);
+        var command = new ParseVoiceAudioCommand(listId, audio, "test.m4a");
+
+        var expected = new VoiceParsingResult("milk and bread", [
+            new ParsedItemDto("Milk", null, null, null),
+            new ParsedItemDto("Bread", null, null, null),
+        ]);
+        _voiceParsingService
+            .ParseAudioAsync(audio, "test.m4a", Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(expected);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(1);
-        result.Value![0].Title.Should().Be("milk");
-    }
-
-    [Fact]
-    public async Task Handle_WithCommaDelimitedText_SplitsCorrectly()
-    {
-        // Arrange
-        SetupValidListAndHousehold(out var listId);
-        var command = new ParseVoiceInputCommand(listId, "milk, bread, eggs");
-
-        // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(3);
-        result.Value![0].Title.Should().Be("milk");
-        result.Value[1].Title.Should().Be("bread");
-        result.Value[2].Title.Should().Be("eggs");
-    }
-
-    [Fact]
-    public async Task Handle_WithQuantityAndUnit_ExtractsCorrectly()
-    {
-        // Arrange
-        SetupValidListAndHousehold(out var listId);
-        var command = new ParseVoiceInputCommand(listId, "2 kg of chicken");
-
-        // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(1);
-        result.Value![0].Quantity.Should().Be(2);
-        result.Value[0].Unit.Should().Be("kg");
-        result.Value[0].Title.Should().Be("chicken");
+        result.Value!.Transcription.Should().Be("milk and bread");
+        result.Value.Items.Should().HaveCount(2);
     }
 
     [Fact]
@@ -96,7 +72,7 @@ public class ParseVoiceInputCommandHandlerTests
         _listRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((HouseholdList?)null);
 
-        var command = new ParseVoiceInputCommand(Guid.NewGuid(), "milk");
+        var command = new ParseVoiceAudioCommand(Guid.NewGuid(), new MemoryStream(), "test.m4a");
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -104,6 +80,8 @@ public class ParseVoiceInputCommandHandlerTests
         // Assert
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("NotFound");
+        await _voiceParsingService.DidNotReceive()
+            .ParseAudioAsync(Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -119,7 +97,7 @@ public class ParseVoiceInputCommandHandlerTests
         _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>())
             .Returns(household);
 
-        var command = new ParseVoiceInputCommand(list.Id, "milk");
+        var command = new ParseVoiceAudioCommand(list.Id, new MemoryStream(), "test.m4a");
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -127,38 +105,27 @@ public class ParseVoiceInputCommandHandlerTests
         // Assert
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("Forbidden");
+        await _voiceParsingService.DidNotReceive()
+            .ParseAudioAsync(Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_WithAndDelimiter_SplitsCorrectly()
+    public async Task Handle_CallsServiceWithCorrectHouseholdId()
     {
         // Arrange
-        SetupValidListAndHousehold(out var listId);
-        var command = new ParseVoiceInputCommand(listId, "milk and bread and eggs");
+        var listId = SetupValidListAndHousehold();
+        var audio = new MemoryStream([1, 2, 3]);
+        var command = new ParseVoiceAudioCommand(listId, audio, "recording.m4a");
+
+        _voiceParsingService
+            .ParseAudioAsync(Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(new VoiceParsingResult("test", []));
 
         // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
+        await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(3);
-    }
-
-    [Fact]
-    public async Task Handle_WithQuantityNoUnit_ExtractsQuantity()
-    {
-        // Arrange
-        SetupValidListAndHousehold(out var listId);
-        var command = new ParseVoiceInputCommand(listId, "3 bottles of water");
-
-        // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(1);
-        result.Value![0].Quantity.Should().Be(3);
-        result.Value[0].Unit.Should().Be("bottles");
-        result.Value[0].Title.Should().Be("water");
+        await _voiceParsingService.Received(1)
+            .ParseAudioAsync(audio, "recording.m4a", Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 }

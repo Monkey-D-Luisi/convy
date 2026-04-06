@@ -16,7 +16,8 @@ data class ListDetailState(
     val searchQuery: String = "",
     val isSearching: Boolean = false,
     val activeFilter: String = "All",
-    val isVoiceListening: Boolean = false,
+    val isRecording: Boolean = false,
+    val isProcessingVoice: Boolean = false,
     val voiceTranscription: String = "",
     val parsedVoiceItems: List<ParsedVoiceItem> = emptyList(),
     val showVoiceSheet: Boolean = false,
@@ -26,6 +27,7 @@ data class ParsedVoiceItem(
     val title: String,
     val quantity: Int?,
     val unit: String?,
+    val matchedExistingItem: String? = null,
     val isSelected: Boolean = true,
 )
 
@@ -41,9 +43,8 @@ sealed interface ListDetailIntent {
     data object ToggleSearch : ListDetailIntent
     data class SetFilter(val filter: String) : ListDetailIntent
     data object ToggleShoppingMode : ListDetailIntent
-    data object StartVoiceInput : ListDetailIntent
-    data object StopVoiceInput : ListDetailIntent
-    data class VoiceTranscriptionReceived(val text: String) : ListDetailIntent
+    data object StartRecording : ListDetailIntent
+    data object StopRecording : ListDetailIntent
     data object DismissVoiceSheet : ListDetailIntent
     data class ToggleVoiceItem(val index: Int) : ListDetailIntent
     data object ConfirmVoiceItems : ListDetailIntent

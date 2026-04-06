@@ -2,7 +2,7 @@ package com.convy.shared.domain.repository
 
 import com.convy.shared.domain.model.DuplicateCheck
 import com.convy.shared.domain.model.ListItem
-import com.convy.shared.domain.model.ParsedItem
+import com.convy.shared.domain.model.VoiceParseResult
 
 interface ItemRepository {
     suspend fun getByList(listId: String, status: String? = null, createdBy: String? = null): Result<List<ListItem>>
@@ -13,5 +13,5 @@ interface ItemRepository {
     suspend fun uncomplete(listId: String, itemId: String): Result<Unit>
     suspend fun checkDuplicate(listId: String, title: String): Result<DuplicateCheck>
     suspend fun getSuggestions(householdId: String, query: String?): Result<List<String>>
-    suspend fun parseVoiceInput(listId: String, text: String): Result<List<ParsedItem>>
+    suspend fun parseVoiceAudio(listId: String, audioData: ByteArray): Result<VoiceParseResult>
 }

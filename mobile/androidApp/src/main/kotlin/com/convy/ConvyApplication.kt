@@ -4,6 +4,7 @@ import android.app.Application
 import com.convy.app.di.appModule
 import com.convy.shared.data.remote.PushTokenProvider
 import com.convy.shared.di.sharedModules
+import com.convy.shared.platform.AudioRecorder
 import com.convy.shared.platform.SpeechRecognizer
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -22,4 +23,5 @@ class ConvyApplication : Application() {
 private val platformModule = module {
     single<PushTokenProvider> { AndroidPushTokenProvider() }
     single<SpeechRecognizer> { AndroidSpeechRecognizer(androidContext()) }
+    single<AudioRecorder> { AndroidAudioRecorder(androidContext()) }
 }

@@ -108,11 +108,28 @@ fun ListDetailContent(
                 },
                 actions = {
                     if (!state.isSearching) {
-                        IconButton(onClick = { onIntent(ListDetailIntent.StartVoiceInput) }) {
-                            Icon(
-                                if (state.isVoiceListening) Icons.Default.Stop else Icons.Default.Mic,
-                                contentDescription = "Voice input",
-                            )
+                        if (state.isRecording) {
+                            IconButton(onClick = { onIntent(ListDetailIntent.StopRecording) }) {
+                                Icon(
+                                    Icons.Default.Stop,
+                                    contentDescription = "Stop recording",
+                                    tint = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        } else {
+                            IconButton(
+                                onClick = { onIntent(ListDetailIntent.StartRecording) },
+                                enabled = !state.isProcessingVoice,
+                            ) {
+                                if (state.isProcessingVoice) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp,
+                                    )
+                                } else {
+                                    Icon(Icons.Default.Mic, contentDescription = "Voice input")
+                                }
+                            }
                         }
                         if (state.listType.equals("Shopping", ignoreCase = true)) {
                             IconButton(onClick = { onIntent(ListDetailIntent.ToggleShoppingMode) }) {
