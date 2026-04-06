@@ -1,0 +1,32 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Create a Tasks-type list
+# Precondition: user is on HouseholdLists screen with "Test Home"
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
+
+# Tap FAB to create list
+- tapOn: "Create list"
+
+# Dialog should appear
+- assertVisible: "New list"
+
+# Enter list name
+- tapOn: "List name"
+- inputText: "House Chores"
+
+# Select Tasks type (Shopping is default, tap Tasks chip)
+- tapOn: "Tasks"
+
+# Confirm
+- tapOn: "Create"
+
+# New list should appear with Tasks type
+- extendedWaitUntil:
+    visible:
+      text: "House Chores"
+    timeout: 5000

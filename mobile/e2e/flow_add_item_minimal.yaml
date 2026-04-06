@@ -1,0 +1,52 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Add item with only title (minimal creation path)
+# Precondition: user has "Weekly Groceries" list
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
+
+# Navigate to list detail
+- tapOn: "Weekly Groceries"
+
+# Wait for list detail
+- extendedWaitUntil:
+    visible:
+      text: "Add item"
+    timeout: 10000
+
+# Tap FAB to add item
+- tapOn: "Add item"
+
+# Item form should show
+- assertVisible: "New item"
+
+# Fill only the title — no quantity, unit, or note
+- tapOn: "Title *"
+- inputText: "Bananas"
+
+# Dismiss keyboard
+- tapOn:
+    point: "50%,5%"
+
+# Scroll to save button
+- scrollUntilVisible:
+    element:
+      text: "Add item"
+    direction: DOWN
+    timeout: 5000
+
+# Save
+- tapOn: "Add item"
+
+# Should return to list with item visible
+- extendedWaitUntil:
+    visible:
+      text: "Bananas"
+    timeout: 5000
+
+# Navigate back for next flow
+- tapOn: "Back"

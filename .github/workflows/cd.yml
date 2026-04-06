@@ -1,0 +1,131 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+
+env:
+  PROJECT_ID: convy-6520d
+  REGION: europe-southwest1
+  REGISTRY_STAGING: europe-southwest1-docker.pkg.dev/convy-6520d/convy-staging
+  REGISTRY_PRODUCTION: europe-southwest1-docker.pkg.dev/convy-6520d/convy-production
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      sha_short: ${{ steps.vars.outputs.sha_short }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set short SHA
+        id: vars
+        run: echo "sha_short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ${{ env.REGISTRY_STAGING }}/api:${{ steps.vars.outputs.sha_short }} \
+            -t ${{ env.REGISTRY_STAGING }}/api:latest \
+            -f docker/backend/Dockerfile \
+            backend/
+
+      - name: Push to staging registry
+        run: |
+          docker push ${{ env.REGISTRY_STAGING }}/api:${{ steps.vars.outputs.sha_short }}
+          docker push ${{ env.REGISTRY_STAGING }}/api:latest
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Deploy to Cloud Run (Staging)
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: convy-staging-api
+          region: ${{ env.REGION }}
+          image: ${{ env.REGISTRY_STAGING }}/api:${{ needs.build-and-push.outputs.sha_short }}
+
+  smoke-test:
+    name: Smoke Test Staging
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Get staging URL
+        id: url
+        run: |
+          URL=$(gcloud run services describe convy-staging-api \
+            --region=${{ env.REGION }} \
+            --format='value(status.url)')
+          echo "staging_url=$URL" >> $GITHUB_OUTPUT
+
+      - name: Health check
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.url.outputs.staging_url }}/health")
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check failed with status $STATUS"
+            exit 1
+          fi
+          echo "Health check passed (HTTP 200)"
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-push, smoke-test]
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Tag image for production registry
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+          docker pull ${{ env.REGISTRY_STAGING }}/api:${{ needs.build-and-push.outputs.sha_short }}
+          docker tag ${{ env.REGISTRY_STAGING }}/api:${{ needs.build-and-push.outputs.sha_short }} \
+            ${{ env.REGISTRY_PRODUCTION }}/api:${{ needs.build-and-push.outputs.sha_short }}
+          docker tag ${{ env.REGISTRY_STAGING }}/api:${{ needs.build-and-push.outputs.sha_short }} \
+            ${{ env.REGISTRY_PRODUCTION }}/api:latest
+          docker push ${{ env.REGISTRY_PRODUCTION }}/api:${{ needs.build-and-push.outputs.sha_short }}
+          docker push ${{ env.REGISTRY_PRODUCTION }}/api:latest
+
+      - name: Deploy to Cloud Run (Production)
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: convy-production-api
+          region: ${{ env.REGION }}
+          image: ${{ env.REGISTRY_PRODUCTION }}/api:${{ needs.build-and-push.outputs.sha_short }}

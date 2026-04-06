@@ -11,6 +11,17 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Compose connection string from individual env vars (Cloud Run with Secret Manager)
+var dbHost = Environment.GetEnvironmentVariable("DB_HOST");
+if (!string.IsNullOrEmpty(dbHost))
+{
+    var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "convy";
+    var dbUser = Environment.GetEnvironmentVariable("DB_USER") ?? "convy";
+    var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "";
+    var connectionString = $"Host={dbHost};Port=5432;Database={dbName};Username={dbUser};Password={dbPassword}";
+    builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;
+}
+
 // Health checks
 builder.Services.AddHealthChecks();
 

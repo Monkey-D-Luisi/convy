@@ -1,0 +1,49 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Rename an existing list
+# Precondition: user is on HouseholdLists screen with "Weekly Groceries"
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
+
+# Tap three-dot menu on "Weekly Groceries" list card
+- tapOn: "Options"
+
+# Tap Rename in dropdown menu
+- tapOn: "Rename"
+
+# Rename dialog should appear
+- assertVisible: "Rename list"
+
+# Clear existing name and type new one
+- tapOn: "List name"
+- eraseText: 20
+- inputText: "Supermarket Run"
+
+# Confirm rename
+- tapOn:
+    text: "Rename"
+
+# Should update on lists screen
+- extendedWaitUntil:
+    visible:
+      text: "Supermarket Run"
+    timeout: 5000
+
+# Rename back to original for subsequent tests
+- tapOn: "Options"
+- tapOn: "Rename"
+- tapOn: "List name"
+- eraseText: 20
+- inputText: "Weekly Groceries"
+- tapOn:
+    text: "Rename"
+
+# Verify restored name
+- extendedWaitUntil:
+    visible:
+      text: "Weekly Groceries"
+    timeout: 5000

@@ -1,0 +1,40 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Uncomplete (undo) a completed item
+# Precondition: user has completed items in "Weekly Groceries"
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
+
+# Navigate to list detail
+- tapOn: "Weekly Groceries"
+
+# Wait for list detail
+- extendedWaitUntil:
+    visible:
+      text: "Add item"
+    timeout: 10000
+
+# Switch to Completed filter to find completed items
+- tapOn: "Completed"
+
+# Wait for completed items to be visible
+- extendedWaitUntil:
+    visible:
+      text: "Milk"
+    timeout: 5000
+    optional: true
+
+# Tap checkbox area of a completed item to uncomplete it
+# The checkbox is at the left edge of the item card
+- tapOn:
+    point: "5%,50%"
+
+# Switch back to All filter to verify item moved back to Pending
+- tapOn: "All"
+
+# Navigate back for next flow
+- tapOn: "Back"

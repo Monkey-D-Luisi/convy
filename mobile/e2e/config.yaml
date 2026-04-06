@@ -8,9 +8,14 @@ executionOrder:
     - flow_register
     - flow_create_household
     - flow_create_list
+    - flow_create_tasks_list
+    - flow_rename_list
+    - flow_archive_list
     - flow_add_item
+    - flow_add_item_minimal
     - flow_edit_item
     - flow_complete_item
+    - flow_uncomplete_item
     - flow_delete_item
     - flow_duplicate_warning
     - flow_suggestions
@@ -23,4 +28,5 @@ executionOrder:
     - flow_invite
     - flow_activity
     - flow_settings
+    - flow_join_household
     - flow_sign_in

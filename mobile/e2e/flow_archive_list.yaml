@@ -1,0 +1,32 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Archive a list
+# Precondition: "House Chores" list exists (created by flow_create_tasks_list)
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
+
+# Verify "House Chores" list is visible
+- assertVisible: "House Chores"
+
+# Tap three-dot menu on "House Chores" list card
+- tapOn: "Options"
+
+# Tap Archive in dropdown menu
+- tapOn: "Archive"
+
+# Confirmation dialog should appear
+- assertVisible: "Archive list"
+
+# Confirm archive
+- tapOn:
+    text: "Archive"
+
+# "House Chores" should no longer be visible in active lists
+- extendedWaitUntil:
+    notVisible:
+      text: "House Chores"
+    timeout: 5000
