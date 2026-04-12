@@ -52,6 +52,14 @@
 -dontwarn androidx.compose.**
 
 # =====================
+# Credentials / Google Sign-In
+# =====================
+-keep class androidx.credentials.** { *; }
+-dontwarn androidx.credentials.**
+-keep class com.google.android.libraries.identity.googleid.** { *; }
+-dontwarn com.google.android.libraries.identity.googleid.**
+
+# =====================
 # General
 # =====================
 -keepattributes SourceFile,LineNumberTable
