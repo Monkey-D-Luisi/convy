@@ -22,6 +22,8 @@ public class CurrentUserService : ICurrentUserService
             if (_cachedUserId.HasValue)
                 return _cachedUserId.Value;
 
+            // Fallback: sync-over-async for cases where middleware didn't run.
+            // Safe in ASP.NET Core (no SynchronizationContext) but prefer ResolveAsync via middleware.
             var firebaseUid = FirebaseUid;
             var user = _userRepository.GetByFirebaseUidAsync(firebaseUid).GetAwaiter().GetResult();
 
@@ -39,5 +41,18 @@ public class CurrentUserService : ICurrentUserService
 
             return uid ?? string.Empty;
         }
+    }
+
+    public async Task ResolveAsync(CancellationToken cancellationToken = default)
+    {
+        if (_cachedUserId.HasValue)
+            return;
+
+        var firebaseUid = FirebaseUid;
+        if (string.IsNullOrEmpty(firebaseUid))
+            return;
+
+        var user = await _userRepository.GetByFirebaseUidAsync(firebaseUid, cancellationToken);
+        _cachedUserId = user?.Id ?? Guid.Empty;
     }
 }

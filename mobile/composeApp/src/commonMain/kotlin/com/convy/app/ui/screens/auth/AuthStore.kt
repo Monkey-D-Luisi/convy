@@ -74,7 +74,11 @@ class AuthStore(
 
             result.fold(
                 onSuccess = { user ->
-                    userRepository.register(user.id, user.displayName, user.email)
+                    val registerResult = userRepository.register(user.id, user.displayName, user.email)
+                    registerResult.onFailure { error ->
+                        _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to register user") }
+                        return@launch
+                    }
                     launch { deviceTokenManager.registerCurrentToken() }
                     val households = householdRepository.getMyHouseholds().getOrNull()
                     _state.update { it.copy(isLoading = false) }
@@ -101,7 +105,11 @@ class AuthStore(
 
             result.fold(
                 onSuccess = { user ->
-                    userRepository.register(user.id, user.displayName, user.email)
+                    val registerResult = userRepository.register(user.id, user.displayName, user.email)
+                    registerResult.onFailure { error ->
+                        _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to register user") }
+                        return@launch
+                    }
                     launch { deviceTokenManager.registerCurrentToken() }
                     val households = householdRepository.getMyHouseholds().getOrNull()
                     _state.update { it.copy(isLoading = false) }

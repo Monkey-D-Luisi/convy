@@ -84,4 +84,7 @@ dependencies {
     implementation(libs.firebase.messaging)
     implementation(libs.activity.compose)
     implementation(libs.koin.android)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services)
+    implementation(libs.googleid)
 }

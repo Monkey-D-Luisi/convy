@@ -64,7 +64,8 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 // HTTP context + current user service
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<CurrentUserService>();
+builder.Services.AddScoped<ICurrentUserService>(sp => sp.GetRequiredService<CurrentUserService>());
 
 var app = builder.Build();
 
@@ -79,6 +80,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<UserResolutionMiddleware>();
 
 // Health check endpoints
 app.MapHealthChecks("/health");

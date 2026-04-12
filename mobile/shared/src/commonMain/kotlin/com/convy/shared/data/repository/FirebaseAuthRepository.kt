@@ -3,11 +3,14 @@ package com.convy.shared.data.repository
 import com.convy.shared.data.remote.TokenProvider
 import com.convy.shared.domain.model.User
 import com.convy.shared.domain.repository.AuthRepository
+import com.convy.shared.platform.GoogleSignInHelper
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.GoogleAuthProvider
 import dev.gitlive.firebase.auth.auth
 
-class FirebaseAuthRepository : AuthRepository, TokenProvider {
+class FirebaseAuthRepository(
+    private val googleSignInHelper: GoogleSignInHelper,
+) : AuthRepository, TokenProvider {
 
     private val auth = Firebase.auth
 
@@ -33,7 +36,15 @@ class FirebaseAuthRepository : AuthRepository, TokenProvider {
     }
 
     override suspend fun signInWithGoogle(): Result<User> {
-        return Result.failure(Exception("Google Sign-In is not available yet. Please use email and password."))
+        return try {
+            val idToken = googleSignInHelper.getGoogleIdToken()
+            val credential = GoogleAuthProvider.credential(idToken, null)
+            val result = auth.signInWithCredential(credential)
+            val firebaseUser = result.user ?: return Result.failure(Exception("Google sign-in failed"))
+            Result.success(firebaseUser.toUser())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     override suspend fun signOut() {

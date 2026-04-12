@@ -13,6 +13,7 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.auth.*
 import io.ktor.client.plugins.auth.providers.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
@@ -47,6 +48,14 @@ val networkModule = module {
                     }
                 }
             }
+            HttpResponseValidator {
+                validateResponse { response ->
+                    if (!response.status.isSuccess()) {
+                        val body = response.bodyAsText()
+                        throw ResponseException(response, body)
+                    }
+                }
+            }
             defaultRequest {
                 url {
                     protocol = urlProtocol
@@ -69,7 +78,7 @@ val networkModule = module {
 }
 
 val repositoryModule = module {
-    single { FirebaseAuthRepository() }
+    single { FirebaseAuthRepository(get()) }
     single<AuthRepository> { get<FirebaseAuthRepository>() }
     single<TokenProvider> { get<FirebaseAuthRepository>() }
     single<UserRepository> { UserRepositoryImpl(get()) }
