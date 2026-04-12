@@ -19,6 +19,7 @@ class ListDetailStore(
     private val audioRecorder: AudioRecorder,
 ) {
     private val scope = CoroutineScope(Dispatchers.Main)
+    private var recordingStartTime: Long = 0L
     private val _state = MutableStateFlow(
         ListDetailState(
             listId = listId,
@@ -140,6 +141,7 @@ class ListDetailStore(
     private fun startRecording() {
         try {
             audioRecorder.startRecording()
+            recordingStartTime = System.currentTimeMillis()
             _state.update { it.copy(isRecording = true) }
         } catch (e: Exception) {
             scope.launch {
@@ -149,6 +151,14 @@ class ListDetailStore(
     }
 
     private fun stopRecording() {
+        val elapsed = System.currentTimeMillis() - recordingStartTime
+        if (elapsed < MIN_RECORDING_DURATION_MS) {
+            audioRecorder.stopRecording()
+            _state.update { it.copy(isRecording = false) }
+            scope.launch { _sideEffects.emit(ListDetailSideEffect.ShowError("Recording too short. Hold the button longer.")) }
+            return
+        }
+
         val audioData = audioRecorder.stopRecording()
         _state.update { it.copy(isRecording = false, isProcessingVoice = true) }
 
@@ -161,15 +171,20 @@ class ListDetailStore(
         scope.launch {
             itemRepository.parseVoiceAudio(listId, audioData).fold(
                 onSuccess = { result ->
-                    _state.update {
-                        it.copy(
-                            isProcessingVoice = false,
-                            voiceTranscription = result.transcription,
-                            parsedVoiceItems = result.items.map { p ->
-                                ParsedVoiceItem(p.title, p.quantity, p.unit, p.matchedExistingItem)
-                            },
-                            showVoiceSheet = true,
-                        )
+                    if (result.transcription.isBlank()) {
+                        _state.update { it.copy(isProcessingVoice = false) }
+                        _sideEffects.emit(ListDetailSideEffect.ShowError("Could not recognize speech. Please try again."))
+                    } else {
+                        _state.update {
+                            it.copy(
+                                isProcessingVoice = false,
+                                voiceTranscription = result.transcription,
+                                parsedVoiceItems = result.items.map { p ->
+                                    ParsedVoiceItem(p.title, p.quantity, p.unit, p.matchedExistingItem)
+                                },
+                                showVoiceSheet = true,
+                            )
+                        }
                     }
                 },
                 onFailure = { error ->
@@ -204,5 +219,9 @@ class ListDetailStore(
                 }
             }
         }
+    }
+
+    companion object {
+        private const val MIN_RECORDING_DURATION_MS = 1500L
     }
 }

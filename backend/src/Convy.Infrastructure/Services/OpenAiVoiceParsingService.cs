@@ -85,6 +85,8 @@ public class OpenAiVoiceParsingService : IAiVoiceParsingService
         var options = new AudioTranscriptionOptions
         {
             ResponseFormat = AudioTranscriptionFormat.Text,
+            Language = "es",
+            Prompt = "Lista de compras, supermercado, productos",
         };
 
         var result = await _audioClient.TranscribeAudioAsync(audio, fileName, options, cancellationToken);
