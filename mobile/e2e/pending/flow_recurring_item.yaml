@@ -26,6 +26,16 @@ appId: com.monkeydluisi.convy
 - tapOn: "Title *"
 - inputText: "Eggs"
 
+# Dismiss any system permission dialog (Gboard audio) if it appears
+- runFlow:
+    when:
+      visible: "No permitir"
+    commands:
+      - tapOn: "No permitir"
+
+# Dismiss keyboard to avoid Gboard permission dialogs
+- hideKeyboard
+
 # Enable recurring
 - scrollUntilVisible:
     element:
@@ -36,7 +46,10 @@ appId: com.monkeydluisi.convy
 - tapOn: "Recurring"
 
 # Frequency options should appear
-- assertVisible: "Every"
+- extendedWaitUntil:
+    visible:
+      text: "Every"
+    timeout: 5000
 - assertVisible: "Weekly"
 
 # Change frequency to Daily

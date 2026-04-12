@@ -2,6 +2,7 @@ package com.convy
 
 import android.app.Application
 import com.convy.app.di.appModule
+import com.convy.shared.config.ApiConfig
 import com.convy.shared.data.remote.PushTokenProvider
 import com.convy.shared.di.sharedModules
 import com.convy.shared.platform.AudioRecorder
@@ -21,6 +22,7 @@ class ConvyApplication : Application() {
 }
 
 private val platformModule = module {
+    single { ApiConfig(BuildConfig.API_PROTOCOL, BuildConfig.API_HOST, BuildConfig.API_PORT) }
     single<PushTokenProvider> { AndroidPushTokenProvider() }
     single<SpeechRecognizer> { AndroidSpeechRecognizer(androidContext()) }
     single<AudioRecorder> { AndroidAudioRecorder(androidContext()) }

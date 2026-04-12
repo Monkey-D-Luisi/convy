@@ -1,5 +1,6 @@
 package com.convy.shared.data.remote
 
+import com.convy.shared.config.ApiConfig
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.client.request.*
@@ -13,9 +14,14 @@ import kotlinx.serialization.json.*
 class SignalRClient(
     private val tokenProvider: TokenProvider,
     private val json: Json,
-    private val baseHost: String = "10.0.2.2",
-    private val basePort: Int = 5062
+    private val apiConfig: ApiConfig
 ) {
+    private val baseHost: String get() = apiConfig.host
+    private val basePort: Int get() = apiConfig.port
+    private val baseProtocol: URLProtocol
+        get() = if (apiConfig.protocol == "https") URLProtocol.HTTPS else URLProtocol.HTTP
+    private val wsProtocol: URLProtocol
+        get() = if (apiConfig.protocol == "https") URLProtocol.WSS else URLProtocol.WS
     private val wsClient = HttpClient {
         install(WebSockets)
     }
@@ -39,7 +45,7 @@ class SignalRClient(
                 // Negotiate to get connectionToken
                 val negotiateResponse = httpClient.post {
                     url {
-                        protocol = URLProtocol.HTTP
+                        protocol = baseProtocol
                         host = baseHost
                         port = basePort
                         path("hub", "household", "negotiate")
@@ -53,13 +59,16 @@ class SignalRClient(
                 val connectionToken = negotiateJson["connectionToken"]?.jsonPrimitive?.contentOrNull
 
                 wsClient.webSocket(
-                    host = baseHost,
-                    port = basePort,
-                    path = "/hub/household",
                     request = {
-                        parameter("access_token", token)
-                        if (connectionToken != null) {
-                            parameter("id", connectionToken)
+                        url {
+                            protocol = wsProtocol
+                            host = baseHost
+                            port = basePort
+                            path("hub", "household")
+                            parameter("access_token", token)
+                            if (connectionToken != null) {
+                                parameter("id", connectionToken)
+                            }
                         }
                     }
                 ) {

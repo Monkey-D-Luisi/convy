@@ -1,5 +1,6 @@
 package com.convy.shared.di
 
+import com.convy.shared.config.ApiConfig
 import com.convy.shared.data.remote.ConvyApi
 import com.convy.shared.data.remote.DeviceTokenManager
 import com.convy.shared.data.remote.HouseholdRealtimeService
@@ -28,6 +29,8 @@ val networkModule = module {
 
     single {
         val tokenProvider = get<TokenProvider>()
+        val apiConfig = get<ApiConfig>()
+        val urlProtocol = if (apiConfig.protocol == "https") URLProtocol.HTTPS else URLProtocol.HTTP
         HttpClient {
             install(ContentNegotiation) {
                 json(get<Json>())
@@ -46,9 +49,9 @@ val networkModule = module {
             }
             defaultRequest {
                 url {
-                    protocol = URLProtocol.HTTP
-                    host = "10.0.2.2"
-                    port = 5062
+                    protocol = urlProtocol
+                    host = apiConfig.host
+                    port = apiConfig.port
                 }
             }
         }
@@ -58,7 +61,10 @@ val networkModule = module {
 
     single { DeviceTokenManager(get(), get()) }
 
-    single { SignalRClient(get<TokenProvider>(), get<Json>()) }
+    single {
+        val apiConfig = get<ApiConfig>()
+        SignalRClient(get<TokenProvider>(), get<Json>(), apiConfig)
+    }
     single { HouseholdRealtimeService(get(), get<Json>()) }
 }
 

@@ -19,19 +19,28 @@ appId: com.monkeydluisi.convy
     timeout: 10000
 
 # Switch to Completed filter to find completed items
-- tapOn: "Completed"
+- tapOn:
+    text: "Completed"
+    index: 0
 
-# Wait for completed items to be visible
+# Wait for completed section to load (collapsed by default, "Show" button visible)
 - extendedWaitUntil:
     visible:
-      text: "Milk"
-    timeout: 5000
-    optional: true
+      text: "Show"
+    timeout: 10000
 
-# Tap checkbox area of a completed item to uncomplete it
-# The checkbox is at the left edge of the item card
+# Expand the completed section by tapping the "Show" button
+- tapOn: "Show"
+
+# Wait for a completed item's checkbox to become visible
+- extendedWaitUntil:
+    visible:
+      id: "item-checkbox"
+    timeout: 10000
+
+# Tap checkbox of a completed item to uncomplete it
 - tapOn:
-    point: "5%,50%"
+    id: "item-checkbox"
 
 # Switch back to All filter to verify item moved back to Pending
 - tapOn: "All"

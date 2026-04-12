@@ -87,6 +87,12 @@ docker/.env
 *.env.local
 
 # =====================
+# Keystore / Signing
+# =====================
+mobile/keystore/
+mobile/keystore.properties
+
+# =====================
 # Firebase (contains project config)
 # =====================
 google-services.json

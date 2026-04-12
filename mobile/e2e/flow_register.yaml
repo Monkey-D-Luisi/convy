@@ -1,7 +1,8 @@
 appId: com.monkeydluisi.convy
 ---
 # Flow: Register a new user account
-- launchApp
+- launchApp:
+    clearState: true
 
 # Auth screen should be visible
 - assertVisible: "Convy"

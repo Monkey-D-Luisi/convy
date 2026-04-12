@@ -1,13 +1,15 @@
 appId: com.monkeydluisi.convy
 ---
 # Flow: Create a new household
-# Precondition: user is authenticated and on HouseholdSetup screen
+# Precondition: user is authenticated and on HouseholdSetup screen (from flow_register)
 - launchApp:
     clearState: false
 
-# Wait for household setup screen
-- assertVisible:
-    text: "Set up your home"
+# Should still be on household setup from registration
+- extendedWaitUntil:
+    visible:
+      text: "Set up your home"
+    timeout: 15000
 
 # Should be in create mode by default
 - assertVisible: "Create a new household to get started"

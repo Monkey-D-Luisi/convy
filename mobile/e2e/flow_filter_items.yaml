@@ -1,7 +1,7 @@
 appId: com.monkeydluisi.convy
 ---
 # Flow: Filter items using filter chips
-# Precondition: user is signed in, list has pending and completed items
+# Precondition: user is signed in, list has items (all pending)
 - launchApp:
     clearState: false
 - extendedWaitUntil:
@@ -12,23 +12,38 @@ appId: com.monkeydluisi.convy
 # Navigate to list
 - tapOn: "Weekly Groceries"
 
-# Wait for list detail
+# Wait for list detail and items to load
 - extendedWaitUntil:
     visible:
-      text: "Add item"
+      id: "item-checkbox"
     timeout: 10000
 
-# Complete Bread so we have both pending and completed items
+# Switch to Pending filter first to ensure we only tap a pending item's checkbox
 - tapOn:
-    point: "5%,18%"
+    text: "Pending"
+    index: 0
 
-# Wait for completed section
+# Wait for pending items to render
 - extendedWaitUntil:
     visible:
-      text: "Completed.*"
-    timeout: 5000
+      id: "item-checkbox"
+    timeout: 10000
 
-# Filter chips should be visible - "All" should be active by default
+# Complete the first pending item by tapping its checkbox
+- tapOn:
+    id: "item-checkbox"
+
+# Switch to All filter to see both pending and completed sections
+- tapOn:
+    text: "All"
+
+# Wait for completed section to appear ("Show" button = collapsed completed section)
+- extendedWaitUntil:
+    visible:
+      text: "Show"
+    timeout: 10000
+
+# Filter chips should be visible
 - assertVisible: "All"
 - assertVisible: "Pending"
 - assertVisible: "Completed"
@@ -36,18 +51,18 @@ appId: com.monkeydluisi.convy
 # Tap "Pending" filter
 - tapOn:
     text: "Pending"
+    index: 0
 
 # Should show only pending items, no completed section
-- assertNotVisible:
-    text: "Completed.*"
+- assertNotVisible: "Show"
 
-# Tap "Completed" filter
+# Tap "Completed" filter to see only completed items
 - tapOn:
     text: "Completed"
+    index: 0
 
-# Should show only completed items
-- assertVisible:
-    text: "Bread"
+# Should show the completed section exists
+- assertVisible: "Show"
 
 # Tap "All" to reset
 - tapOn:

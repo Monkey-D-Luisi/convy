@@ -12,7 +12,7 @@ appId: com.monkeydluisi.convy
     text: "Already have an account? Sign in"
     optional: true
 
-# Fill sign-in form
+# Fill sign-in form using the email env var (same as registration)
 - tapOn: "Email"
 - inputText: "${EMAIL}"
 - tapOn: "Password"

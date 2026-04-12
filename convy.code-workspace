@@ -1,0 +1,492 @@
+{
+  "folders": [
+    {
+      "name": "📋 Convy",
+      "path": "."
+    },
+    {
+      "name": "🔷 Backend",
+      "path": "backend"
+    },
+    {
+      "name": "📱 Mobile",
+      "path": "mobile"
+    },
+    {
+      "name": "🐳 Docker",
+      "path": "docker"
+    },
+    {
+      "name": "☁️ Infra",
+      "path": "infra"
+    },
+    {
+      "name": "📖 Docs",
+      "path": "docs"
+    }
+  ],
+  "settings": {
+    // ── Editor ──────────────────────────────────────────────
+    "editor.formatOnSave": true,
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs": "active",
+    "editor.minimap.enabled": false,
+    "editor.stickyScroll.enabled": true,
+    "editor.linkedEditing": true,
+    "editor.renderWhitespace": "boundary",
+    "editor.cursorBlinking": "smooth",
+    "editor.cursorSmoothCaretAnimation": "on",
+    "editor.smoothScrolling": true,
+
+    // ── Files ───────────────────────────────────────────────
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "files.exclude": {
+      "**/.git": true,
+      "**/.DS_Store": true,
+      "**/Thumbs.db": true,
+      "**/*.user": true,
+      "**/*.suo": true
+    },
+
+    // ── Search ──────────────────────────────────────────────
+    "search.exclude": {
+      "**/bin": true,
+      "**/obj": true,
+      "**/build": true,
+      "**/node_modules": true,
+      "**/.gradle": true,
+      "**/TestResults": true,
+      "mobile/composeApp/build": true,
+      "mobile/shared/build": true,
+      "mobile/androidApp/build": true,
+      "mobile/build": true,
+      "infra/.terraform": true,
+      "infra/terraform.tfstate*": true
+    },
+
+    // ── Explorer ────────────────────────────────────────────
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.expand": false,
+    "explorer.fileNesting.patterns": {
+      "*.csproj": ".editorconfig, Directory.Build.props, *.slnx, nuget.config",
+      "*.ts": "${capture}.js, ${capture}.d.ts, ${capture}.js.map",
+      "build.gradle.kts": "settings.gradle.kts, gradle.properties, gradlew, gradlew.bat, local.properties, keystore.properties",
+      "docker-compose.yml": "docker-compose.*.yml, .dockerignore, Dockerfile",
+      ".gitignore": ".gitattributes, .editorconfig, .env, .env.*",
+      "appsettings.json": "appsettings.*.json",
+      "main.tf": "variables.tf, outputs.tf, terraform.tfvars, terraform.tfvars.example, *.tfstate, *.tfstate.backup"
+    },
+    "explorer.sortOrder": "type",
+
+    // ── Workbench ───────────────────────────────────────────
+    "workbench.editor.labelFormat": "short",
+    "workbench.editor.highlightModifiedTabs": true,
+    "workbench.tree.indent": 16,
+    "workbench.colorCustomizations": {
+      "activityBar.foreground": "#00b894",
+      "sideBarSectionHeader.foreground": "#00b894",
+      "tab.activeBorderTop": "#00b894",
+      "statusBar.background": "#0d6e5b",
+      "statusBar.foreground": "#f0f0f0",
+      "statusBar.debuggingBackground": "#e17055",
+      "statusBar.noFolderBackground": "#636e72",
+      "titleBar.activeBackground": "#0d6e5b",
+      "titleBar.activeForeground": "#f0f0f0"
+    },
+
+    // ── Terminal ────────────────────────────────────────────
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.profiles.windows": {
+      "Backend Shell": {
+        "path": "powershell.exe",
+        "args": ["-NoExit", "-Command", "cd backend"],
+        "icon": "server"
+      },
+      "Mobile Shell": {
+        "path": "powershell.exe",
+        "args": ["-NoExit", "-Command", "cd mobile"],
+        "icon": "device-mobile"
+      },
+      "Docker Shell": {
+        "path": "powershell.exe",
+        "args": ["-NoExit", "-Command", "cd docker"],
+        "icon": "package"
+      }
+    },
+
+    // ── .NET / C# ──────────────────────────────────────────
+    "dotnet.defaultSolution": "backend/Convy.slnx",
+    "omnisharp.enableRoslynAnalyzers": true,
+    "omnisharp.enableEditorConfigSupport": true,
+    "[csharp]": {
+      "editor.defaultFormatter": "ms-dotnettools.csharp",
+      "editor.formatOnSave": true
+    },
+
+    // ── Kotlin ─────────────────────────────────────────────
+    "[kotlin]": {
+      "editor.tabSize": 4,
+      "editor.formatOnSave": true
+    },
+
+    // ── JSON / YAML / Markdown ─────────────────────────────
+    "[json]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.tabSize": 2
+    },
+    "[jsonc]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.tabSize": 2
+    },
+    "[yaml]": {
+      "editor.defaultFormatter": "redhat.vscode-yaml",
+      "editor.tabSize": 2
+    },
+    "[markdown]": {
+      "editor.wordWrap": "on",
+      "editor.quickSuggestions": {
+        "comments": "off",
+        "strings": "off",
+        "other": "off"
+      }
+    },
+    "[dockerfile]": {
+      "editor.defaultFormatter": "ms-azuretools.vscode-docker"
+    },
+    "[terraform]": {
+      "editor.defaultFormatter": "hashicorp.terraform",
+      "editor.formatOnSave": true
+    },
+
+    // ── Git ─────────────────────────────────────────────────
+    "git.autofetch": true,
+    "git.enableSmartCommit": true,
+    "git.confirmSync": false,
+
+    // ── Testing ─────────────────────────────────────────────
+    "dotnet-test-explorer.testProjectPath": "backend/tests/**/*.csproj",
+
+    // ── MCP (preserved from existing settings) ──────────────
+    "mcp": {
+      "servers": {
+        "github": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-github"],
+          "env": {
+            "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_TOKEN}"
+          }
+        },
+        "postgres": {
+          "command": "npx",
+          "args": [
+            "-y",
+            "@modelcontextprotocol/server-postgres",
+            "postgresql://convy:convy_dev_password@localhost:5432/convy"
+          ]
+        },
+        "context7": {
+          "command": "npx",
+          "args": ["-y", "@upstash/context7-mcp"]
+        },
+        "maestro": {
+          "command": "node",
+          "args": ["C:\\Users\\luiss\\source\\repos\\maestro-mcp\\mcp\\dist\\index.js"]
+        }
+      }
+    }
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      // ── Backend ─────────────────────────────────────────
+      {
+        "label": "🔷 Backend: Build",
+        "type": "shell",
+        "command": "dotnet build",
+        "options": { "cwd": "${workspaceFolder:� Backend}" },
+        "group": "build",
+        "problemMatcher": "$msCompile",
+        "presentation": { "reveal": "silent", "panel": "shared" }
+      },
+      {
+        "label": "🔷 Backend: Test",
+        "type": "shell",
+        "command": "dotnet test --verbosity normal",
+        "options": { "cwd": "${workspaceFolder:� Backend}" },
+        "group": "test",
+        "problemMatcher": "$msCompile",
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
+      {
+        "label": "🔷 Backend: Watch Run",
+        "type": "shell",
+        "command": "dotnet watch run",
+        "options": { "cwd": "${workspaceFolder:� Backend}/src/Convy.API" },
+        "isBackground": true,
+        "problemMatcher": {
+          "pattern": { "regexp": "^$" },
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "^dotnet watch",
+            "endsPattern": "^\\s*Now listening on"
+          }
+        },
+        "presentation": { "reveal": "always", "panel": "dedicated", "group": "servers" }
+      },
+      {
+        "label": "🔷 Backend: Restore",
+        "type": "shell",
+        "command": "dotnet restore",
+        "options": { "cwd": "${workspaceFolder:� Backend}" },
+        "problemMatcher": "$msCompile",
+        "presentation": { "reveal": "silent", "panel": "shared" }
+      },
+      {
+        "label": "🔷 Backend: Add Migration",
+        "type": "shell",
+        "command": "dotnet ef migrations add ${input:migrationName} --project src/Convy.Infrastructure --startup-project src/Convy.API",
+        "options": { "cwd": "${workspaceFolder:� Backend}" },
+        "problemMatcher": "$msCompile",
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
+      {
+        "label": "🔷 Backend: Update Database",
+        "type": "shell",
+        "command": "dotnet ef database update --project src/Convy.Infrastructure --startup-project src/Convy.API",
+        "options": { "cwd": "${workspaceFolder:� Backend}" },
+        "problemMatcher": "$msCompile",
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
+      // ── Mobile ──────────────────────────────────────────
+      {
+        "label": "📱 Mobile: Build Debug",
+        "type": "shell",
+        "command": ".\\gradlew :composeApp:assembleDebug",
+        "options": { "cwd": "${workspaceFolder:� Mobile}" },
+        "group": "build",
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
+      {
+        "label": "📱 Mobile: Install on Device",
+        "type": "shell",
+        "command": ".\\gradlew :androidApp:installDebug",
+        "options": { "cwd": "${workspaceFolder:� Mobile}" },
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
+      {
+        "label": "📱 Mobile: Run Tests",
+        "type": "shell",
+        "command": ".\\gradlew :shared:allTests",
+        "options": { "cwd": "${workspaceFolder:� Mobile}" },
+        "group": "test",
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
+      {
+        "label": "📱 Mobile: Clean",
+        "type": "shell",
+        "command": ".\\gradlew clean",
+        "options": { "cwd": "${workspaceFolder:� Mobile}" },
+        "problemMatcher": [],
+        "presentation": { "reveal": "silent", "panel": "shared" }
+      },
+      // ── Docker ──────────────────────────────────────────
+      {
+        "label": "🐳 Docker: Up",
+        "type": "shell",
+        "command": "docker-compose up -d",
+        "options": { "cwd": "${workspaceFolder:� Docker}" },
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "dedicated", "group": "infra" }
+      },
+      {
+        "label": "🐳 Docker: Down",
+        "type": "shell",
+        "command": "docker-compose down",
+        "options": { "cwd": "${workspaceFolder:� Docker}" },
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
+      {
+        "label": "🐳 Docker: Up (with pgAdmin)",
+        "type": "shell",
+        "command": "docker-compose --profile tools up -d",
+        "options": { "cwd": "${workspaceFolder:� Docker}" },
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "dedicated", "group": "infra" }
+      },
+      {
+        "label": "🐳 Docker: Logs",
+        "type": "shell",
+        "command": "docker-compose logs -f --tail=50",
+        "options": { "cwd": "${workspaceFolder:� Docker}" },
+        "isBackground": true,
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "dedicated", "group": "infra" }
+      },
+      // ── Infra ───────────────────────────────────────────
+      {
+        "label": "☁️ Terraform: Plan",
+        "type": "shell",
+        "command": "terraform plan",
+        "options": { "cwd": "${workspaceFolder:☁️ Infra}" },
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
+      {
+        "label": "☁️ Terraform: Apply",
+        "type": "shell",
+        "command": "terraform apply",
+        "options": { "cwd": "${workspaceFolder:☁️ Infra}" },
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
+      // ── Composite ───────────────────────────────────────
+      {
+        "label": "🚀 Full Stack: Start Dev",
+        "dependsOn": ["🐳 Docker: Up", "🔷 Backend: Watch Run"],
+        "dependsOrder": "sequence",
+        "problemMatcher": [],
+        "presentation": { "reveal": "always" }
+      },
+      {
+        "label": "✅ Full Stack: Build All",
+        "dependsOn": ["🔷 Backend: Build", "📱 Mobile: Build Debug"],
+        "dependsOrder": "parallel",
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "problemMatcher": [],
+        "presentation": { "reveal": "always" }
+      },
+      {
+        "label": "✅ Full Stack: Test All",
+        "dependsOn": ["🔷 Backend: Test", "📱 Mobile: Run Tests"],
+        "dependsOrder": "parallel",
+        "group": {
+          "kind": "test",
+          "isDefault": true
+        },
+        "problemMatcher": [],
+        "presentation": { "reveal": "always" }
+      }
+    ],
+    "inputs": [
+      {
+        "id": "migrationName",
+        "description": "Name for the EF Core migration",
+        "type": "promptString",
+        "default": "Migration"
+      }
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "🔷 Backend: Launch API",
+        "type": "coreclr",
+        "request": "launch",
+        "preLaunchTask": "🔷 Backend: Build",
+        "program": "${workspaceFolder:� Backend}/src/Convy.API/bin/Debug/net10.0/Convy.API.dll",
+        "args": [],
+        "cwd": "${workspaceFolder:🔷 Backend}/src/Convy.API",
+        "stopAtEntry": false,
+        "env": {
+          "ASPNETCORE_ENVIRONMENT": "Development"
+        },
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "🔷 Backend: Attach to Process",
+        "type": "coreclr",
+        "request": "attach"
+      },
+      {
+        "name": "🧪 Backend: Debug Current Test",
+        "type": "coreclr",
+        "request": "launch",
+        "program": "dotnet",
+        "args": [
+          "test",
+          "--filter",
+          "${input:testFilter}",
+          "--no-build"
+        ],
+        "cwd": "${workspaceFolder:� Backend}",
+        "console": "integratedTerminal"
+      }
+    ],
+    "compounds": [
+      {
+        "name": "🚀 Full Stack: API + Docker",
+        "configurations": ["🔷 Backend: Launch API"],
+        "preLaunchTask": "🐳 Docker: Up",
+        "stopAll": true
+      }
+    ],
+    "inputs": [
+      {
+        "id": "testFilter",
+        "description": "Test filter expression (e.g. FullyQualifiedName~MyTest)",
+        "type": "promptString",
+        "default": ""
+      }
+    ]
+  },
+  "extensions": {
+    "recommendations": [
+      // C# / .NET
+      "ms-dotnettools.csharp",
+      "ms-dotnettools.csdevkit",
+      "ms-dotnettools.dotnet-interactive-vscode",
+
+      // Kotlin / Android
+      "fwcd.kotlin",
+      "mathiasfrohlich.Kotlin",
+
+      // Docker
+      "ms-azuretools.vscode-docker",
+
+      // Terraform
+      "hashicorp.terraform",
+
+      // Database
+      "ckolkman.vscode-postgres",
+
+      // YAML / JSON
+      "redhat.vscode-yaml",
+
+      // Formatting
+      "esbenp.prettier-vscode",
+      "editorconfig.editorconfig",
+
+      // Git
+      "eamodio.gitlens",
+      "mhutchie.git-graph",
+
+      // REST Client
+      "humao.rest-client",
+
+      // Icons & Themes
+      "pkief.material-icon-theme",
+      "pkief.material-product-icons",
+
+      // Productivity
+      "streetsidesoftware.code-spell-checker",
+      "gruntfuggly.todo-tree",
+      "usernamehw.errorlens",
+      "christian-kohler.path-intellisense",
+
+      // Copilot
+      "github.copilot",
+      "github.copilot-chat"
+    ],
+    "unwantedRecommendations": []
+  }
+}

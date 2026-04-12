@@ -15,8 +15,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.convy.app.ui.components.EmptyContent
 import com.convy.app.ui.components.ErrorContent
@@ -142,13 +148,31 @@ fun HouseholdListsContent(
                 onDismissRequest = { onIntent(HouseholdListsIntent.DismissRenameDialog) },
                 title = { Text("Rename list") },
                 text = {
+                    val focusRequester = remember { FocusRequester() }
+                    val textFieldValue = remember(state.renameListId) {
+                        mutableStateOf(
+                            TextFieldValue(
+                                text = state.renameListName,
+                                selection = TextRange(0, state.renameListName.length),
+                            ),
+                        )
+                    }
                     TextField(
-                        value = state.renameListName,
-                        onValueChange = { onIntent(HouseholdListsIntent.UpdateRenameListName(it)) },
+                        value = textFieldValue.value,
+                        onValueChange = {
+                            textFieldValue.value = it
+                            onIntent(HouseholdListsIntent.UpdateRenameListName(it.text))
+                        },
                         label = { Text("List name") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester)
+                            .testTag("rename-list-input"),
                     )
+                    LaunchedEffect(Unit) {
+                        focusRequester.requestFocus()
+                    }
                 },
                 confirmButton = {
                     TextButton(

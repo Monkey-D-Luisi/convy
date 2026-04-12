@@ -11,7 +11,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import kotlinx.coroutines.launch
 import com.convy.app.navigation.AppNavigator
 import com.convy.app.navigation.NavRoute
@@ -38,8 +41,10 @@ import com.convy.shared.data.remote.DeviceTokenManager
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun App() {
+    Box(Modifier.semantics { testTagsAsResourceId = true }) {
     ConvyTheme {
         val navigator = koinInject<AppNavigator>()
         val authRepository = koinInject<AuthRepository>()
@@ -177,5 +182,6 @@ fun App() {
                 )
             }
         }
+    }
     }
 }

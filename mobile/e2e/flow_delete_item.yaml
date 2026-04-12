@@ -1,7 +1,7 @@
 appId: com.monkeydluisi.convy
 ---
 # Flow: Delete an item from a list
-# Precondition: user has a list open with at least one item
+# Precondition: user has a list with items (after complete/uncomplete flows)
 - launchApp:
     clearState: false
 - extendedWaitUntil:
@@ -9,17 +9,10 @@ appId: com.monkeydluisi.convy
       text: "Test Home"
     timeout: 15000
 
-# Navigate to list if needed
+# Navigate to list
 - tapOn: "Weekly Groceries"
 
 # Wait for list detail
-- assertVisible: "Back"
-
-# The item was completed in the previous flow, so it's in the collapsed "Completed" section.
-# Expand it by tapping the "Show" arrow button.
-- tapOn: "Show"
-
-# Now the completed item should be visible
 - extendedWaitUntil:
     visible:
       text: "Whole Milk"

@@ -14,6 +14,12 @@ appId: com.monkeydluisi.convy
 - assertVisible:
     text: "Settings"
 
+# Wait for household data to load before tapping rename
+- extendedWaitUntil:
+    visible:
+      text: "Household"
+    timeout: 10000
+
 # Tap rename icon (pencil)
 - tapOn: "Rename"
 
@@ -21,13 +27,11 @@ appId: com.monkeydluisi.convy
 - assertVisible: "Rename household"
 
 # Clear existing name and type new one
-- tapOn: "Household name"
-- eraseText: 20
+# Text is auto-selected, just type new name
 - inputText: "My Home"
 
 # Confirm rename
-- tapOn:
-    text: "Rename"
+- tapOn: "Rename"
 
 # Should update on settings screen
 - extendedWaitUntil:
@@ -42,12 +46,15 @@ appId: com.monkeydluisi.convy
 
 # Rename back to original for other tests
 - tapOn: "Settings"
+- extendedWaitUntil:
+    visible:
+      text: "Household"
+    timeout: 10000
 - tapOn: "Rename"
-- tapOn: "Household name"
-- eraseText: 20
+
+# Text is auto-selected, just type new name
 - inputText: "Test Home"
-- tapOn:
-    text: "Rename"
+- tapOn: "Rename"
 - extendedWaitUntil:
     visible:
       text: "Test Home"

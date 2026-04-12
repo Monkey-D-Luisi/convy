@@ -21,7 +21,7 @@ appId: com.monkeydluisi.convy
 - tapOn: "Display name"
 - inputText: "Second User"
 - tapOn: "Email"
-- inputText: "second_${EMAIL}"
+- inputText: "${JOIN_EMAIL}"
 - tapOn: "Password"
 - inputText: "Test1234!"
 
@@ -39,7 +39,7 @@ appId: com.monkeydluisi.convy
     timeout: 30000
 
 # Switch to Join mode
-- tapOn: "Want to join an existing household?"
+- tapOn: "Have an invite code? Join instead"
 
 # Verify join mode UI
 - assertVisible: "Enter an invite code to join an existing household"
@@ -58,43 +58,35 @@ appId: com.monkeydluisi.convy
 - tapOn: "Join household"
 
 # The join will likely fail with an error (invalid code), which is expected.
-# We verify the UI handles the error gracefully.
-# Wait a moment for the API response
+# Wait for the error message or a brief moment
 - extendedWaitUntil:
     visible:
-      text: ".*"
-    timeout: 5000
-    optional: true
+      text: "Want to create a new household?"
+    timeout: 10000
 
 # Switch back to Create mode to leave the app in a usable state for flow_sign_in
-- tapOn:
-    text: "Want to create a new household?"
-    optional: true
+- tapOn: "Want to create a new household?"
 
 # Create a household so this user has a home
-- tapOn:
-    text: "Household name"
-    optional: true
+- tapOn: "Household name"
 - inputText: "Second Home"
 
+# Dismiss keyboard
 - tapOn:
-    text: "Create household"
-    optional: true
+    point: "50%,5%"
+
+- tapOn: "Create household"
 
 # Sign out so flow_sign_in can use the original user
 - extendedWaitUntil:
     visible:
       text: "Second Home"
     timeout: 15000
-    optional: true
 
-- tapOn:
-    text: "Settings"
-    optional: true
+- tapOn: "Settings"
+- assertVisible: "Settings"
 
-- tapOn:
-    text: "Sign out"
-    optional: true
+- tapOn: "Sign out"
 
 # Should return to auth screen
 - extendedWaitUntil:

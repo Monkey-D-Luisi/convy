@@ -43,7 +43,10 @@ public static class DependencyInjection
                      ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
 
         if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            services.AddScoped<IAiVoiceParsingService, NoOpVoiceParsingService>();
             return;
+        }
 
         var transcriptionModel = configuration["OpenAI:TranscriptionModel"] ?? "gpt-4o-mini-transcribe";
         var parsingModel = configuration["OpenAI:ParsingModel"] ?? "gpt-5.4-nano";

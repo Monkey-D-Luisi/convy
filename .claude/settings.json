@@ -3,7 +3,7 @@
     "PreToolUse": [
       {
         "type": "command",
-        "windows": "powershell -NoProfile -Command \"$input = [Console]::In.ReadToEnd(); $data = $input | ConvertFrom-Json; if ($data.tool_name -eq 'write' -or $data.tool_name -eq 'edit') { $path = $data.tool_input.file_path; if ($path -match 'Convy\\.Domain' -and $path -notmatch 'Tests') { $content = if ($data.tool_input.content) { $data.tool_input.content } elseif ($data.tool_input.new_string) { $data.tool_input.new_string } else { '' }; if ($content -match 'using Convy\\.Infrastructure|using Microsoft\\.EntityFrameworkCore|using Npgsql') { Write-Output '{\\\"decision\\\": \\\"block\\\", \\\"reason\\\": \\\"Domain layer must not reference Infrastructure or EF Core\\\"}' } } }\"",
+        "windows": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$ErrorActionPreference='SilentlyContinue'; $raw=[Console]::In.ReadToEnd(); $data=$raw|ConvertFrom-Json; $t=$data.tool_name; if($t -ne 'write' -and $t -ne 'edit' -and $t -ne 'create'){exit 0}; $p=$data.tool_input.file_path; if(-not $p -or $p -notmatch 'Convy\\.Domain' -or $p -match 'Tests'){exit 0}; $c=''; if($data.tool_input.content){$c=$data.tool_input.content}elseif($data.tool_input.new_string){$c=$data.tool_input.new_string}; if($c -match 'using Convy\\.Infrastructure|using Microsoft\\.EntityFrameworkCore|using Npgsql|using Convy\\.Application'){Write-Output '{\\\"decision\\\": \\\"block\\\", \\\"reason\\\": \\\"Domain layer must not reference Infrastructure, Application, or EF Core\\\"}'}\"",
         "timeout": 10
       }
     ]

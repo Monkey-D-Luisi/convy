@@ -18,13 +18,9 @@ appId: com.monkeydluisi.convy
       text: "Whole Milk"
     timeout: 10000
 
-# The item card has checkbox at left, text at right.
-# Tapping text navigates to edit. We need the checkbox.
-# The checkbox is at the very left edge of the card.
-# Using a very specific strategy: tap the checkbox area only.
-# On a standard phone: checkbox center is about 5% from left, 18% from top.
+# Tap the first item's checkbox using testTag
 - tapOn:
-    point: "5%,18%"
+    id: "item-checkbox"
 
 # After completing the only item, "Completed" section should appear
 - extendedWaitUntil:
