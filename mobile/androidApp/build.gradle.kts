@@ -22,8 +22,8 @@ android {
         applicationId = "com.monkeydluisi.convy"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.1.1"
     }
 
     signingConfigs {
@@ -48,7 +48,7 @@ android {
         create("staging") {
             dimension = "environment"
             buildConfigField("String", "API_PROTOCOL", "\"https\"")
-            buildConfigField("String", "API_HOST", "\"convy-staging-api-n2didg3xda-no.a.run.app\"")
+            buildConfigField("String", "API_HOST", "\"convy-staging-api-863271144614.europe-southwest1.run.app\"")
             buildConfigField("int", "API_PORT", "443")
         }
     }
