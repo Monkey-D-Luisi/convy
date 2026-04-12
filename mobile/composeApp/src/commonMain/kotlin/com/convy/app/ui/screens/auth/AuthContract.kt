@@ -1,15 +1,17 @@
 package com.convy.app.ui.screens.auth
 
+import com.convy.app.util.UiText
+
 data class AuthState(
     val email: String = "",
     val password: String = "",
     val displayName: String = "",
     val isSignUp: Boolean = false,
     val isLoading: Boolean = false,
-    val error: String? = null,
-    val emailError: String? = null,
-    val passwordError: String? = null,
-    val nameError: String? = null,
+    val error: UiText? = null,
+    val emailError: UiText? = null,
+    val passwordError: UiText? = null,
+    val nameError: UiText? = null,
 )
 
 sealed interface AuthIntent {

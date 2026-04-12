@@ -22,6 +22,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.convy.app.ui.screens.listdetail.ParsedVoiceItem
+import com.convy.app.generated.resources.*
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +39,7 @@ fun VoiceInputSheet(
         Column(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
         ) {
-            Text("Voice Input", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(Res.string.voice_title), style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 "\"$transcription\"",
@@ -44,7 +47,7 @@ fun VoiceInputSheet(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Parsed items:", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(Res.string.voice_parsed_items), style = MaterialTheme.typography.titleSmall)
             Spacer(modifier = Modifier.height(8.dp))
 
             LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -68,7 +71,7 @@ fun VoiceInputSheet(
                             }
                             if (item.matchedExistingItem != null) {
                                 Text(
-                                    "Matches: ${item.matchedExistingItem}",
+                                    stringResource(Res.string.voice_matches, item.matchedExistingItem),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.tertiary,
                                 )
@@ -83,12 +86,13 @@ fun VoiceInputSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
             ) {
-                TextButton(onClick = onDismiss) { Text("Cancel") }
+                TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
                 Spacer(modifier = Modifier.width(8.dp))
+                val selectedCount = items.count { it.isSelected }
                 Button(
                     onClick = onConfirm,
                     enabled = items.any { it.isSelected },
-                ) { Text("Add ${items.count { it.isSelected }} items") }
+                ) { Text(pluralStringResource(Res.plurals.voice_add_items, selectedCount, selectedCount)) }
             }
             Spacer(modifier = Modifier.height(16.dp))
         }

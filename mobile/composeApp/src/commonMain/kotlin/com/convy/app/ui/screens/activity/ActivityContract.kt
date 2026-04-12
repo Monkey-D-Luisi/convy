@@ -1,6 +1,7 @@
 package com.convy.app.ui.screens.activity
 
 import com.convy.shared.domain.model.ActivityLogEntry
+import com.convy.app.util.UiText
 
 data class ActivityState(
     val householdId: String = "",
@@ -8,7 +9,7 @@ data class ActivityState(
     val isLoading: Boolean = false,
     val isLoadingMore: Boolean = false,
     val hasMore: Boolean = true,
-    val error: String? = null,
+    val error: UiText? = null,
 )
 
 data class DateGroup(

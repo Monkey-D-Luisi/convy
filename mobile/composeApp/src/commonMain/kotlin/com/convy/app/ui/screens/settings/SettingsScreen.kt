@@ -21,6 +21,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import com.convy.app.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SettingsScreen(
@@ -53,13 +55,13 @@ fun SettingsContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(Res.string.settings_title)) },
                 navigationIcon = {
                     IconButton(
                         onClick = { onIntent(SettingsIntent.NavigateBack) },
                         modifier = Modifier.testTag("Back"),
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 },
             )
@@ -100,11 +102,11 @@ fun SettingsContent(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = state.displayName.ifEmpty { "Unknown" },
+                        text = state.displayName.ifEmpty { stringResource(Res.string.settings_unknown_name) },
                         style = MaterialTheme.typography.titleLarge,
                     )
                     Text(
-                        text = state.email.ifEmpty { "No email" },
+                        text = state.email.ifEmpty { stringResource(Res.string.settings_no_email) },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -120,7 +122,7 @@ fun SettingsContent(
                     ),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Household", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(Res.string.settings_household), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -134,7 +136,7 @@ fun SettingsContent(
                             ) {
                                 Icon(
                                     Icons.Default.Edit,
-                                    contentDescription = "Rename",
+                                    contentDescription = stringResource(Res.string.rename),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
@@ -157,7 +159,7 @@ fun SettingsContent(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("App version", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(Res.string.settings_app_version), style = MaterialTheme.typography.bodyMedium)
                         Text(
                             "0.1.0",
                             style = MaterialTheme.typography.bodyMedium,
@@ -177,7 +179,7 @@ fun SettingsContent(
                     contentColor = MaterialTheme.colorScheme.error,
                 ),
             ) {
-                Text("Leave household")
+                Text(stringResource(Res.string.settings_leave_household))
             }
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -191,22 +193,22 @@ fun SettingsContent(
             ) {
                 Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Sign out")
+                Text(stringResource(Res.string.settings_sign_out))
             }
 
             if (state.showLeaveConfirmation) {
                 AlertDialog(
                     onDismissRequest = { onIntent(SettingsIntent.DismissLeaveConfirmation) },
-                    title = { Text("Leave household") },
-                    text = { Text("Are you sure you want to leave \"${state.householdName}\"? You will need a new invite to rejoin.") },
+                    title = { Text(stringResource(Res.string.settings_leave_title)) },
+                    text = { Text(stringResource(Res.string.settings_leave_message, state.householdName)) },
                     confirmButton = {
                         TextButton(
                             onClick = { onIntent(SettingsIntent.ConfirmLeaveHousehold) },
                             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                        ) { Text("Leave") }
+                        ) { Text(stringResource(Res.string.settings_leave)) }
                     },
                     dismissButton = {
-                        TextButton(onClick = { onIntent(SettingsIntent.DismissLeaveConfirmation) }) { Text("Cancel") }
+                        TextButton(onClick = { onIntent(SettingsIntent.DismissLeaveConfirmation) }) { Text(stringResource(Res.string.cancel)) }
                     },
                 )
             }
@@ -214,7 +216,7 @@ fun SettingsContent(
             if (state.showRenameDialog) {
                 AlertDialog(
                     onDismissRequest = { onIntent(SettingsIntent.DismissRenameDialog) },
-                    title = { Text("Rename household") },
+                    title = { Text(stringResource(Res.string.settings_rename_household)) },
                     text = {
                         val focusRequester = remember { FocusRequester() }
                         val textFieldValue = remember(state.showRenameDialog) {
@@ -231,7 +233,7 @@ fun SettingsContent(
                                 textFieldValue.value = it
                                 onIntent(SettingsIntent.UpdateRenameText(it.text))
                             },
-                            label = { Text("Household name") },
+                            label = { Text(stringResource(Res.string.settings_household_name_label)) },
                             singleLine = true,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -246,10 +248,10 @@ fun SettingsContent(
                         TextButton(
                             onClick = { onIntent(SettingsIntent.ConfirmRename) },
                             enabled = state.renameText.isNotBlank() && !state.isRenaming,
-                        ) { Text("Rename") }
+                        ) { Text(stringResource(Res.string.rename)) }
                     },
                     dismissButton = {
-                        TextButton(onClick = { onIntent(SettingsIntent.DismissRenameDialog) }) { Text("Cancel") }
+                        TextButton(onClick = { onIntent(SettingsIntent.DismissRenameDialog) }) { Text(stringResource(Res.string.cancel)) }
                     },
                 )
             }

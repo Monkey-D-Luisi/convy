@@ -12,6 +12,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.convy.shared.domain.model.ListItem
+import com.convy.app.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ItemCard(
@@ -63,7 +65,7 @@ fun ItemCard(
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
                             Icons.Default.Refresh,
-                            contentDescription = "Recurring",
+                            contentDescription = stringResource(Res.string.item_card_recurring),
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.primary,
                         )
@@ -90,9 +92,10 @@ fun ItemCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = if (item.isCompleted) {
-                        "Completed by ${item.completedByName ?: "unknown"}${item.completedAt?.let { " \u00B7 ${formatTimestamp(it)}" } ?: ""}"
+                        item.completedAt?.let { stringResource(Res.string.item_card_completed_by_at, item.completedByName ?: stringResource(Res.string.unknown), formatTimestamp(it)) }
+                            ?: stringResource(Res.string.item_card_completed_by, item.completedByName ?: stringResource(Res.string.unknown))
                     } else {
-                        "Added by ${item.createdByName} \u00B7 ${formatTimestamp(item.createdAt)}"
+                        stringResource(Res.string.item_card_added_by, item.createdByName, formatTimestamp(item.createdAt))
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,

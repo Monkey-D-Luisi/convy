@@ -2,6 +2,7 @@ package com.convy.app.ui.screens.item
 
 import com.convy.shared.domain.model.ActivityLogEntry
 import com.convy.shared.domain.model.DuplicateItem
+import com.convy.app.util.UiText
 
 data class ItemFormState(
     val listId: String = "",
@@ -14,7 +15,7 @@ data class ItemFormState(
     val isEditing: Boolean = false,
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
-    val error: String? = null,
+    val error: UiText? = null,
     val duplicateWarning: List<DuplicateItem> = emptyList(),
     val suggestions: List<String> = emptyList(),
     val recurrenceFrequency: Int? = null,

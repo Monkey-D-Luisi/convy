@@ -22,6 +22,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.convy.app.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AuthScreen(
@@ -75,7 +77,7 @@ fun AuthContent(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Coordinate your home effortlessly",
+                    text = stringResource(Res.string.app_tagline),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -95,7 +97,7 @@ fun AuthContent(
                 TextField(
                     value = state.displayName,
                     onValueChange = { onIntent(AuthIntent.UpdateDisplayName(it)) },
-                    label = { Text("Display name") },
+                    label = { Text(stringResource(Res.string.auth_display_name)) },
                     leadingIcon = {
                         Icon(Icons.Default.Person, contentDescription = null)
                     },
@@ -108,7 +110,7 @@ fun AuthContent(
                     ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     isError = state.nameError != null,
-                    supportingText = state.nameError?.let { error -> { Text(error) } },
+                    supportingText = state.nameError?.let { error -> { Text(error.asString()) } },
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -116,7 +118,7 @@ fun AuthContent(
             TextField(
                 value = state.email,
                 onValueChange = { onIntent(AuthIntent.UpdateEmail(it)) },
-                label = { Text("Email") },
+                label = { Text(stringResource(Res.string.auth_email)) },
                 leadingIcon = {
                     Icon(Icons.Default.Email, contentDescription = null)
                 },
@@ -132,14 +134,14 @@ fun AuthContent(
                     imeAction = ImeAction.Next,
                 ),
                 isError = state.emailError != null,
-                supportingText = state.emailError?.let { error -> { Text(error) } },
+                supportingText = state.emailError?.let { error -> { Text(error.asString()) } },
             )
             Spacer(modifier = Modifier.height(12.dp))
 
             TextField(
                 value = state.password,
                 onValueChange = { onIntent(AuthIntent.UpdatePassword(it)) },
-                label = { Text("Password") },
+                label = { Text(stringResource(Res.string.auth_password)) },
                 leadingIcon = {
                     Icon(Icons.Default.Lock, contentDescription = null)
                 },
@@ -156,13 +158,13 @@ fun AuthContent(
                     imeAction = ImeAction.Done,
                 ),
                 isError = state.passwordError != null,
-                supportingText = state.passwordError?.let { error -> { Text(error) } },
+                supportingText = state.passwordError?.let { error -> { Text(error.asString()) } },
             )
 
             if (state.error != null) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = state.error,
+                    text = state.error.asString(),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -183,7 +185,7 @@ fun AuthContent(
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 } else {
-                    Text(if (state.isSignUp) "Create account" else "Sign in")
+                    Text(if (state.isSignUp) stringResource(Res.string.auth_create_account) else stringResource(Res.string.auth_sign_in))
                 }
             }
 
@@ -201,7 +203,7 @@ fun AuthContent(
                     color = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Sign in with Google")
+                Text(stringResource(Res.string.auth_sign_in_google))
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -211,8 +213,8 @@ fun AuthContent(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
-                    text = if (state.isSignUp) "Already have an account? Sign in"
-                    else "Don't have an account? Create one",
+                    text = if (state.isSignUp) stringResource(Res.string.auth_toggle_to_sign_in)
+                    else stringResource(Res.string.auth_toggle_to_sign_up),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -221,7 +223,7 @@ fun AuthContent(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "By continuing, you agree to our Terms of Service",
+                text = stringResource(Res.string.auth_terms),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

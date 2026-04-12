@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.convy.shared.domain.model.ListItem
+import com.convy.app.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ShoppingModeItem(
@@ -39,7 +41,7 @@ fun ShoppingModeItem(
             if (item.isCompleted) {
                 Icon(
                     Icons.Default.Check,
-                    contentDescription = "Completed",
+                    contentDescription = stringResource(Res.string.item_card_completed),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(28.dp),
                 )

@@ -1,6 +1,7 @@
 package com.convy.app.ui.screens.listdetail
 
 import com.convy.shared.domain.model.ListItem
+import com.convy.app.util.UiText
 
 data class ListDetailState(
     val listId: String = "",
@@ -12,7 +13,7 @@ data class ListDetailState(
     val completedItems: List<ListItem> = emptyList(),
     val showCompleted: Boolean = false,
     val isLoading: Boolean = false,
-    val error: String? = null,
+    val error: UiText? = null,
     val searchQuery: String = "",
     val isSearching: Boolean = false,
     val activeFilter: String = "All",

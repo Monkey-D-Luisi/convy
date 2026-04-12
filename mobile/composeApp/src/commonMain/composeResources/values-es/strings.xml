@@ -1,0 +1,191 @@
+<resources>
+    <!-- App -->
+    <string name="app_name">Convy</string>
+    <string name="app_tagline">Coordina tu hogar sin esfuerzo</string>
+
+    <!-- Common -->
+    <string name="back">Atrás</string>
+    <string name="cancel">Cancelar</string>
+    <string name="retry">Reintentar</string>
+    <string name="dismiss">Descartar</string>
+    <string name="save">Guardar</string>
+    <string name="delete">Eliminar</string>
+    <string name="rename">Renombrar</string>
+    <string name="archive">Archivar</string>
+    <string name="create">Crear</string>
+    <string name="search">Buscar</string>
+    <string name="close_search">Cerrar búsqueda</string>
+    <string name="options">Opciones</string>
+    <string name="unknown">desconocido</string>
+
+    <!-- Auth -->
+    <string name="auth_display_name">Nombre para mostrar</string>
+    <string name="auth_email">Correo electrónico</string>
+    <string name="auth_password">Contraseña</string>
+    <string name="auth_sign_in">Iniciar sesión</string>
+    <string name="auth_create_account">Crear cuenta</string>
+    <string name="auth_sign_in_google">Iniciar sesión con Google</string>
+    <string name="auth_toggle_to_sign_in">¿Ya tienes cuenta? Inicia sesión</string>
+    <string name="auth_toggle_to_sign_up">¿No tienes cuenta? Crea una</string>
+    <string name="auth_terms">Al continuar, aceptas nuestros Términos de Servicio</string>
+    <string name="auth_email_required">El correo es obligatorio</string>
+    <string name="auth_email_invalid">Formato de correo inválido</string>
+    <string name="auth_password_required">La contraseña es obligatoria</string>
+    <string name="auth_password_min_length">La contraseña debe tener al menos 6 caracteres</string>
+    <string name="auth_name_required">El nombre es obligatorio</string>
+    <string name="auth_failed">Error de autenticación</string>
+    <string name="auth_register_failed">Error al registrar usuario</string>
+    <string name="auth_google_failed">Error al iniciar sesión con Google</string>
+
+    <!-- Household Setup -->
+    <string name="setup_title">Configura tu hogar</string>
+    <string name="setup_create_subtitle">Crea un nuevo hogar para comenzar</string>
+    <string name="setup_join_subtitle">Introduce un código de invitación para unirte a un hogar existente</string>
+    <string name="setup_household_name">Nombre del hogar</string>
+    <string name="setup_household_placeholder">p. ej. Nuestro Hogar</string>
+    <string name="setup_household_hint">Así aparecerá tu hogar para todos los miembros</string>
+    <string name="setup_invite_code">Código de invitación</string>
+    <string name="setup_invite_placeholder">Introduce el código de 8 caracteres</string>
+    <string name="setup_invite_hint">Pide a un miembro del hogar que comparta su código</string>
+    <string name="setup_create_household">Crear hogar</string>
+    <string name="setup_join_household">Unirse al hogar</string>
+    <string name="setup_toggle_to_join">¿Tienes un código? Únete</string>
+    <string name="setup_toggle_to_create">¿Quieres crear un nuevo hogar?</string>
+    <string name="setup_create_failed">Error al crear el hogar</string>
+    <string name="setup_join_failed">Error al unirse al hogar</string>
+
+    <!-- Household Lists -->
+    <string name="lists_default_title">Mi Hogar</string>
+    <string name="lists_activity">Actividad</string>
+    <string name="lists_members">Miembros</string>
+    <string name="lists_settings">Ajustes</string>
+    <string name="lists_create_list">Crear lista</string>
+    <string name="lists_empty">Aún no hay listas. ¡Toca + para crear una!</string>
+    <string name="lists_new_list">Nueva lista</string>
+    <string name="lists_list_name">Nombre de la lista</string>
+    <string name="lists_type_shopping">Compras</string>
+    <string name="lists_type_tasks">Tareas</string>
+    <string name="lists_rename_title">Renombrar lista</string>
+    <string name="lists_archive_title">Archivar lista</string>
+    <string name="lists_archive_message">¿Seguro que quieres archivar \"%1$s\"? Ya no aparecerá en tus listas.</string>
+    <string name="lists_load_failed">Error al cargar las listas</string>
+    <string name="lists_create_failed">Error al crear la lista</string>
+    <string name="lists_rename_failed">Error al renombrar la lista</string>
+    <string name="lists_archive_failed">Error al archivar la lista</string>
+
+    <!-- List Detail -->
+    <string name="detail_search_placeholder">Buscar artículos…</string>
+    <string name="detail_voice_input">Entrada de voz</string>
+    <string name="detail_stop_recording">Detener grabación</string>
+    <string name="detail_shopping_mode">Modo compra</string>
+    <string name="detail_add_item">Añadir artículo</string>
+    <string name="detail_filter_all">Todos</string>
+    <string name="detail_filter_pending">Pendientes</string>
+    <string name="detail_filter_completed">Completados</string>
+    <string name="detail_no_search_results">Ningún artículo coincide con tu búsqueda.</string>
+    <string name="detail_empty">Aún no hay artículos. ¡Toca + para añadir uno!</string>
+    <string name="detail_pending_header">Pendientes (%1$d)</string>
+    <string name="detail_completed_header">Completados (%1$d)</string>
+    <string name="detail_done_progress">%1$d de %2$d completados</string>
+    <string name="detail_hide">Ocultar</string>
+    <string name="detail_show">Mostrar</string>
+    <string name="detail_load_failed">Error al cargar los artículos</string>
+    <string name="detail_update_failed">Error al actualizar el artículo</string>
+    <string name="detail_delete_failed">Error al eliminar el artículo</string>
+    <string name="detail_recording_too_short">Grabación muy corta. Mantén el botón más tiempo.</string>
+    <string name="detail_recording_failed">Error al iniciar la grabación</string>
+    <string name="detail_no_audio">No se grabó audio</string>
+    <string name="detail_speech_not_recognized">No se pudo reconocer el habla. Inténtalo de nuevo.</string>
+    <string name="detail_voice_process_failed">Error al procesar la entrada de voz</string>
+
+    <!-- Item Form -->
+    <string name="item_edit_title">Editar artículo</string>
+    <string name="item_new_title">Nuevo artículo</string>
+    <string name="item_title_label">Título *</string>
+    <string name="item_qty_label">Cant.</string>
+    <string name="item_unit_label">Unidad</string>
+    <string name="item_unit_placeholder">p. ej. kg, uds</string>
+    <string name="item_note_label">Nota</string>
+    <string name="item_note_placeholder">Nota opcional…</string>
+    <string name="item_recurring">Recurrente</string>
+    <string name="item_every">Cada</string>
+    <string name="item_freq_daily">Diario</string>
+    <string name="item_freq_weekly">Semanal</string>
+    <string name="item_freq_monthly">Mensual</string>
+    <string name="item_duplicates_found">Posibles duplicados encontrados:</string>
+    <string name="item_save_changes">Guardar cambios</string>
+    <string name="item_add">Añadir artículo</string>
+    <string name="item_view_history">Ver historial</string>
+    <string name="item_not_found">Artículo no encontrado</string>
+    <string name="item_save_failed">Error al guardar el artículo</string>
+    <string name="item_delete_failed">Error al eliminar el artículo</string>
+
+    <!-- Members -->
+    <string name="members_title">Miembros</string>
+    <string name="members_owner">Propietario</string>
+    <string name="members_invite_title">Invitar a alguien</string>
+    <string name="members_invite_description">Genera un código de invitación para compartir con alguien que quieras añadir a este hogar.</string>
+    <string name="members_invite_code_label">Código de invitación:</string>
+    <string name="members_copy_code">Copiar código</string>
+    <string name="members_generate_new">Generar nuevo código</string>
+    <string name="members_generate">Generar código de invitación</string>
+    <string name="members_active_invites">Invitaciones activas</string>
+    <string name="members_expires">Expira: %1$s</string>
+    <string name="members_revoke">Revocar</string>
+    <string name="members_load_failed">Error al cargar los miembros</string>
+    <string name="members_generate_failed">Error al generar la invitación</string>
+    <string name="members_revoke_failed">Error al revocar la invitación</string>
+
+    <!-- Activity -->
+    <string name="activity_title">Actividad</string>
+    <string name="activity_empty">Aún no hay actividad</string>
+    <string name="activity_load_more">Cargar más</string>
+    <string name="activity_today">Hoy</string>
+    <string name="activity_load_failed">Error al cargar la actividad</string>
+    <string name="activity_created">Creó %1$s%2$s</string>
+    <string name="activity_updated">Actualizó %1$s%2$s</string>
+    <string name="activity_completed">Completó %1$s%2$s</string>
+    <string name="activity_uncompleted">Marcó %1$s%2$s como pendiente</string>
+    <string name="activity_deleted">Eliminó %1$s</string>
+    <string name="activity_archived">Archivó %1$s%2$s</string>
+    <string name="activity_renamed">Renombró %1$s a%2$s</string>
+    <string name="activity_member_joined">Se unió al hogar</string>
+    <string name="activity_default">%1$s %2$s</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_unknown_name">Desconocido</string>
+    <string name="settings_no_email">Sin correo</string>
+    <string name="settings_household">Hogar</string>
+    <string name="settings_rename_household">Renombrar hogar</string>
+    <string name="settings_household_name_label">Nombre del hogar</string>
+    <string name="settings_app_version">Versión de la app</string>
+    <string name="settings_leave_household">Abandonar hogar</string>
+    <string name="settings_leave_title">Abandonar hogar</string>
+    <string name="settings_leave_message">¿Seguro que quieres abandonar \"%1$s\"? Necesitarás una nueva invitación para volver.</string>
+    <string name="settings_leave">Abandonar</string>
+    <string name="settings_sign_out">Cerrar sesión</string>
+
+    <!-- Voice Input Sheet -->
+    <string name="voice_title">Entrada de voz</string>
+    <string name="voice_parsed_items">Artículos detectados:</string>
+    <string name="voice_matches">Coincide con: %1$s</string>
+
+    <!-- Item Card -->
+    <string name="item_card_completed_by">Completado por %1$s</string>
+    <string name="item_card_completed_by_at">Completado por %1$s · %2$s</string>
+    <string name="item_card_added_by">Añadido por %1$s · %2$s</string>
+    <string name="item_card_recurring">Recurrente</string>
+    <string name="item_card_completed">Completado</string>
+
+    <!-- Item History Sheet -->
+    <string name="history_title">Historial: %1$s</string>
+    <string name="history_empty">Aún no hay historial</string>
+    <string name="history_by">por %1$s</string>
+
+    <!-- Plurals -->
+    <plurals name="voice_add_items">
+        <item quantity="one">Añadir %1$d artículo</item>
+        <item quantity="other">Añadir %1$d artículos</item>
+    </plurals>
+</resources>

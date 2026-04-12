@@ -17,6 +17,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.convy.shared.domain.model.HouseholdList
 import com.convy.shared.domain.model.ListType
+import com.convy.app.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ListCard(
@@ -61,8 +63,8 @@ fun ListCard(
                     label = {
                         Text(
                             text = when (list.type) {
-                                ListType.Shopping -> "Shopping"
-                                ListType.Tasks -> "Tasks"
+                                ListType.Shopping -> stringResource(Res.string.lists_type_shopping)
+                                ListType.Tasks -> stringResource(Res.string.lists_type_tasks)
                             },
                             style = MaterialTheme.typography.labelSmall,
                         )
@@ -85,18 +87,18 @@ fun ListCard(
                 var showMenu by remember { mutableStateOf(false) }
                 Box {
                     IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Options")
+                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(Res.string.options))
                     }
                     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                         if (onRenameClick != null) {
                             DropdownMenuItem(
-                                text = { Text("Rename") },
+                                text = { Text(stringResource(Res.string.rename)) },
                                 onClick = { showMenu = false; onRenameClick() },
                             )
                         }
                         if (onArchiveClick != null) {
                             DropdownMenuItem(
-                                text = { Text("Archive") },
+                                text = { Text(stringResource(Res.string.archive)) },
                                 onClick = { showMenu = false; onArchiveClick() },
                             )
                         }

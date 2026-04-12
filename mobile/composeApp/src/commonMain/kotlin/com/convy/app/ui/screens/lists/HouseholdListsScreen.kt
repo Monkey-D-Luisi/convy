@@ -29,6 +29,8 @@ import com.convy.app.ui.components.ErrorContent
 import com.convy.app.ui.components.ListCard
 import com.convy.app.ui.components.LoadingContent
 import com.convy.shared.domain.model.ListType
+import com.convy.app.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun HouseholdListsScreen(
@@ -69,26 +71,26 @@ fun HouseholdListsContent(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(state.householdName.ifEmpty { "My Home" })
+                    Text(state.householdName.ifEmpty { stringResource(Res.string.lists_default_title) })
                 },
                 actions = {
                     IconButton(
                         onClick = { onIntent(HouseholdListsIntent.OpenActivity) },
                         modifier = Modifier.testTag("Activity"),
                     ) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Activity")
+                        Icon(Icons.Default.Notifications, contentDescription = stringResource(Res.string.lists_activity))
                     }
                     IconButton(
                         onClick = { onIntent(HouseholdListsIntent.OpenMembers) },
                         modifier = Modifier.testTag("Members"),
                     ) {
-                        Icon(Icons.Default.Person, contentDescription = "Members")
+                        Icon(Icons.Default.Person, contentDescription = stringResource(Res.string.lists_members))
                     }
                     IconButton(
                         onClick = { onIntent(HouseholdListsIntent.OpenSettings) },
                         modifier = Modifier.testTag("Settings"),
                     ) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.lists_settings))
                     }
                 },
             )
@@ -98,7 +100,7 @@ fun HouseholdListsContent(
                 onClick = { onIntent(HouseholdListsIntent.ShowCreateDialog) },
                 modifier = Modifier.testTag("Create list"),
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Create list")
+                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.lists_create_list))
             }
         },
     ) { padding ->
@@ -111,10 +113,10 @@ fun HouseholdListsContent(
             when {
                 state.isLoading -> LoadingContent()
                 state.error != null -> ErrorContent(
-                    message = state.error,
+                    message = state.error.asString(),
                     onRetry = { onIntent(HouseholdListsIntent.Refresh) },
                 )
-                state.lists.isEmpty() -> EmptyContent("No lists yet. Tap + to create one!")
+                state.lists.isEmpty() -> EmptyContent(stringResource(Res.string.lists_empty))
                 else -> LazyColumn(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -146,7 +148,7 @@ fun HouseholdListsContent(
         if (state.showRenameDialog) {
             AlertDialog(
                 onDismissRequest = { onIntent(HouseholdListsIntent.DismissRenameDialog) },
-                title = { Text("Rename list") },
+                title = { Text(stringResource(Res.string.lists_rename_title)) },
                 text = {
                     val focusRequester = remember { FocusRequester() }
                     val textFieldValue = remember(state.renameListId) {
@@ -163,7 +165,7 @@ fun HouseholdListsContent(
                             textFieldValue.value = it
                             onIntent(HouseholdListsIntent.UpdateRenameListName(it.text))
                         },
-                        label = { Text("List name") },
+                        label = { Text(stringResource(Res.string.lists_list_name)) },
                         singleLine = true,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -178,10 +180,10 @@ fun HouseholdListsContent(
                     TextButton(
                         onClick = { onIntent(HouseholdListsIntent.ConfirmRenameList) },
                         enabled = state.renameListName.isNotBlank(),
-                    ) { Text("Rename") }
+                    ) { Text(stringResource(Res.string.rename)) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { onIntent(HouseholdListsIntent.DismissRenameDialog) }) { Text("Cancel") }
+                    TextButton(onClick = { onIntent(HouseholdListsIntent.DismissRenameDialog) }) { Text(stringResource(Res.string.cancel)) }
                 },
             )
         }
@@ -189,16 +191,16 @@ fun HouseholdListsContent(
         if (state.showArchiveConfirmation) {
             AlertDialog(
                 onDismissRequest = { onIntent(HouseholdListsIntent.DismissArchiveConfirmation) },
-                title = { Text("Archive list") },
-                text = { Text("Are you sure you want to archive \"${state.archiveListName}\"? It will no longer appear in your lists.") },
+                title = { Text(stringResource(Res.string.lists_archive_title)) },
+                text = { Text(stringResource(Res.string.lists_archive_message, state.archiveListName)) },
                 confirmButton = {
                     TextButton(
                         onClick = { onIntent(HouseholdListsIntent.ConfirmArchiveList) },
                         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                    ) { Text("Archive") }
+                    ) { Text(stringResource(Res.string.archive)) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { onIntent(HouseholdListsIntent.DismissArchiveConfirmation) }) { Text("Cancel") }
+                    TextButton(onClick = { onIntent(HouseholdListsIntent.DismissArchiveConfirmation) }) { Text(stringResource(Res.string.cancel)) }
                 },
             )
         }
@@ -216,13 +218,13 @@ private fun CreateListDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New list") },
+        title = { Text(stringResource(Res.string.lists_new_list)) },
         text = {
             Column {
                 TextField(
                     value = name,
                     onValueChange = onNameChange,
-                    label = { Text("List name") },
+                    label = { Text(stringResource(Res.string.lists_list_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -239,13 +241,13 @@ private fun CreateListDialog(
                     FilterChip(
                         selected = type == ListType.Shopping,
                         onClick = { onTypeChange(ListType.Shopping) },
-                        label = { Text("Shopping") },
+                        label = { Text(stringResource(Res.string.lists_type_shopping)) },
                         modifier = Modifier.weight(1f),
                     )
                     FilterChip(
                         selected = type == ListType.Tasks,
                         onClick = { onTypeChange(ListType.Tasks) },
-                        label = { Text("Tasks") },
+                        label = { Text(stringResource(Res.string.lists_type_tasks)) },
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -256,12 +258,12 @@ private fun CreateListDialog(
                 onClick = onConfirm,
                 enabled = name.isNotBlank(),
             ) {
-                Text("Create")
+                Text(stringResource(Res.string.create))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(Res.string.cancel))
             }
         },
     )

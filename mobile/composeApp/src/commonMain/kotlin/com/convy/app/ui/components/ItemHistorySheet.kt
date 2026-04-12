@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.convy.shared.domain.model.ActivityLogEntry
+import com.convy.app.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -21,7 +23,7 @@ fun ItemHistorySheet(
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
             Text(
-                "History: $itemTitle",
+                stringResource(Res.string.history_title, itemTitle),
                 style = MaterialTheme.typography.titleLarge,
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -29,7 +31,7 @@ fun ItemHistorySheet(
                 CircularProgressIndicator(modifier = Modifier.padding(16.dp))
             } else if (entries.isEmpty()) {
                 Text(
-                    "No history yet",
+                    stringResource(Res.string.history_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -50,7 +52,7 @@ fun ItemHistorySheet(
                                     fontWeight = FontWeight.Medium,
                                 )
                                 Text(
-                                    text = "by ${entry.performedByName}",
+                                    text = stringResource(Res.string.history_by, entry.performedByName),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )

@@ -2,6 +2,7 @@ package com.convy.app.ui.screens.members
 
 import com.convy.shared.domain.model.HouseholdMember
 import com.convy.shared.domain.model.Invite
+import com.convy.app.util.UiText
 
 data class MembersState(
     val householdId: String = "",
@@ -10,7 +11,7 @@ data class MembersState(
     val activeInvites: List<Invite> = emptyList(),
     val isLoading: Boolean = false,
     val isGeneratingInvite: Boolean = false,
-    val error: String? = null,
+    val error: UiText? = null,
 )
 
 sealed interface MembersIntent {

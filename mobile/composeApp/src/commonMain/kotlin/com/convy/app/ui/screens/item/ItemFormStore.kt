@@ -1,5 +1,7 @@
 package com.convy.app.ui.screens.item
 
+import com.convy.app.generated.resources.*
+import com.convy.app.util.UiText
 import com.convy.shared.domain.repository.ActivityRepository
 import com.convy.shared.domain.repository.ItemRepository
 import kotlinx.coroutines.CoroutineScope
@@ -100,11 +102,11 @@ class ItemFormStore(
                             )
                         }
                     } else {
-                        _state.update { it.copy(isLoading = false, error = "Item not found") }
+                        _state.update { it.copy(isLoading = false, error = UiText.StringResourceText(Res.string.item_not_found)) }
                     }
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, error = error.message) }
+                    _state.update { it.copy(isLoading = false, error = UiText.fromError(error.message, Res.string.item_save_failed)) }
                 },
             )
         }
@@ -172,7 +174,7 @@ class ItemFormStore(
                     _sideEffects.emit(ItemFormSideEffect.NavigateBack)
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(isSaving = false, error = error.message ?: "Failed to save item") }
+                    _state.update { it.copy(isSaving = false, error = UiText.fromError(error.message, Res.string.item_save_failed)) }
                 },
             )
         }
@@ -190,7 +192,7 @@ class ItemFormStore(
                     _sideEffects.emit(ItemFormSideEffect.NavigateBack)
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(isSaving = false, error = error.message ?: "Failed to delete item") }
+                    _state.update { it.copy(isSaving = false, error = UiText.fromError(error.message, Res.string.item_delete_failed)) }
                 },
             )
         }

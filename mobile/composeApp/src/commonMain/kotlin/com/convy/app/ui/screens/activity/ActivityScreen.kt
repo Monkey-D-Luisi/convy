@@ -20,6 +20,8 @@ import com.convy.app.ui.components.EmptyContent
 import com.convy.app.ui.components.ErrorContent
 import com.convy.app.ui.components.LoadingContent
 import com.convy.shared.domain.model.ActivityLogEntry
+import com.convy.app.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ActivityScreen(
@@ -49,13 +51,13 @@ fun ActivityContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Activity") },
+                title = { Text(stringResource(Res.string.activity_title)) },
                 navigationIcon = {
                     IconButton(
                         onClick = { onIntent(ActivityIntent.NavigateBack) },
                         modifier = Modifier.testTag("Back"),
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 },
             )
@@ -64,12 +66,12 @@ fun ActivityContent(
         when {
             state.isLoading -> LoadingContent(modifier = Modifier.padding(padding))
             state.error != null -> ErrorContent(
-                message = state.error,
+                message = state.error.asString(),
                 onRetry = { onIntent(ActivityIntent.Refresh) },
                 modifier = Modifier.padding(padding),
             )
             state.groupedEntries.isEmpty() -> EmptyContent(
-                message = "No activity yet",
+                message = stringResource(Res.string.activity_empty),
                 modifier = Modifier.padding(padding),
             )
             else -> LazyColumn(
@@ -87,7 +89,7 @@ fun ActivityContent(
                             color = MaterialTheme.colorScheme.surface,
                         ) {
                             Text(
-                                text = group.date,
+                                text = if (group.date == "Today") stringResource(Res.string.activity_today) else group.date,
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary,
@@ -109,7 +111,7 @@ fun ActivityContent(
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp))
                             } else {
                                 TextButton(onClick = { onIntent(ActivityIntent.LoadMore) }) {
-                                    Text("Load more")
+                                    Text(stringResource(Res.string.activity_load_more))
                                 }
                             }
                         }
@@ -173,18 +175,19 @@ private fun actionIcon(actionType: String): String = when (actionType) {
     else -> "•"
 }
 
+@Composable
 private fun formatAction(entry: ActivityLogEntry): String {
     val entityLabel = entry.entityType.lowercase()
     val metadata = entry.metadata?.let { " \"$it\"" } ?: ""
     return when (entry.actionType) {
-        "Created" -> "Created $entityLabel$metadata"
-        "Updated" -> "Updated $entityLabel$metadata"
-        "Completed" -> "Completed $entityLabel$metadata"
-        "Uncompleted" -> "Marked $entityLabel$metadata as pending"
-        "Deleted" -> "Deleted $entityLabel"
-        "Archived" -> "Archived $entityLabel$metadata"
-        "Renamed" -> "Renamed $entityLabel to$metadata"
-        "MemberJoined" -> "Joined the household"
-        else -> "$entityLabel ${entry.actionType.lowercase()}"
+        "Created" -> stringResource(Res.string.activity_created, entityLabel, metadata)
+        "Updated" -> stringResource(Res.string.activity_updated, entityLabel, metadata)
+        "Completed" -> stringResource(Res.string.activity_completed, entityLabel, metadata)
+        "Uncompleted" -> stringResource(Res.string.activity_uncompleted, entityLabel, metadata)
+        "Deleted" -> stringResource(Res.string.activity_deleted, entityLabel)
+        "Archived" -> stringResource(Res.string.activity_archived, entityLabel, metadata)
+        "Renamed" -> stringResource(Res.string.activity_renamed, entityLabel, metadata)
+        "MemberJoined" -> stringResource(Res.string.activity_member_joined)
+        else -> stringResource(Res.string.activity_default, entityLabel, entry.actionType.lowercase())
     }
 }

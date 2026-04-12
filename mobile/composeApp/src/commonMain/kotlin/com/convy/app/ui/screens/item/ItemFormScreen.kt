@@ -24,6 +24,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.convy.app.ui.components.ItemHistorySheet
 import com.convy.app.ui.components.LoadingContent
+import com.convy.app.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ItemFormScreen(
@@ -62,13 +64,13 @@ fun ItemFormContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (state.isEditing) "Edit item" else "New item") },
+                title = { Text(if (state.isEditing) stringResource(Res.string.item_edit_title) else stringResource(Res.string.item_new_title)) },
                 navigationIcon = {
                     IconButton(
                         onClick = { onIntent(ItemFormIntent.NavigateBack) },
                         modifier = Modifier.testTag("Back"),
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 },
                 actions = {
@@ -80,7 +82,7 @@ fun ItemFormContent(
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "Delete",
+                                contentDescription = stringResource(Res.string.delete),
                                 tint = MaterialTheme.colorScheme.error,
                             )
                         }
@@ -104,7 +106,7 @@ fun ItemFormContent(
             TextField(
                 value = state.title,
                 onValueChange = { onIntent(ItemFormIntent.UpdateTitle(it)) },
-                label = { Text("Title *") },
+                label = { Text(stringResource(Res.string.item_title_label)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -136,7 +138,7 @@ fun ItemFormContent(
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(
-                            text = "Possible duplicates found:",
+                            text = stringResource(Res.string.item_duplicates_found),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                         )
@@ -151,7 +153,7 @@ fun ItemFormContent(
                         TextButton(
                             onClick = { onIntent(ItemFormIntent.DismissDuplicateWarning) },
                         ) {
-                            Text("Dismiss")
+                            Text(stringResource(Res.string.dismiss))
                         }
                     }
                 }
@@ -166,7 +168,7 @@ fun ItemFormContent(
                 TextField(
                     value = state.quantity,
                     onValueChange = { onIntent(ItemFormIntent.UpdateQuantity(it)) },
-                    label = { Text("Qty") },
+                    label = { Text(stringResource(Res.string.item_qty_label)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
@@ -182,8 +184,8 @@ fun ItemFormContent(
                 TextField(
                     value = state.unit,
                     onValueChange = { onIntent(ItemFormIntent.UpdateUnit(it)) },
-                    label = { Text("Unit") },
-                    placeholder = { Text("e.g. kg, pcs") },
+                    label = { Text(stringResource(Res.string.item_unit_label)) },
+                    placeholder = { Text(stringResource(Res.string.item_unit_placeholder)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
@@ -200,8 +202,8 @@ fun ItemFormContent(
             TextField(
                 value = state.note,
                 onValueChange = { onIntent(ItemFormIntent.UpdateNote(it)) },
-                label = { Text("Note") },
-                placeholder = { Text("Optional note...") },
+                label = { Text(stringResource(Res.string.item_note_label)) },
+                placeholder = { Text(stringResource(Res.string.item_note_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = TextFieldDefaults.colors(
@@ -218,7 +220,7 @@ fun ItemFormContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Recurring", style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(Res.string.item_recurring), style = MaterialTheme.typography.bodyLarge)
                 Switch(
                     checked = state.recurrenceFrequency != null,
                     onCheckedChange = { enabled ->
@@ -246,13 +248,13 @@ fun ItemFormContent(
                                 onIntent(ItemFormIntent.UpdateRecurrenceInterval(interval))
                             }
                         },
-                        label = { Text("Every") },
+                        label = { Text(stringResource(Res.string.item_every)) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     )
 
-                    val frequencies = listOf("Daily", "Weekly", "Monthly")
+                    val frequencies = listOf(stringResource(Res.string.item_freq_daily), stringResource(Res.string.item_freq_weekly), stringResource(Res.string.item_freq_monthly))
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.weight(2f)) {
                         frequencies.forEachIndexed { index, label ->
                             SegmentedButton(
@@ -268,7 +270,7 @@ fun ItemFormContent(
             if (state.error != null) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = state.error,
+                    text = state.error.asString(),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -278,7 +280,7 @@ fun ItemFormContent(
 
             if (state.isEditing) {
                 TextButton(onClick = { onIntent(ItemFormIntent.ShowHistory) }) {
-                    Text("View history")
+                    Text(stringResource(Res.string.item_view_history))
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -296,7 +298,7 @@ fun ItemFormContent(
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 } else {
-                    Text(if (state.isEditing) "Save changes" else "Add item")
+                    Text(if (state.isEditing) stringResource(Res.string.item_save_changes) else stringResource(Res.string.item_add))
                 }
             }
         }

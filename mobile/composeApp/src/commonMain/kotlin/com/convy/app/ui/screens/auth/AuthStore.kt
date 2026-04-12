@@ -1,5 +1,7 @@
 package com.convy.app.ui.screens.auth
 
+import com.convy.app.generated.resources.*
+import com.convy.app.util.UiText
 import com.convy.shared.data.remote.DeviceTokenManager
 import com.convy.shared.domain.repository.AuthRepository
 import com.convy.shared.domain.repository.HouseholdRepository
@@ -37,19 +39,19 @@ class AuthStore(
         val current = _state.value
 
         val emailError = when {
-            current.email.isBlank() -> "Email is required"
-            !current.email.contains("@") -> "Invalid email format"
+            current.email.isBlank() -> UiText.StringResourceText(Res.string.auth_email_required)
+            !current.email.contains("@") -> UiText.StringResourceText(Res.string.auth_email_invalid)
             else -> null
         }
 
         val passwordError = when {
-            current.password.isBlank() -> "Password is required"
-            current.password.length < 6 -> "Password must be at least 6 characters"
+            current.password.isBlank() -> UiText.StringResourceText(Res.string.auth_password_required)
+            current.password.length < 6 -> UiText.StringResourceText(Res.string.auth_password_min_length)
             else -> null
         }
 
         val nameError = if (current.isSignUp && current.displayName.isBlank()) {
-            "Display name is required"
+            UiText.StringResourceText(Res.string.auth_name_required)
         } else {
             null
         }
@@ -76,7 +78,7 @@ class AuthStore(
                 onSuccess = { user ->
                     val registerResult = userRepository.register(user.id, user.displayName, user.email)
                     registerResult.onFailure { error ->
-                        _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to register user") }
+                        _state.update { it.copy(isLoading = false, error = UiText.fromError(error.message, Res.string.auth_register_failed)) }
                         return@launch
                     }
                     launch { deviceTokenManager.registerCurrentToken() }
@@ -89,7 +91,7 @@ class AuthStore(
                     }
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, error = error.message ?: "Authentication failed") }
+                    _state.update { it.copy(isLoading = false, error = UiText.fromError(error.message, Res.string.auth_failed)) }
                 },
             )
         }
@@ -107,7 +109,7 @@ class AuthStore(
                 onSuccess = { user ->
                     val registerResult = userRepository.register(user.id, user.displayName, user.email)
                     registerResult.onFailure { error ->
-                        _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to register user") }
+                        _state.update { it.copy(isLoading = false, error = UiText.fromError(error.message, Res.string.auth_register_failed)) }
                         return@launch
                     }
                     launch { deviceTokenManager.registerCurrentToken() }
@@ -120,7 +122,7 @@ class AuthStore(
                     }
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, error = error.message ?: "Google sign-in failed") }
+                    _state.update { it.copy(isLoading = false, error = UiText.fromError(error.message, Res.string.auth_google_failed)) }
                 },
             )
         }

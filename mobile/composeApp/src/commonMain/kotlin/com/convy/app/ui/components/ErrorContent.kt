@@ -9,6 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.convy.app.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ErrorContent(
@@ -30,7 +32,7 @@ fun ErrorContent(
             if (onRetry != null) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = onRetry) {
-                    Text("Retry")
+                    Text(stringResource(Res.string.retry))
                 }
             }
         }

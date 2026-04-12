@@ -23,6 +23,8 @@ import com.convy.app.ui.components.ErrorContent
 import com.convy.app.ui.components.LoadingContent
 import com.convy.shared.domain.model.HouseholdMember
 import com.convy.shared.domain.model.HouseholdRole
+import com.convy.app.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MembersScreen(
@@ -56,13 +58,13 @@ fun MembersContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Members") },
+                title = { Text(stringResource(Res.string.members_title)) },
                 navigationIcon = {
                     IconButton(
                         onClick = { onIntent(MembersIntent.NavigateBack) },
                         modifier = Modifier.testTag("Back"),
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 },
             )
@@ -71,7 +73,7 @@ fun MembersContent(
         when {
             state.isLoading -> LoadingContent(modifier = Modifier.padding(padding))
             state.error != null -> ErrorContent(
-                message = state.error,
+                message = state.error.asString(),
                 onRetry = { onIntent(MembersIntent.Refresh) },
                 modifier = Modifier.padding(padding),
             )
@@ -101,7 +103,7 @@ fun MembersContent(
                     item {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            "Active invites",
+                            stringResource(Res.string.members_active_invites),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(horizontal = 4.dp),
                         )
@@ -126,7 +128,7 @@ fun MembersContent(
                                         fontWeight = FontWeight.Bold,
                                     )
                                     Text(
-                                        text = "Expires: ${invite.expiresAt}",
+                                        text = stringResource(Res.string.members_expires, invite.expiresAt),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -137,7 +139,7 @@ fun MembersContent(
                                 ) {
                                     Icon(
                                         Icons.Default.Close,
-                                        contentDescription = "Revoke",
+                                        contentDescription = stringResource(Res.string.members_revoke),
                                         tint = MaterialTheme.colorScheme.error,
                                     )
                                 }
@@ -191,7 +193,7 @@ private fun MemberCard(member: HouseholdMember) {
             if (member.role == HouseholdRole.Owner) {
                 AssistChip(
                     onClick = {},
-                    label = { Text("Owner") },
+                    label = { Text(stringResource(Res.string.members_owner)) },
                 )
             }
         }
@@ -213,12 +215,12 @@ private fun InviteSection(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Invite someone",
+                text = stringResource(Res.string.members_invite_title),
                 style = MaterialTheme.typography.titleMedium,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Generate an invite code to share with someone you want to add to this household.",
+                text = stringResource(Res.string.members_invite_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
             )
@@ -232,7 +234,7 @@ private fun InviteSection(
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(
-                            text = "Invite code:",
+                            text = stringResource(Res.string.members_invite_code_label),
                             style = MaterialTheme.typography.labelMedium,
                         )
                         Text(
@@ -247,7 +249,7 @@ private fun InviteSection(
                     onClick = onCopyCode,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Copy code")
+                    Text(stringResource(Res.string.members_copy_code))
                 }
             }
 
@@ -266,7 +268,7 @@ private fun InviteSection(
                 }
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(if (invite != null) "Generate new code" else "Generate invite code")
+                Text(if (invite != null) stringResource(Res.string.members_generate_new) else stringResource(Res.string.members_generate))
             }
         }
     }

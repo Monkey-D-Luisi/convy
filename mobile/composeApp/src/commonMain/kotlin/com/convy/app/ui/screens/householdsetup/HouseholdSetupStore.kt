@@ -1,5 +1,7 @@
 package com.convy.app.ui.screens.householdsetup
 
+import com.convy.app.generated.resources.*
+import com.convy.app.util.UiText
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.InviteRepository
 import kotlinx.coroutines.CoroutineScope
@@ -41,7 +43,7 @@ class HouseholdSetupStore(
                         _sideEffects.emit(HouseholdSetupSideEffect.NavigateToLists(householdId))
                     },
                     onFailure = { error ->
-                        _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to create household") }
+                        _state.update { it.copy(isLoading = false, error = UiText.fromError(error.message, Res.string.setup_create_failed)) }
                     },
                 )
             } else {
@@ -51,7 +53,7 @@ class HouseholdSetupStore(
                         _sideEffects.emit(HouseholdSetupSideEffect.NavigateToLists(householdId))
                     },
                     onFailure = { error ->
-                        _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to join household") }
+                        _state.update { it.copy(isLoading = false, error = UiText.fromError(error.message, Res.string.setup_join_failed)) }
                     },
                 )
             }

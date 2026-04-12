@@ -2,6 +2,7 @@ package com.convy.app.ui.screens.lists
 
 import com.convy.shared.domain.model.HouseholdList
 import com.convy.shared.domain.model.ListType
+import com.convy.app.util.UiText
 
 data class HouseholdListsState(
     val householdId: String = "",
@@ -9,7 +10,7 @@ data class HouseholdListsState(
     val lists: List<HouseholdList> = emptyList(),
     val pendingCounts: Map<String, Int> = emptyMap(),
     val isLoading: Boolean = false,
-    val error: String? = null,
+    val error: UiText? = null,
     val showCreateDialog: Boolean = false,
     val newListName: String = "",
     val newListType: ListType = ListType.Shopping,

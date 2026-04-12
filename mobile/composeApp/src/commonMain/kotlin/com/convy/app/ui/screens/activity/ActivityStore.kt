@@ -1,5 +1,7 @@
 package com.convy.app.ui.screens.activity
 
+import com.convy.app.generated.resources.*
+import com.convy.app.util.UiText
 import com.convy.shared.data.remote.HouseholdEvent
 import com.convy.shared.data.remote.HouseholdRealtimeService
 import com.convy.shared.domain.model.ActivityLogEntry
@@ -58,7 +60,7 @@ class ActivityStore(
                 },
                 onFailure = { error ->
                     _state.update {
-                        it.copy(isLoading = false, error = error.message ?: "Failed to load activity")
+                        it.copy(isLoading = false, error = UiText.fromError(error.message, Res.string.activity_load_failed))
                     }
                 },
             )

@@ -16,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.convy.app.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun HouseholdSetupScreen(
@@ -68,14 +70,14 @@ fun HouseholdSetupContent(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Set up your home",
+                    text = stringResource(Res.string.setup_title),
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = if (state.isCreateMode) "Create a new household to get started"
-                    else "Enter an invite code to join an existing household",
+                    text = if (state.isCreateMode) stringResource(Res.string.setup_create_subtitle)
+                    else stringResource(Res.string.setup_join_subtitle),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -95,8 +97,8 @@ fun HouseholdSetupContent(
                 TextField(
                     value = state.householdName,
                     onValueChange = { onIntent(HouseholdSetupIntent.UpdateHouseholdName(it)) },
-                    label = { Text("Household name") },
-                    placeholder = { Text("e.g. Our Home") },
+                    label = { Text(stringResource(Res.string.setup_household_name)) },
+                    placeholder = { Text(stringResource(Res.string.setup_household_placeholder)) },
                     leadingIcon = {
                         Icon(Icons.Default.Home, contentDescription = null)
                     },
@@ -110,7 +112,7 @@ fun HouseholdSetupContent(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "This is how your household will appear to all members",
+                    text = stringResource(Res.string.setup_household_hint),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth(),
@@ -119,8 +121,8 @@ fun HouseholdSetupContent(
                 TextField(
                     value = state.inviteCode,
                     onValueChange = { onIntent(HouseholdSetupIntent.UpdateInviteCode(it)) },
-                    label = { Text("Invite code") },
-                    placeholder = { Text("Enter the 8-character code") },
+                    label = { Text(stringResource(Res.string.setup_invite_code)) },
+                    placeholder = { Text(stringResource(Res.string.setup_invite_placeholder)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -131,7 +133,7 @@ fun HouseholdSetupContent(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Ask a household member to share their invite code",
+                    text = stringResource(Res.string.setup_invite_hint),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth(),
@@ -141,7 +143,7 @@ fun HouseholdSetupContent(
             if (state.error != null) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = state.error,
+                    text = state.error.asString(),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -166,7 +168,7 @@ fun HouseholdSetupContent(
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 } else {
-                    Text(if (state.isCreateMode) "Create household" else "Join household")
+                    Text(if (state.isCreateMode) stringResource(Res.string.setup_create_household) else stringResource(Res.string.setup_join_household))
                 }
             }
 
@@ -177,8 +179,8 @@ fun HouseholdSetupContent(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
-                    if (state.isCreateMode) "Have an invite code? Join instead"
-                    else "Want to create a new household?",
+                    if (state.isCreateMode) stringResource(Res.string.setup_toggle_to_join)
+                    else stringResource(Res.string.setup_toggle_to_create),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )

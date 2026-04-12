@@ -1,5 +1,7 @@
 package com.convy.app.ui.screens.members
 
+import com.convy.app.generated.resources.*
+import com.convy.app.util.UiText
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.InviteRepository
 import kotlinx.coroutines.CoroutineScope
@@ -52,7 +54,7 @@ class MembersStore(
                     _state.update { it.copy(members = detail.members, isLoading = false) }
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to load members") }
+                    _state.update { it.copy(isLoading = false, error = UiText.fromError(error.message, Res.string.members_load_failed)) }
                 },
             )
         }

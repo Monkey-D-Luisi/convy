@@ -37,6 +37,8 @@ import com.convy.app.ui.components.LoadingContent
 import com.convy.app.ui.components.ShoppingModeItem
 import com.convy.app.ui.components.VoiceInputSheet
 import com.convy.app.util.rememberRecordAudioPermissionState
+import com.convy.app.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ListDetailScreen(
@@ -116,7 +118,7 @@ fun ListDetailContent(
                         OutlinedTextField(
                             value = state.searchQuery,
                             onValueChange = { onIntent(ListDetailIntent.UpdateSearchQuery(it)) },
-                            placeholder = { Text("Search items...") },
+                            placeholder = { Text(stringResource(Res.string.detail_search_placeholder)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -136,7 +138,7 @@ fun ListDetailContent(
                             onIntent(ListDetailIntent.NavigateBack)
                         }
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 },
                 actions = {
@@ -145,7 +147,7 @@ fun ListDetailContent(
                             IconButton(onClick = { onIntent(ListDetailIntent.StopRecording) }) {
                                 Icon(
                                     Icons.Default.Stop,
-                                    contentDescription = "Stop recording",
+                                    contentDescription = stringResource(Res.string.detail_stop_recording),
                                     tint = MaterialTheme.colorScheme.error,
                                 )
                             }
@@ -160,7 +162,7 @@ fun ListDetailContent(
                                         strokeWidth = 2.dp,
                                     )
                                 } else {
-                                    Icon(Icons.Default.Mic, contentDescription = "Voice input")
+                                    Icon(Icons.Default.Mic, contentDescription = stringResource(Res.string.detail_voice_input))
                                 }
                             }
                         }
@@ -168,17 +170,17 @@ fun ListDetailContent(
                             IconButton(onClick = { onIntent(ListDetailIntent.ToggleShoppingMode) }) {
                                 Icon(
                                     Icons.Default.ShoppingCart,
-                                    contentDescription = "Shopping mode",
+                                    contentDescription = stringResource(Res.string.detail_shopping_mode),
                                     tint = if (state.isShoppingMode) MaterialTheme.colorScheme.primary else LocalContentColor.current,
                                 )
                             }
                         }
                         IconButton(onClick = { onIntent(ListDetailIntent.ToggleSearch) }) {
-                            Icon(Icons.Default.Search, contentDescription = "Search")
+                            Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.search))
                         }
                     } else {
                         IconButton(onClick = { onIntent(ListDetailIntent.ToggleSearch) }) {
-                            Icon(Icons.Default.Close, contentDescription = "Close search")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(Res.string.close_search))
                         }
                     }
                 },
@@ -189,7 +191,7 @@ fun ListDetailContent(
                 onClick = { onIntent(ListDetailIntent.AddItem) },
                 modifier = Modifier.testTag("Add item"),
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add item")
+                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.detail_add_item))
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -205,17 +207,20 @@ fun ListDetailContent(
             val filteredCompleted = if (query.isBlank()) state.completedItems else state.completedItems.filter { it.title.lowercase().contains(query) }
 
             Column(modifier = Modifier.fillMaxSize()) {
+                val filterAll = stringResource(Res.string.detail_filter_all)
+                val filterPending = stringResource(Res.string.detail_filter_pending)
+                val filterCompleted = stringResource(Res.string.detail_filter_completed)
+                val filters = listOf("All" to filterAll, "Pending" to filterPending, "Completed" to filterCompleted)
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    val filters = listOf("All", "Pending", "Completed")
                     items(filters.size) { index ->
-                        val filter = filters[index]
+                        val (filter, label) = filters[index]
                         FilterChip(
                             selected = state.activeFilter == filter,
                             onClick = { onIntent(ListDetailIntent.SetFilter(filter)) },
-                            label = { Text(filter) },
+                            label = { Text(label) },
                         )
                     }
                 }
@@ -223,14 +228,14 @@ fun ListDetailContent(
                 when {
                     state.isLoading -> LoadingContent()
                     state.error != null -> ErrorContent(
-                        message = state.error,
+                        message = state.error.asString(),
                         onRetry = { onIntent(ListDetailIntent.Refresh) },
                     )
                     filteredPending.isEmpty() && filteredCompleted.isEmpty() && state.searchQuery.isNotBlank() -> EmptyContent(
-                        "No items match your search.",
+                        stringResource(Res.string.detail_no_search_results),
                     )
                     state.pendingItems.isEmpty() && state.completedItems.isEmpty() -> EmptyContent(
-                        "No items yet. Tap + to add one!",
+                        stringResource(Res.string.detail_empty),
                     )
                     state.isShoppingMode -> {
                         val allItems = state.pendingItems + state.completedItems
@@ -242,7 +247,7 @@ fun ListDetailContent(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                             )
                             Text(
-                                text = "$doneCount of $totalCount done",
+                                text = stringResource(Res.string.detail_done_progress, doneCount, totalCount),
                                 style = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -278,7 +283,7 @@ fun ListDetailContent(
                     if (filteredPending.isNotEmpty()) {
                         item {
                             Text(
-                                text = "Pending (${filteredPending.size})",
+                                text = stringResource(Res.string.detail_pending_header, filteredPending.size),
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 4.dp),
@@ -339,7 +344,7 @@ fun ListDetailContent(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = "Completed (${filteredCompleted.size})",
+                                    text = stringResource(Res.string.detail_completed_header, filteredCompleted.size),
                                     style = MaterialTheme.typography.titleSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.weight(1f),
@@ -353,7 +358,7 @@ fun ListDetailContent(
                                         } else {
                                             Icons.Default.KeyboardArrowDown
                                         },
-                                        contentDescription = if (state.showCompleted) "Hide" else "Show",
+                                        contentDescription = if (state.showCompleted) stringResource(Res.string.detail_hide) else stringResource(Res.string.detail_show),
                                     )
                                 }
                             }
