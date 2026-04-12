@@ -37,6 +37,7 @@ captures/
 *.aab
 *.ap_
 *.dex
+.kotlin/
 
 # =====================
 # JetBrains IDEs
@@ -102,6 +103,8 @@ GoogleService-Info.plist
 # E2E Screenshots
 # =====================
 mobile/e2e/screenshots/
+mobile/e2e/*.png
+mobile/e2e/*.xml
 
 # =====================
 # Environment
@@ -119,3 +122,5 @@ mobile/e2e/screenshots/
 *.swp
 *~
 node_modules/
+ui_dump.*
+uidump.*
