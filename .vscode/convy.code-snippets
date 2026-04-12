@@ -1,0 +1,22 @@
+{
+  "EF Migration Down Method": {
+    "prefix": "migration-down",
+    "scope": "csharp",
+    "description": "EF Core migration Down() method that reverses the Up()",
+    "body": [
+      "/// <inheritdoc />",
+      "protected override void Down(MigrationBuilder migrationBuilder)",
+      "{",
+      "    migrationBuilder.${1|DropTable,DropColumn,DropIndex|}(${2:args});",
+      "    $0",
+      "}"
+    ]
+  },
+  "Conventional Commit": {
+    "prefix": "commit",
+    "description": "Conventional commit message format",
+    "body": [
+      "${1|feat,fix,chore,docs,test,refactor|}(${2:scope}): ${3:description}"
+    ]
+  }
+}

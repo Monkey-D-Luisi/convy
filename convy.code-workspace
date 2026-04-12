@@ -58,6 +58,8 @@
       "**/node_modules": true,
       "**/.gradle": true,
       "**/TestResults": true,
+      "**/Migrations": true,
+      "**/composeResources": true,
       "mobile/composeApp/build": true,
       "mobile/shared/build": true,
       "mobile/androidApp/build": true,
@@ -76,9 +78,13 @@
       "docker-compose.yml": "docker-compose.*.yml, .dockerignore, Dockerfile",
       ".gitignore": ".gitattributes, .editorconfig, .env, .env.*",
       "appsettings.json": "appsettings.*.json",
-      "main.tf": "variables.tf, outputs.tf, terraform.tfvars, terraform.tfvars.example, *.tfstate, *.tfstate.backup"
+      "main.tf": "variables.tf, outputs.tf, terraform.tfvars, terraform.tfvars.example, *.tfstate, *.tfstate.backup",
+      "AGENTS.md": "CLAUDE.md",
+      "*.cs": "${capture}.Designer.cs"
     },
     "explorer.sortOrder": "type",
+    "explorer.compactFolders": false,
+    "breadcrumbs.enabled": true,
 
     // ── Workbench ───────────────────────────────────────────
     "workbench.editor.labelFormat": "short",
@@ -167,6 +173,41 @@
 
     // ── Testing ─────────────────────────────────────────────
     "dotnet-test-explorer.testProjectPath": "backend/tests/**/*.csproj",
+
+    // ── Todo Tree ───────────────────────────────────────────
+    "todo-tree.general.tags": ["TODO", "FIXME", "HACK", "BUG", "PERF"],
+    "todo-tree.highlights.defaultHighlight": {
+      "gutterIcon": true,
+      "foreground": "#fff",
+      "type": "tag"
+    },
+    "todo-tree.highlights.customHighlight": {
+      "TODO":  { "background": "#ffb300", "icon": "checklist",  "iconColour": "#ffb300" },
+      "FIXME": { "background": "#e53935", "icon": "alert",      "iconColour": "#e53935" },
+      "HACK":  { "background": "#ab47bc", "icon": "tools",     "iconColour": "#ab47bc" },
+      "BUG":   { "background": "#e53935", "icon": "bug",       "iconColour": "#e53935" },
+      "PERF":  { "background": "#42a5f5", "icon": "dashboard", "iconColour": "#42a5f5" }
+    },
+
+    // ── Spell Checker ───────────────────────────────────────
+    "cSpell.words": [
+      "Convy", "MediatR", "FluentValidation", "Testcontainers",
+      "NSubstitute", "Koin", "Ktor", "composable", "composables",
+      "coroutine", "coroutines", "kotlinx", "signup", "onboarding",
+      "pgAdmin", "pgdata", "slnx", "CQRS", "Firebase", "SignalR",
+      "multiplatform", "nullable", "kebab", "Guid", "Dto", "DTOs",
+      "serialization", "deserialization", "Kmp", "Gradle", "dotnet",
+      "appsettings", "tfvars", "Terraform", "autofetch"
+    ],
+
+    // ── Error Lens ──────────────────────────────────────────
+    "errorLens.severityFilter": ["error", "warning", "info"],
+
+    // ── File Associations ───────────────────────────────────
+    "files.associations": {
+      "*.slnx": "xml",
+      "*.tfvars": "terraform"
+    },
 
     // ── MCP (preserved from existing settings) ──────────────
     "mcp": {
@@ -259,6 +300,56 @@
         "problemMatcher": "$msCompile",
         "presentation": { "reveal": "always", "panel": "shared" }
       },
+      {
+        "label": "🔷 Backend: Rollback Migration",
+        "type": "shell",
+        "command": "dotnet ef database update ${input:targetMigration} --project src/Convy.Infrastructure --startup-project src/Convy.API",
+        "options": { "cwd": "${workspaceFolder:� Backend}" },
+        "problemMatcher": "$msCompile",
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
+      {
+        "label": "🔷 Backend: Remove Last Migration",
+        "type": "shell",
+        "command": "dotnet ef migrations remove --project src/Convy.Infrastructure --startup-project src/Convy.API",
+        "options": { "cwd": "${workspaceFolder:� Backend}" },
+        "problemMatcher": "$msCompile",
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
+      {
+        "label": "🔷 Backend: Test Domain",
+        "type": "shell",
+        "command": "dotnet test tests/Convy.Domain.Tests --verbosity normal",
+        "options": { "cwd": "${workspaceFolder:� Backend}" },
+        "group": "test",
+        "problemMatcher": "$msCompile",
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
+      {
+        "label": "🔷 Backend: Test Application",
+        "type": "shell",
+        "command": "dotnet test tests/Convy.Application.Tests --verbosity normal",
+        "options": { "cwd": "${workspaceFolder:� Backend}" },
+        "group": "test",
+        "problemMatcher": "$msCompile",
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
+      {
+        "label": "🔷 Backend: Format Check",
+        "type": "shell",
+        "command": "dotnet format --verify-no-changes --verbosity normal",
+        "options": { "cwd": "${workspaceFolder:� Backend}" },
+        "problemMatcher": "$msCompile",
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
+      {
+        "label": "🔷 Backend: Format Fix",
+        "type": "shell",
+        "command": "dotnet format",
+        "options": { "cwd": "${workspaceFolder:� Backend}" },
+        "problemMatcher": "$msCompile",
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
       // ── Mobile ──────────────────────────────────────────
       {
         "label": "📱 Mobile: Build Debug",
@@ -294,6 +385,15 @@
         "problemMatcher": [],
         "presentation": { "reveal": "silent", "panel": "shared" }
       },
+      {
+        "label": "📱 Mobile: Build Release",
+        "type": "shell",
+        "command": ".\\gradlew :composeApp:assembleRelease",
+        "options": { "cwd": "${workspaceFolder:� Mobile}" },
+        "group": "build",
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "shared" }
+      },
       // ── Docker ──────────────────────────────────────────
       {
         "label": "🐳 Docker: Up",
@@ -325,6 +425,22 @@
         "command": "docker-compose logs -f --tail=50",
         "options": { "cwd": "${workspaceFolder:� Docker}" },
         "isBackground": true,
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "dedicated", "group": "infra" }
+      },
+      {
+        "label": "🐳 Docker: Rebuild",
+        "type": "shell",
+        "command": "docker-compose up -d --build",
+        "options": { "cwd": "${workspaceFolder:� Docker}" },
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "dedicated", "group": "infra" }
+      },
+      {
+        "label": "🐳 Docker: Reset Database",
+        "type": "shell",
+        "command": "docker-compose down -v && docker-compose up -d",
+        "options": { "cwd": "${workspaceFolder:� Docker}" },
         "problemMatcher": [],
         "presentation": { "reveal": "always", "panel": "dedicated", "group": "infra" }
       },
@@ -374,6 +490,13 @@
         },
         "problemMatcher": [],
         "presentation": { "reveal": "always" }
+      },
+      {
+        "label": "🚀 Full Stack: Fresh Start",
+        "dependsOn": ["🐳 Docker: Reset Database", "🔷 Backend: Watch Run"],
+        "dependsOrder": "sequence",
+        "problemMatcher": [],
+        "presentation": { "reveal": "always" }
       }
     ],
     "inputs": [
@@ -382,6 +505,12 @@
         "description": "Name for the EF Core migration",
         "type": "promptString",
         "default": "Migration"
+      },
+      {
+        "id": "targetMigration",
+        "description": "Target migration name to rollback to (or '0' for initial state)",
+        "type": "promptString",
+        "default": "0"
       }
     ]
   },
@@ -394,6 +523,19 @@
         "request": "launch",
         "preLaunchTask": "🔷 Backend: Build",
         "program": "${workspaceFolder:� Backend}/src/Convy.API/bin/Debug/net10.0/Convy.API.dll",
+        "args": [],
+        "cwd": "${workspaceFolder:🔷 Backend}/src/Convy.API",
+        "stopAtEntry": false,
+        "env": {
+          "ASPNETCORE_ENVIRONMENT": "Development"
+        },
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "🔷 Backend: Launch API (Skip Build)",
+        "type": "coreclr",
+        "request": "launch",
+        "program": "${workspaceFolder:🔷 Backend}/src/Convy.API/bin/Debug/net10.0/Convy.API.dll",
         "args": [],
         "cwd": "${workspaceFolder:🔷 Backend}/src/Convy.API",
         "stopAtEntry": false,
@@ -444,7 +586,6 @@
       // C# / .NET
       "ms-dotnettools.csharp",
       "ms-dotnettools.csdevkit",
-      "ms-dotnettools.dotnet-interactive-vscode",
 
       // Kotlin / Android
       "fwcd.kotlin",

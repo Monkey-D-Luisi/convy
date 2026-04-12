@@ -1,0 +1,213 @@
+{
+  // ── MVI Contract ─────────────────────────────────────────
+  "MVI State": {
+    "prefix": "mvi-state",
+    "scope": "kotlin",
+    "description": "MVI State data class with standard fields",
+    "body": [
+      "data class ${1:Screen}State(",
+      "    val ${2:items}: List<${3:Item}> = emptyList(),",
+      "    val isLoading: Boolean = false,",
+      "    val error: String? = null,",
+      "    $0",
+      ")"
+    ]
+  },
+  "MVI Intent": {
+    "prefix": "mvi-intent",
+    "scope": "kotlin",
+    "description": "MVI Intent sealed interface with sample actions",
+    "body": [
+      "sealed interface ${1:Screen}Intent {",
+      "    data object Refresh : ${1}Intent",
+      "    data object NavigateBack : ${1}Intent",
+      "    data class ${2:Action}(val ${3:param}: ${4:String}) : ${1}Intent",
+      "    $0",
+      "}"
+    ]
+  },
+  "MVI SideEffect": {
+    "prefix": "mvi-sideeffect",
+    "scope": "kotlin",
+    "description": "MVI SideEffect sealed interface for one-time events",
+    "body": [
+      "sealed interface ${1:Screen}SideEffect {",
+      "    data object NavigateBack : ${1}SideEffect",
+      "    data class ShowError(val message: String) : ${1}SideEffect",
+      "    $0",
+      "}"
+    ]
+  },
+  "MVI Contract": {
+    "prefix": "mvi-contract",
+    "scope": "kotlin",
+    "description": "Full MVI contract file: State + Intent + SideEffect",
+    "body": [
+      "package com.convy.app.ui.screens.${1:feature}",
+      "",
+      "data class ${2:Screen}State(",
+      "    val isLoading: Boolean = false,",
+      "    val error: String? = null,",
+      "    $0",
+      ")",
+      "",
+      "sealed interface ${2}Intent {",
+      "    data object Refresh : ${2}Intent",
+      "    data object NavigateBack : ${2}Intent",
+      "}",
+      "",
+      "sealed interface ${2}SideEffect {",
+      "    data object NavigateBack : ${2}SideEffect",
+      "    data class ShowError(val message: String) : ${2}SideEffect",
+      "}"
+    ]
+  },
+
+  // ── Store ────────────────────────────────────────────────
+  "MVI Store": {
+    "prefix": "mvi-store",
+    "scope": "kotlin",
+    "description": "MVI Store with StateFlow, SharedFlow, and processIntent",
+    "body": [
+      "package com.convy.app.ui.screens.${1:feature}",
+      "",
+      "import kotlinx.coroutines.CoroutineScope",
+      "import kotlinx.coroutines.Dispatchers",
+      "import kotlinx.coroutines.flow.*",
+      "import kotlinx.coroutines.launch",
+      "",
+      "class ${2:Screen}Store(",
+      "    private val ${3:repository}: ${4:Repository},",
+      ") {",
+      "    private val scope = CoroutineScope(Dispatchers.Main)",
+      "    private val _state = MutableStateFlow(${2}State())",
+      "    val state: StateFlow<${2}State> = _state.asStateFlow()",
+      "",
+      "    private val _sideEffects = MutableSharedFlow<${2}SideEffect>()",
+      "    val sideEffects: SharedFlow<${2}SideEffect> = _sideEffects.asSharedFlow()",
+      "",
+      "    init {",
+      "        load()",
+      "    }",
+      "",
+      "    fun processIntent(intent: ${2}Intent) {",
+      "        when (intent) {",
+      "            is ${2}Intent.Refresh -> load()",
+      "            is ${2}Intent.NavigateBack -> scope.launch {",
+      "                _sideEffects.emit(${2}SideEffect.NavigateBack)",
+      "            }",
+      "            $0",
+      "        }",
+      "    }",
+      "",
+      "    private fun load() {",
+      "        _state.update { it.copy(isLoading = true, error = null) }",
+      "        scope.launch {",
+      "            // TODO: Load data from repository",
+      "            _state.update { it.copy(isLoading = false) }",
+      "        }",
+      "    }",
+      "}"
+    ]
+  },
+
+  // ── Compose UI ───────────────────────────────────────────
+  "Compose Screen": {
+    "prefix": "compose-screen",
+    "scope": "kotlin",
+    "description": "Screen composable that wires Store state and side effects",
+    "body": [
+      "package com.convy.app.ui.screens.${1:feature}",
+      "",
+      "import androidx.compose.runtime.Composable",
+      "import androidx.compose.runtime.LaunchedEffect",
+      "import androidx.compose.runtime.collectAsState",
+      "import androidx.compose.runtime.getValue",
+      "",
+      "@Composable",
+      "fun ${2:Screen}Screen(",
+      "    store: ${2}Store,",
+      "    onNavigateBack: () -> Unit,",
+      ") {",
+      "    val state by store.state.collectAsState()",
+      "",
+      "    LaunchedEffect(Unit) {",
+      "        store.sideEffects.collect { effect ->",
+      "            when (effect) {",
+      "                is ${2}SideEffect.NavigateBack -> onNavigateBack()",
+      "                is ${2}SideEffect.ShowError -> {}",
+      "            }",
+      "        }",
+      "    }",
+      "",
+      "    ${2}Content(state = state, onIntent = store::processIntent)",
+      "}"
+    ]
+  },
+  "Compose Content": {
+    "prefix": "compose-content",
+    "scope": "kotlin",
+    "description": "Content composable with Scaffold, TopAppBar, and loading/error states",
+    "body": [
+      "@OptIn(ExperimentalMaterial3Api::class)",
+      "@Composable",
+      "fun ${1:Screen}Content(",
+      "    state: ${1}State,",
+      "    onIntent: (${1}Intent) -> Unit,",
+      ") {",
+      "    Scaffold(",
+      "        topBar = {",
+      "            TopAppBar(",
+      "                title = { Text(\"${2:Title}\") },",
+      "                navigationIcon = {",
+      "                    IconButton(",
+      "                        onClick = { onIntent(${1}Intent.NavigateBack) },",
+      "                        modifier = Modifier.testTag(\"Back\"),",
+      "                    ) {",
+      "                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = \"Back\")",
+      "                    }",
+      "                },",
+      "            )",
+      "        },",
+      "    ) { padding ->",
+      "        when {",
+      "            state.isLoading -> LoadingContent(modifier = Modifier.padding(padding))",
+      "            state.error != null -> ErrorContent(",
+      "                message = state.error,",
+      "                onRetry = { onIntent(${1}Intent.Refresh) },",
+      "                modifier = Modifier.padding(padding),",
+      "            )",
+      "            else -> {",
+      "                $0",
+      "            }",
+      "        }",
+      "    }",
+      "}"
+    ]
+  },
+
+  // ── DI ───────────────────────────────────────────────────
+  "Koin Module": {
+    "prefix": "koin-module",
+    "scope": "kotlin",
+    "description": "Koin DI module with factory registration",
+    "body": [
+      "import org.koin.dsl.module",
+      "",
+      "val ${1:feature}Module = module {",
+      "    factory { ${2:Store}(get()) }",
+      "    $0",
+      "}"
+    ]
+  },
+  "Koin Factory with Params": {
+    "prefix": "koin-factory-params",
+    "scope": "kotlin",
+    "description": "Koin factory with parametersOf injection",
+    "body": [
+      "factory { (${1:param}: ${2:String}) ->",
+      "    ${3:Store}(${1}, get())",
+      "}"
+    ]
+  }
+}
