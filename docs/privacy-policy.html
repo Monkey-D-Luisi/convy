@@ -1,58 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Convy — Privacy Policy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&family=Be+Vietnam+Pro:wght@400;600&display=swap"
+        rel="stylesheet">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #333; }
-        h1 { font-size: 1.8rem; }
-        h2 { font-size: 1.3rem; margin-top: 2rem; }
-        p, li { font-size: 0.95rem; }
-        .date { color: #666; font-size: 0.85rem; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8f9fa;
+            color: #2d3335;
+            line-height: 1.6;
+        }
+
+        .brand-bar {
+            background: #006d4a;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-bar span {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 700;
+            font-size: 20px;
+            color: #fff;
+            letter-spacing: -0.02em;
+        }
+
+        .content {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 32px 24px 0;
+        }
+
+        h1 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 700;
+            font-size: 28px;
+            color: #2d3335;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 600;
+            font-size: 18px;
+            color: #006d4a;
+            margin-top: 28px;
+            margin-bottom: 8px;
+        }
+
+        p,
+        li {
+            font-size: 15px;
+            line-height: 1.65;
+        }
+
+        .date {
+            color: #767c7e;
+            font-size: 13px;
+            margin-top: 4px;
+            margin-bottom: 24px;
+        }
+
+        .intro {
+            margin-bottom: 4px;
+        }
+
+        ul {
+            padding-left: 20px;
+            margin-top: 4px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        a {
+            color: #006d4a;
+            text-decoration: underline;
+        }
+
+        a:hover {
+            color: #005f40;
+        }
+
+        footer {
+            margin-top: 48px;
+            background: #f1f4f5;
+            padding: 24px;
+            text-align: center;
+            font-size: 13px;
+            color: #767c7e;
+        }
     </style>
 </head>
+
 <body>
-    <h1>Privacy Policy</h1>
-    <p class="date">Last updated: April 12, 2026</p>
+    <div class="brand-bar"><span>Convy</span></div>
+    <div class="content">
+        <h1>Privacy Policy</h1>
+        <p class="date">Last updated: April 12, 2026</p>
 
-    <p><strong>Convy</strong> ("the App") is a household coordination app developed by Luis S. ("we", "us"). This policy explains what data the App collects and how it is used.</p>
+        <p class="intro"><strong>Convy</strong> ("the App") is a household coordination app developed by Luis S. ("we",
+            "us"). This policy
+            explains what data the App collects and how it is used.</p>
 
-    <h2>1. Data We Collect</h2>
-    <ul>
-        <li><strong>Account information:</strong> display name, email address, and authentication credentials managed by Firebase Authentication.</li>
-        <li><strong>Household data:</strong> lists, items, and activity you create within your household. This data is stored on our servers so household members can collaborate in real time.</li>
-        <li><strong>Audio recordings:</strong> when you use the voice-input feature the App temporarily records audio through your device microphone. Audio is sent to a server for transcription and is <strong>not stored</strong> after processing.</li>
-        <li><strong>Push-notification tokens:</strong> a device token is stored to deliver notifications about household activity.</li>
-    </ul>
+        <h2>1. Data We Collect</h2>
+        <ul>
+            <li><strong>Account information:</strong> display name, email address, and authentication credentials
+                managed by
+                Firebase Authentication.</li>
+            <li><strong>Household data:</strong> lists, items, and activity you create within your household. This data
+                is
+                stored on our servers so household members can collaborate in real time.</li>
+            <li><strong>Audio recordings:</strong> when you use the voice-input feature the App temporarily records
+                audio
+                through your device microphone. Audio is sent to a server for transcription and is <strong>not
+                    stored</strong> after processing.</li>
+            <li><strong>Push-notification tokens:</strong> a device token is stored to deliver notifications about
+                household
+                activity.</li>
+        </ul>
 
-    <h2>2. How We Use Your Data</h2>
-    <ul>
-        <li>To provide and improve the App's core features (shared lists, real-time sync, notifications).</li>
-        <li>To transcribe voice input into list items (audio is processed and immediately discarded).</li>
-        <li>To authenticate you and secure your account.</li>
-    </ul>
+        <h2>2. How We Use Your Data</h2>
+        <ul>
+            <li>To provide and improve the App's core features (shared lists, real-time sync, notifications).</li>
+            <li>To transcribe voice input into list items (audio is processed and immediately discarded).</li>
+            <li>To authenticate you and secure your account.</li>
+        </ul>
 
-    <h2>3. Third-Party Services</h2>
-    <ul>
-        <li><strong>Firebase (Google):</strong> authentication, cloud messaging. <a href="https://firebase.google.com/support/privacy">Firebase Privacy</a>.</li>
-        <li><strong>OpenAI:</strong> audio transcription and item parsing. <a href="https://openai.com/policies/privacy-policy">OpenAI Privacy</a>.</li>
-        <li><strong>Google Cloud Platform:</strong> hosting and database. <a href="https://cloud.google.com/terms/cloud-privacy-notice">GCP Privacy</a>.</li>
-    </ul>
+        <h2>3. Third-Party Services</h2>
+        <ul>
+            <li><strong>Firebase (Google):</strong> authentication, cloud messaging. <a
+                    href="https://firebase.google.com/support/privacy">Firebase Privacy</a>.</li>
+            <li><strong>OpenAI:</strong> audio transcription and item parsing. <a
+                    href="https://openai.com/policies/privacy-policy">OpenAI Privacy</a>.</li>
+            <li><strong>Google Cloud Platform:</strong> hosting and database. <a
+                    href="https://cloud.google.com/terms/cloud-privacy-notice">GCP Privacy</a>.</li>
+        </ul>
 
-    <h2>4. Data Retention</h2>
-    <p>Account and household data is retained while your account is active. Audio recordings are processed in memory and never persisted. You can delete your account and associated data by contacting us.</p>
+        <h2>4. Data Retention</h2>
+        <p>Account and household data is retained while your account is active. Audio recordings are processed in memory
+            and
+            never persisted. You can delete your account and associated data by contacting us.</p>
 
-    <h2>5. Microphone Permission</h2>
-    <p>The App requests microphone access <strong>only</strong> when you tap the voice-input button. The permission is optional — the App is fully functional without it. Audio is used solely for transcription and is not stored, shared, or used for advertising.</p>
+        <h2>5. Microphone Permission</h2>
+        <p>The App requests microphone access <strong>only</strong> when you tap the voice-input button. The permission
+            is
+            optional — the App is fully functional without it. Audio is used solely for transcription and is not stored,
+            shared, or used for advertising.</p>
 
-    <h2>6. Children's Privacy</h2>
-    <p>The App is not directed at children under 13. We do not knowingly collect data from children.</p>
+        <h2>6. Children's Privacy</h2>
+        <p>The App is not directed at children under 13. We do not knowingly collect data from children.</p>
 
-    <h2>7. Changes to This Policy</h2>
-    <p>We may update this policy from time to time. The updated version will be indicated by the "Last updated" date above.</p>
+        <h2>7. Changes to This Policy</h2>
+        <p>We may update this policy from time to time. The updated version will be indicated by the "Last updated" date
+            above.</p>
 
-    <h2>8. Contact</h2>
-    <p>If you have questions about this policy, contact us at: <strong>convy.app.privacy@gmail.com</strong></p>
+        <h2>8. Contact</h2>
+        <p>If you have questions about this policy, contact us at: <a
+                href="mailto:convy.app.privacy@gmail.com">convy.app.privacy@gmail.com</a></p>
+    </div>
+    <footer>&copy; 2026 Convy</footer>
 </body>
+
 </html>
