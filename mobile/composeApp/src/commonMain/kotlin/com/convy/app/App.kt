@@ -37,6 +37,7 @@ import com.convy.app.ui.screens.settings.SettingsStore
 import com.convy.app.ui.theme.ConvyTheme
 import com.convy.shared.domain.repository.AuthRepository
 import com.convy.shared.domain.repository.HouseholdRepository
+import com.convy.shared.domain.repository.UserRepository
 import com.convy.shared.data.remote.DeviceTokenManager
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
@@ -48,6 +49,7 @@ fun App() {
     ConvyTheme {
         val navigator = koinInject<AppNavigator>()
         val authRepository = koinInject<AuthRepository>()
+        val userRepository = koinInject<UserRepository>()
         val householdRepository = koinInject<HouseholdRepository>()
         val deviceTokenManager = koinInject<DeviceTokenManager>()
         val currentRoute by navigator.currentRoute.collectAsState()
@@ -56,6 +58,8 @@ fun App() {
         LaunchedEffect(Unit) {
             val user = authRepository.getCurrentUser()
             if (user != null) {
+                // Ensure user is registered in the backend (idempotent)
+                userRepository.register(user.id, user.displayName, user.email)
                 launch { deviceTokenManager.registerCurrentToken() }
                 val households = householdRepository.getMyHouseholds().getOrNull()
                 if (!households.isNullOrEmpty()) {

@@ -33,6 +33,9 @@ public class JoinHouseholdCommandHandler : IRequestHandler<JoinHouseholdCommand,
 
     public async Task<Result<Guid>> Handle(JoinHouseholdCommand request, CancellationToken cancellationToken)
     {
+        if (_currentUser.UserId == Guid.Empty)
+            return Result<Guid>.Failure(Error.Validation("User account not found. Please sign in again."));
+
         var invite = await _inviteRepository.GetByCodeAsync(request.InviteCode, cancellationToken);
 
         if (invite is null)
