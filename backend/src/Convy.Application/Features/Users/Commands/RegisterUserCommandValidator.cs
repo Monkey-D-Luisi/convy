@@ -6,10 +6,6 @@ public class RegisterUserCommandValidator : AbstractValidator<RegisterUserComman
 {
     public RegisterUserCommandValidator()
     {
-        RuleFor(x => x.FirebaseUid)
-            .NotEmpty().WithMessage("Firebase UID is required.")
-            .MaximumLength(128).WithMessage("Firebase UID is too long.");
-
         RuleFor(x => x.DisplayName)
             .NotEmpty().WithMessage("Display name is required.")
             .MaximumLength(100).WithMessage("Display name must not exceed 100 characters.");

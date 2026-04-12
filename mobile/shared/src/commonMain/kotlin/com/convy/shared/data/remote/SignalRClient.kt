@@ -48,7 +48,7 @@ class SignalRClient(
                         protocol = baseProtocol
                         host = baseHost
                         port = basePort
-                        path("hub", "household", "negotiate")
+                        path("hubs", "household", "negotiate")
                         parameter("negotiateVersion", "1")
                     }
                     header("Authorization", "Bearer $token")
@@ -64,7 +64,7 @@ class SignalRClient(
                             protocol = wsProtocol
                             host = baseHost
                             port = basePort
-                            path("hub", "household")
+                            path("hubs", "household")
                             parameter("access_token", token)
                             if (connectionToken != null) {
                                 parameter("id", connectionToken)

@@ -46,13 +46,13 @@ public class GetItemHistoryQueryHandlerTests
         _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>())
             .Returns(household);
 
-        var log = new ActivityLog(household.Id, ActivityEntityType.Item, item.Id, ActivityActionType.Created, _userId);
+        var user = new User("firebase-uid", "Test User", "test@example.com");
+        var log = new ActivityLog(household.Id, ActivityEntityType.Item, item.Id, ActivityActionType.Created, user.Id);
         _activityRepository.GetByEntityIdAsync(item.Id, 50, Arg.Any<CancellationToken>())
             .Returns(new List<ActivityLog> { log }.AsReadOnly());
 
-        var user = new User("firebase-uid", "Test User", "test@example.com");
-        _userRepository.GetByIdAsync(_userId, Arg.Any<CancellationToken>())
-            .Returns(user);
+        _userRepository.GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<User> { user }.AsReadOnly());
 
         var query = new GetItemHistoryQuery(item.Id);
 

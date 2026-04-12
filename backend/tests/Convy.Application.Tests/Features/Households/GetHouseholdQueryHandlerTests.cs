@@ -26,13 +26,14 @@ public class GetHouseholdQueryHandlerTests
     public async Task Handle_WithExistingHousehold_ReturnsHouseholdDetail()
     {
         // Arrange
-        var household = new Household("Test", _userId);
         var user = new User("firebase_uid", "Test User", "test@test.com");
+        var household = new Household("Test", user.Id);
+        _currentUser.UserId.Returns(user.Id);
 
         _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>())
             .Returns(household);
-        _userRepository.GetByIdAsync(_userId, Arg.Any<CancellationToken>())
-            .Returns(user);
+        _userRepository.GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<User> { user }.AsReadOnly());
 
         var query = new GetHouseholdQuery(household.Id);
 

@@ -1,3 +1,4 @@
+using Convy.Application.Common.Interfaces;
 using Convy.Application.Common.Models;
 using Convy.Application.Features.Users.Commands;
 using Convy.Application.Features.Users.DTOs;
@@ -16,9 +17,10 @@ public static class UserEndpoints
 
         group.MapPost("/register", [Authorize] async (
             RegisterUserRequest request,
-            IMediator mediator) =>
+            IMediator mediator,
+            ICurrentUserService currentUser) =>
         {
-            var command = new RegisterUserCommand(request.FirebaseUid, request.DisplayName, request.Email);
+            var command = new RegisterUserCommand(currentUser.FirebaseUid, request.DisplayName, request.Email);
             var result = await mediator.Send(command);
 
             return result.IsSuccess
@@ -46,4 +48,4 @@ public static class UserEndpoints
     };
 }
 
-public record RegisterUserRequest(string FirebaseUid, string DisplayName, string Email);
+public record RegisterUserRequest(string DisplayName, string Email);

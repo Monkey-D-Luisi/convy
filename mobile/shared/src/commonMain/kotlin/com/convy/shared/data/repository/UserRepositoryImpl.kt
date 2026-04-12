@@ -13,7 +13,7 @@ class UserRepositoryImpl(
     override suspend fun register(firebaseUid: String, displayName: String, email: String): Result<User> =
         runCatching {
             val response = api.registerUser(
-                RegisterUserRequest(firebaseUid, displayName, email)
+                RegisterUserRequest(displayName, email)
             )
             response.toDomain()
         }

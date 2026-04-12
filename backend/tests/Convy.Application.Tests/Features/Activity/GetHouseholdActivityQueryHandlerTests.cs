@@ -36,13 +36,14 @@ public class GetHouseholdActivityQueryHandlerTests
         _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>())
             .Returns(household);
 
-        var log1 = new ActivityLog(household.Id, ActivityEntityType.Item, Guid.NewGuid(), ActivityActionType.Created, _userId);
-        var log2 = new ActivityLog(household.Id, ActivityEntityType.List, Guid.NewGuid(), ActivityActionType.Updated, _userId);
+        var user = new User("firebase-uid", "Test User", "test@example.com");
+        var log1 = new ActivityLog(household.Id, ActivityEntityType.Item, Guid.NewGuid(), ActivityActionType.Created, user.Id);
+        var log2 = new ActivityLog(household.Id, ActivityEntityType.List, Guid.NewGuid(), ActivityActionType.Updated, user.Id);
         _activityRepository.GetByHouseholdIdAsync(household.Id, 50, Arg.Any<DateTime?>(), Arg.Any<CancellationToken>())
             .Returns(new List<ActivityLog> { log1, log2 }.AsReadOnly());
 
-        var user = new User("firebase-uid", "Test User", "test@example.com");
-        _userRepository.GetByIdAsync(_userId, Arg.Any<CancellationToken>()).Returns(user);
+        _userRepository.GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<User> { user }.AsReadOnly());
 
         var query = new GetHouseholdActivityQuery(household.Id);
 
@@ -127,8 +128,8 @@ public class GetHouseholdActivityQueryHandlerTests
         _activityRepository.GetByHouseholdIdAsync(household.Id, 50, Arg.Any<DateTime?>(), Arg.Any<CancellationToken>())
             .Returns(new List<ActivityLog> { log }.AsReadOnly());
 
-        _userRepository.GetByIdAsync(unknownPerformerId, Arg.Any<CancellationToken>())
-            .Returns((User?)null);
+        _userRepository.GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<User>().AsReadOnly());
 
         var query = new GetHouseholdActivityQuery(household.Id);
 

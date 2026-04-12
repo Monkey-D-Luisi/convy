@@ -16,22 +16,6 @@ public class RegisterUserCommandValidatorTests
     }
 
     [Fact]
-    public void Validate_WithEmptyFirebaseUid_FailsValidation()
-    {
-        var command = new RegisterUserCommand("", "John Doe", "john@example.com");
-        var result = _validator.TestValidate(command);
-        result.ShouldHaveValidationErrorFor(x => x.FirebaseUid);
-    }
-
-    [Fact]
-    public void Validate_WithLongFirebaseUid_FailsValidation()
-    {
-        var command = new RegisterUserCommand(new string('a', 129), "John Doe", "john@example.com");
-        var result = _validator.TestValidate(command);
-        result.ShouldHaveValidationErrorFor(x => x.FirebaseUid);
-    }
-
-    [Fact]
     public void Validate_WithEmptyDisplayName_FailsValidation()
     {
         var command = new RegisterUserCommand("firebase-uid-123", "", "john@example.com");

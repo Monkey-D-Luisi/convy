@@ -5,7 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class RegisterUserRequest(
-    @SerialName("firebaseUid") val firebaseUid: String,
     @SerialName("displayName") val displayName: String,
     @SerialName("email") val email: String,
 )

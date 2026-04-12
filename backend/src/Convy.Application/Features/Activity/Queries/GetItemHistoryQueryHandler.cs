@@ -48,12 +48,8 @@ public class GetItemHistoryQueryHandler : IRequestHandler<GetItemHistoryQuery, R
         var logs = await _activityRepository.GetByEntityIdAsync(request.ItemId, 50, cancellationToken);
 
         var performerIds = logs.Select(l => l.PerformedBy).Distinct().ToList();
-        var users = new Dictionary<Guid, string>();
-        foreach (var userId in performerIds)
-        {
-            var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
-            users[userId] = user?.DisplayName ?? "Unknown";
-        }
+        var users = (await _userRepository.GetByIdsAsync(performerIds, cancellationToken))
+            .ToDictionary(u => u.Id, u => u.DisplayName);
 
         var dtos = logs.Select(log => new ActivityLogDto(
             log.Id,

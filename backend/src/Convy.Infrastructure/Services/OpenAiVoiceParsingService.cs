@@ -71,7 +71,7 @@ public class OpenAiVoiceParsingService : IAiVoiceParsingService
         CancellationToken cancellationToken = default)
     {
         var transcription = await TranscribeAsync(audio, fileName, cancellationToken);
-        _logger.LogInformation("Transcription result: {Text}", transcription);
+        _logger.LogDebug("Transcription result: {Text}", transcription);
 
         var existingItems = await _itemRepository.GetFrequentTitlesAsync(householdId, null, 50, cancellationToken);
 

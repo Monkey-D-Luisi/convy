@@ -32,20 +32,19 @@ public class GetHouseholdQueryHandler : IRequestHandler<GetHouseholdQuery, Resul
         if (!household.IsMember(_currentUser.UserId))
             return Result<HouseholdDetailDto>.Failure(Error.Forbidden("You are not a member of this household."));
 
-        var memberDtos = new List<HouseholdMemberDto>();
-        foreach (var membership in household.Memberships)
-        {
-            var user = await _userRepository.GetByIdAsync(membership.UserId, cancellationToken);
-            if (user is not null)
-            {
-                memberDtos.Add(new HouseholdMemberDto(
-                    user.Id,
-                    user.DisplayName,
-                    user.Email,
-                    membership.Role,
-                    membership.JoinedAt));
-            }
-        }
+        var memberUserIds = household.Memberships.Select(m => m.UserId).ToList();
+        var users = (await _userRepository.GetByIdsAsync(memberUserIds, cancellationToken))
+            .ToDictionary(u => u.Id);
+
+        var memberDtos = household.Memberships
+            .Where(m => users.ContainsKey(m.UserId))
+            .Select(m => new HouseholdMemberDto(
+                users[m.UserId].Id,
+                users[m.UserId].DisplayName,
+                users[m.UserId].Email,
+                m.Role,
+                m.JoinedAt))
+            .ToList();
 
         var dto = new HouseholdDetailDto(
             household.Id,
