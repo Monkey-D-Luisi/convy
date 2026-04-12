@@ -22,6 +22,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,6 +36,7 @@ import com.convy.app.ui.components.ItemCard
 import com.convy.app.ui.components.LoadingContent
 import com.convy.app.ui.components.ShoppingModeItem
 import com.convy.app.ui.components.VoiceInputSheet
+import com.convy.app.util.rememberRecordAudioPermissionState
 
 @Composable
 fun ListDetailScreen(
@@ -42,6 +46,16 @@ fun ListDetailScreen(
     onNavigateBack: () -> Unit,
 ) {
     val state by store.state.collectAsState()
+    val permissionState = rememberRecordAudioPermissionState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    var pendingRecord by remember { mutableStateOf(false) }
+
+    LaunchedEffect(permissionState.isGranted) {
+        if (permissionState.isGranted && pendingRecord) {
+            pendingRecord = false
+            store.processIntent(ListDetailIntent.StartRecording)
+        }
+    }
 
     LaunchedEffect(Unit) {
         store.sideEffects.collect { effect ->
@@ -51,7 +65,9 @@ fun ListDetailScreen(
                 is ListDetailSideEffect.NavigateToEditItem ->
                     onNavigateToEditItem(effect.householdId, effect.listId, effect.itemId)
                 is ListDetailSideEffect.NavigateBack -> onNavigateBack()
-                is ListDetailSideEffect.ShowError -> {}
+                is ListDetailSideEffect.ShowError -> {
+                    snackbarHostState.showSnackbar(effect.message)
+                }
             }
         }
     }
@@ -66,7 +82,23 @@ fun ListDetailScreen(
         )
     }
 
-    ListDetailContent(state = state, onIntent = store::processIntent)
+    ListDetailContent(
+        state = state,
+        onIntent = { intent ->
+            when (intent) {
+                is ListDetailIntent.StartRecording -> {
+                    if (permissionState.isGranted) {
+                        store.processIntent(intent)
+                    } else {
+                        pendingRecord = true
+                        permissionState.launchRequest()
+                    }
+                }
+                else -> store.processIntent(intent)
+            }
+        },
+        snackbarHostState = snackbarHostState,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,6 +106,7 @@ fun ListDetailScreen(
 fun ListDetailContent(
     state: ListDetailState,
     onIntent: (ListDetailIntent) -> Unit,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     Scaffold(
         topBar = {
@@ -159,6 +192,7 @@ fun ListDetailContent(
                 Icon(Icons.Default.Add, contentDescription = "Add item")
             }
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Box(
             modifier = Modifier

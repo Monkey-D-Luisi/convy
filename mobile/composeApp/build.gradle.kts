@@ -37,6 +37,7 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(compose.preview)
+            implementation(libs.activity.compose)
         }
     }
 }
