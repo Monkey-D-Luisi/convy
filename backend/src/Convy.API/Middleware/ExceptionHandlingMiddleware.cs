@@ -38,6 +38,22 @@ public class ExceptionHandlingMiddleware
 
             await context.Response.WriteAsync(JsonSerializer.Serialize(problem));
         }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Bad request: {Message}", ex.Message);
+            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            context.Response.ContentType = "application/problem+json";
+
+            var problem = new
+            {
+                type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                title = "Bad Request",
+                status = 400,
+                detail = ex.Message
+            };
+
+            await context.Response.WriteAsync(JsonSerializer.Serialize(problem));
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception occurred");
