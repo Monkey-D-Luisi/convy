@@ -10,9 +10,9 @@ import com.convy.shared.data.repository.*
 import com.convy.shared.domain.repository.*
 import io.ktor.client.*
 import io.ktor.client.plugins.*
-import io.ktor.client.plugins.auth.*
-import io.ktor.client.plugins.auth.providers.*
+import io.ktor.client.plugins.api.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -36,18 +36,14 @@ val networkModule = module {
             install(ContentNegotiation) {
                 json(get<Json>())
             }
-            install(Auth) {
-                bearer {
-                    loadTokens {
-                        val token = tokenProvider.getToken()
-                        if (token != null) BearerTokens(token, "") else null
-                    }
-                    refreshTokens {
-                        val token = tokenProvider.getToken()
-                        if (token != null) BearerTokens(token, "") else null
+            install(createClientPlugin("FirebaseAuth") {
+                onRequest { request, _ ->
+                    val token = tokenProvider.getToken()
+                    if (token != null) {
+                        request.bearerAuth(token)
                     }
                 }
-            }
+            })
             HttpResponseValidator {
                 validateResponse { response ->
                     if (!response.status.isSuccess()) {
