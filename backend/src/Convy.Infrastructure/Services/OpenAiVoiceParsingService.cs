@@ -70,8 +70,11 @@ public class OpenAiVoiceParsingService : IAiVoiceParsingService
         Guid householdId,
         CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("Voice parsing request: file={FileName}, streamLength={Length}",
+            fileName, audio.CanSeek ? audio.Length : -1);
+
         var transcription = await TranscribeAsync(audio, fileName, cancellationToken);
-        _logger.LogDebug("Transcription result: {Text}", transcription);
+        _logger.LogInformation("Transcription result: {Text}", transcription);
 
         var existingItems = await _itemRepository.GetFrequentTitlesAsync(householdId, null, 50, cancellationToken);
 
@@ -85,8 +88,6 @@ public class OpenAiVoiceParsingService : IAiVoiceParsingService
         var options = new AudioTranscriptionOptions
         {
             ResponseFormat = AudioTranscriptionFormat.Text,
-            Language = "es",
-            Prompt = "Lista de compras, supermercado, productos",
         };
 
         var result = await _audioClient.TranscribeAudioAsync(audio, fileName, options, cancellationToken);

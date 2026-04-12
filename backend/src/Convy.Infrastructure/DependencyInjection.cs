@@ -39,7 +39,7 @@ public static class DependencyInjection
 
     private static void AddOpenAiServices(IServiceCollection services, IConfiguration configuration)
     {
-        var apiKey = configuration["OPENAI_API_KEY"]
+        var apiKey = configuration["OpenAI:ApiKey"]
                      ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
 
         if (string.IsNullOrWhiteSpace(apiKey))
