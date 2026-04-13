@@ -3,6 +3,7 @@ using Convy.Application.Common.Models;
 using Convy.Domain.Repositories;
 using Convy.Domain.ValueObjects;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Convy.Application.Features.Invites.Commands;
 
@@ -14,6 +15,7 @@ public class JoinHouseholdCommandHandler : IRequestHandler<JoinHouseholdCommand,
     private readonly ICurrentUserService _currentUser;
     private readonly IHouseholdNotificationService _notifications;
     private readonly IActivityLogger _activityLogger;
+    private readonly ILogger<JoinHouseholdCommandHandler> _logger;
 
     public JoinHouseholdCommandHandler(
         IInviteRepository inviteRepository,
@@ -21,7 +23,8 @@ public class JoinHouseholdCommandHandler : IRequestHandler<JoinHouseholdCommand,
         IUserRepository userRepository,
         ICurrentUserService currentUser,
         IHouseholdNotificationService notifications,
-        IActivityLogger activityLogger)
+        IActivityLogger activityLogger,
+        ILogger<JoinHouseholdCommandHandler> logger)
     {
         _inviteRepository = inviteRepository;
         _householdRepository = householdRepository;
@@ -29,6 +32,7 @@ public class JoinHouseholdCommandHandler : IRequestHandler<JoinHouseholdCommand,
         _currentUser = currentUser;
         _notifications = notifications;
         _activityLogger = activityLogger;
+        _logger = logger;
     }
 
     public async Task<Result<Guid>> Handle(JoinHouseholdCommand request, CancellationToken cancellationToken)
@@ -56,14 +60,17 @@ public class JoinHouseholdCommandHandler : IRequestHandler<JoinHouseholdCommand,
         if (household.IsMember(_currentUser.UserId))
             return Result<Guid>.Failure(Error.Conflict("You are already a member of this household."));
 
-        household.AddMember(_currentUser.UserId);
-        invite.Use(_currentUser.UserId);
+        _logger.LogInformation(
+            "Adding member {UserId} to household {HouseholdId} via invite {InviteId}",
+            _currentUser.UserId, household.Id, invite.Id);
 
+        household.AddMember(_currentUser.UserId);
         await _householdRepository.SaveChangesAsync(cancellationToken);
+
+        invite.Use(_currentUser.UserId);
         await _inviteRepository.SaveChangesAsync(cancellationToken);
 
-        var user = await _userRepository.GetByIdAsync(_currentUser.UserId, cancellationToken);
-        var displayName = user?.DisplayName ?? _currentUser.UserId.ToString();
+        var displayName = currentUser.DisplayName ?? _currentUser.UserId.ToString();
         await _notifications.NotifyMemberJoined(household.Id, _currentUser.UserId.ToString(), displayName, cancellationToken);
         await _activityLogger.LogAsync(household.Id, ActivityEntityType.Household, household.Id, ActivityActionType.MemberJoined, _currentUser.UserId, cancellationToken: cancellationToken);
 

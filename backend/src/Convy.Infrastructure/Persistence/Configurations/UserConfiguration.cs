@@ -11,7 +11,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.ToTable("users");
 
         builder.HasKey(u => u.Id);
-        builder.Property(u => u.Id).HasColumnName("id");
+        builder.Property(u => u.Id).HasColumnName("id").ValueGeneratedNever();
 
         builder.Property(u => u.FirebaseUid)
             .HasColumnName("firebase_uid")

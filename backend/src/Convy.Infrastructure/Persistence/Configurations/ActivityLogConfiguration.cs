@@ -12,7 +12,7 @@ public class ActivityLogConfiguration : IEntityTypeConfiguration<ActivityLog>
         builder.ToTable("activity_logs");
 
         builder.HasKey(a => a.Id);
-        builder.Property(a => a.Id).HasColumnName("id");
+        builder.Property(a => a.Id).HasColumnName("id").ValueGeneratedNever();
 
         builder.Property(a => a.HouseholdId)
             .HasColumnName("household_id")

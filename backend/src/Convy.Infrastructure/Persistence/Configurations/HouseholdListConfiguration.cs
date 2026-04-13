@@ -12,7 +12,7 @@ public class HouseholdListConfiguration : IEntityTypeConfiguration<HouseholdList
         builder.ToTable("household_lists");
 
         builder.HasKey(l => l.Id);
-        builder.Property(l => l.Id).HasColumnName("id");
+        builder.Property(l => l.Id).HasColumnName("id").ValueGeneratedNever();
 
         builder.Property(l => l.Name)
             .HasColumnName("name")

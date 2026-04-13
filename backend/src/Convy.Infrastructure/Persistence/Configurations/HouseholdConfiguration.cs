@@ -11,7 +11,7 @@ public class HouseholdConfiguration : IEntityTypeConfiguration<Household>
         builder.ToTable("households");
 
         builder.HasKey(h => h.Id);
-        builder.Property(h => h.Id).HasColumnName("id");
+        builder.Property(h => h.Id).HasColumnName("id").ValueGeneratedNever();
 
         builder.Property(h => h.Name)
             .HasColumnName("name")

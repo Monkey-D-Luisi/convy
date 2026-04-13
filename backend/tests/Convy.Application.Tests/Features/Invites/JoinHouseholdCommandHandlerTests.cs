@@ -3,6 +3,7 @@ using Convy.Application.Features.Invites.Commands;
 using Convy.Domain.Entities;
 using Convy.Domain.Repositories;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 
 namespace Convy.Application.Tests.Features.Invites;
@@ -15,6 +16,7 @@ public class JoinHouseholdCommandHandlerTests
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
     private readonly IHouseholdNotificationService _notifications = Substitute.For<IHouseholdNotificationService>();
     private readonly IActivityLogger _activityLogger = Substitute.For<IActivityLogger>();
+    private readonly ILogger<JoinHouseholdCommandHandler> _logger = Substitute.For<ILogger<JoinHouseholdCommandHandler>>();
     private readonly JoinHouseholdCommandHandler _handler;
 
     private readonly Guid _userId = Guid.NewGuid();
@@ -24,7 +26,7 @@ public class JoinHouseholdCommandHandlerTests
         _currentUser.UserId.Returns(_userId);
         _userRepository.GetByIdAsync(_userId, Arg.Any<CancellationToken>())
             .Returns(new User("firebase-uid", "Test User", "test@example.com"));
-        _handler = new JoinHouseholdCommandHandler(_inviteRepository, _householdRepository, _userRepository, _currentUser, _notifications, _activityLogger);
+        _handler = new JoinHouseholdCommandHandler(_inviteRepository, _householdRepository, _userRepository, _currentUser, _notifications, _activityLogger, _logger);
     }
 
     [Fact]

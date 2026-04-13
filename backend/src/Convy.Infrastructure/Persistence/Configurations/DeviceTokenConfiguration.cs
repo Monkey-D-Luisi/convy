@@ -11,7 +11,7 @@ public class DeviceTokenConfiguration : IEntityTypeConfiguration<DeviceToken>
         builder.ToTable("device_tokens");
 
         builder.HasKey(d => d.Id);
-        builder.Property(d => d.Id).HasColumnName("id");
+        builder.Property(d => d.Id).HasColumnName("id").ValueGeneratedNever();
 
         builder.Property(d => d.UserId)
             .HasColumnName("user_id")

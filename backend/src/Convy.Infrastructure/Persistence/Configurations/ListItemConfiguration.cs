@@ -11,7 +11,7 @@ public class ListItemConfiguration : IEntityTypeConfiguration<ListItem>
         builder.ToTable("list_items");
 
         builder.HasKey(i => i.Id);
-        builder.Property(i => i.Id).HasColumnName("id");
+        builder.Property(i => i.Id).HasColumnName("id").ValueGeneratedNever();
 
         builder.Property(i => i.Title)
             .HasColumnName("title")

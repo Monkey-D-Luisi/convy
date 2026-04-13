@@ -11,7 +11,7 @@ public class InviteConfiguration : IEntityTypeConfiguration<Invite>
         builder.ToTable("invites");
 
         builder.HasKey(i => i.Id);
-        builder.Property(i => i.Id).HasColumnName("id");
+        builder.Property(i => i.Id).HasColumnName("id").ValueGeneratedNever();
 
         builder.Property(i => i.HouseholdId)
             .HasColumnName("household_id")
