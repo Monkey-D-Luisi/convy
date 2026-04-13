@@ -28,6 +28,21 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
                 existing.CreatedAt));
         }
 
+        // Firebase UID not found — check if email already exists (Firebase account was recreated)
+        var existingByEmail = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
+
+        if (existingByEmail is not null)
+        {
+            existingByEmail.UpdateFirebaseUid(request.FirebaseUid);
+            await _userRepository.SaveChangesAsync(cancellationToken);
+
+            return Result<UserDto>.Success(new UserDto(
+                existingByEmail.Id,
+                existingByEmail.DisplayName,
+                existingByEmail.Email,
+                existingByEmail.CreatedAt));
+        }
+
         var user = new User(request.FirebaseUid, request.DisplayName, request.Email);
 
         await _userRepository.AddAsync(user, cancellationToken);

@@ -36,4 +36,12 @@ public class User : Entity
 
         DisplayName = displayName;
     }
+
+    public void UpdateFirebaseUid(string firebaseUid)
+    {
+        if (string.IsNullOrWhiteSpace(firebaseUid))
+            throw new ArgumentException("Firebase UID is required.", nameof(firebaseUid));
+
+        FirebaseUid = firebaseUid;
+    }
 }

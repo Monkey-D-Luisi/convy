@@ -22,6 +22,8 @@ public class JoinHouseholdCommandHandlerTests
     public JoinHouseholdCommandHandlerTests()
     {
         _currentUser.UserId.Returns(_userId);
+        _userRepository.GetByIdAsync(_userId, Arg.Any<CancellationToken>())
+            .Returns(new User("firebase-uid", "Test User", "test@example.com"));
         _handler = new JoinHouseholdCommandHandler(_inviteRepository, _householdRepository, _userRepository, _currentUser, _notifications, _activityLogger);
     }
 
