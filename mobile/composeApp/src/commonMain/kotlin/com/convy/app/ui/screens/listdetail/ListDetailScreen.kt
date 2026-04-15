@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -127,7 +128,18 @@ fun ListDetailContent(
                             ),
                         )
                     } else {
-                        Text(state.listName)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(state.listName)
+                            if (state.pendingSyncCount > 0) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(
+                                    Icons.Default.Sync,
+                                    contentDescription = "Syncing ${state.pendingSyncCount} pending changes",
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                     }
                 },
                 navigationIcon = {

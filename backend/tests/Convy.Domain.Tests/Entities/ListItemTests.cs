@@ -149,15 +149,18 @@ public class ListItemTests
     }
 
     [Fact]
-    public void Complete_WhenAlreadyCompleted_ThrowsDomainException()
+    public void Complete_WhenAlreadyCompleted_IsIdempotent()
     {
         var item = new ListItem("Milk", _listId, _creatorId);
+        var firstCompleter = Guid.NewGuid();
+        item.Complete(firstCompleter);
+        var originalCompletedAt = item.CompletedAt;
+
         item.Complete(Guid.NewGuid());
 
-        var act = () => item.Complete(Guid.NewGuid());
-
-        act.Should().Throw<DomainException>()
-            .WithMessage("Item is already completed.");
+        item.IsCompleted.Should().BeTrue();
+        item.CompletedBy.Should().Be(firstCompleter);
+        item.CompletedAt.Should().Be(originalCompletedAt);
     }
 
     [Fact]
@@ -174,14 +177,15 @@ public class ListItemTests
     }
 
     [Fact]
-    public void Uncomplete_WhenNotCompleted_ThrowsDomainException()
+    public void Uncomplete_WhenNotCompleted_IsIdempotent()
     {
         var item = new ListItem("Milk", _listId, _creatorId);
 
-        var act = () => item.Uncomplete();
+        item.Uncomplete();
 
-        act.Should().Throw<DomainException>()
-            .WithMessage("Item is not completed.");
+        item.IsCompleted.Should().BeFalse();
+        item.CompletedBy.Should().BeNull();
+        item.CompletedAt.Should().BeNull();
     }
 
     [Fact]

@@ -22,6 +22,7 @@ data class ListDetailState(
     val voiceTranscription: String = "",
     val parsedVoiceItems: List<ParsedVoiceItem> = emptyList(),
     val showVoiceSheet: Boolean = false,
+    val pendingSyncCount: Int = 0,
 )
 
 data class ParsedVoiceItem(

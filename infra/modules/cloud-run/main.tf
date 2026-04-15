@@ -27,6 +27,13 @@ resource "google_project_iam_member" "cloudsql_client" {
   member  = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
+# Grant Cloud Run SA access to Firebase Cloud Messaging
+resource "google_project_iam_member" "firebase_messaging" {
+  project = var.project_id
+  role    = "roles/firebase.sdkAdminServiceAgent"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
 # Cloud Run service
 resource "google_cloud_run_v2_service" "api" {
   name     = "convy-${var.environment}-api"
@@ -146,6 +153,7 @@ resource "google_cloud_run_v2_service" "api" {
     google_secret_manager_secret_iam_member.db_password,
     google_secret_manager_secret_iam_member.openai_key,
     google_project_iam_member.cloudsql_client,
+    google_project_iam_member.firebase_messaging,
   ]
 }
 

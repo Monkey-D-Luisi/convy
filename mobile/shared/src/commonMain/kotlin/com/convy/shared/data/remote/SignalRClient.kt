@@ -11,6 +11,13 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.*
 
+enum class ConnectionState {
+    Disconnected,
+    Connecting,
+    Connected,
+    Reconnecting
+}
+
 class SignalRClient(
     private val tokenProvider: TokenProvider,
     private val json: Json,
@@ -31,90 +38,127 @@ class SignalRClient(
     private val _messages = MutableSharedFlow<SignalRMessage>(extraBufferCapacity = 64)
     val messages: SharedFlow<SignalRMessage> = _messages
 
+    private val _connectionState = MutableStateFlow(ConnectionState.Disconnected)
+    val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+
     private var session: WebSocketSession? = null
     private var connectionJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
+    private var currentHouseholdId: String? = null
+    private var explicitDisconnect = false
+
     suspend fun connect(householdId: String) {
         disconnect()
-
-        val token = tokenProvider.getToken() ?: return
+        explicitDisconnect = false
+        currentHouseholdId = householdId
 
         connectionJob = scope.launch {
-            try {
-                // Negotiate to get connectionToken
-                val negotiateResponse = httpClient.post {
-                    url {
-                        protocol = baseProtocol
-                        host = baseHost
-                        port = basePort
-                        path("hubs", "household", "negotiate")
-                        parameter("negotiateVersion", "1")
-                    }
-                    header("Authorization", "Bearer $token")
+            var retryDelay = INITIAL_RETRY_DELAY_MS
+            var isFirstAttempt = true
+
+            while (isActive) {
+                val token = tokenProvider.getToken()
+                if (token == null) {
+                    _connectionState.value = ConnectionState.Disconnected
+                    return@launch
                 }
 
-                val negotiateBody = negotiateResponse.bodyAsText()
-                val negotiateJson = json.parseToJsonElement(negotiateBody).jsonObject
-                val connectionToken = negotiateJson["connectionToken"]?.jsonPrimitive?.contentOrNull
+                _connectionState.value = if (isFirstAttempt) ConnectionState.Connecting else ConnectionState.Reconnecting
 
-                wsClient.webSocket(
-                    request = {
-                        url {
-                            protocol = wsProtocol
-                            host = baseHost
-                            port = basePort
-                            path("hubs", "household")
-                            parameter("access_token", token)
-                            if (connectionToken != null) {
-                                parameter("id", connectionToken)
-                            }
-                        }
-                    }
-                ) {
-                    session = this
+                try {
+                    connectWebSocket(token, householdId)
+                } catch (_: CancellationException) {
+                    throw CancellationException()
+                } catch (_: Exception) {
+                    // Connection failed or dropped
+                }
 
-                    // Send handshake
-                    send(Frame.Text("{\"protocol\":\"json\",\"version\":1}\u001E"))
+                if (!isActive || explicitDisconnect) break
 
-                    // Read handshake response
-                    val handshake = incoming.receive()
-                    if (handshake is Frame.Text) {
-                        val text = handshake.readText().trimEnd('\u001E')
-                        val parsed = json.parseToJsonElement(text).jsonObject
-                        if (parsed.containsKey("error")) {
-                            return@webSocket
-                        }
-                    }
+                // Connection lost — retry with backoff
+                _connectionState.value = ConnectionState.Reconnecting
+                isFirstAttempt = false
+                delay(retryDelay)
+                retryDelay = (retryDelay * 2).coerceAtMost(MAX_RETRY_DELAY_MS)
+            }
 
-                    // Join household group
-                    sendInvocation("JoinHousehold", listOf(JsonPrimitive(householdId)))
+            _connectionState.value = ConnectionState.Disconnected
+        }
+    }
 
-                    // Listen for messages
-                    for (frame in incoming) {
-                        if (frame is Frame.Text) {
-                            val text = frame.readText()
-                            text.split('\u001E').filter { it.isNotBlank() }.forEach { msg ->
-                                processMessage(msg)
-                            }
-                        }
+    private suspend fun connectWebSocket(token: String, householdId: String) {
+        // Negotiate to get connectionToken
+        val negotiateResponse = httpClient.post {
+            url {
+                protocol = baseProtocol
+                host = baseHost
+                port = basePort
+                path("hubs", "household", "negotiate")
+                parameter("negotiateVersion", "1")
+            }
+            header("Authorization", "Bearer $token")
+        }
+
+        val negotiateBody = negotiateResponse.bodyAsText()
+        val negotiateJson = json.parseToJsonElement(negotiateBody).jsonObject
+        val connectionToken = negotiateJson["connectionToken"]?.jsonPrimitive?.contentOrNull
+
+        wsClient.webSocket(
+            request = {
+                url {
+                    protocol = wsProtocol
+                    host = baseHost
+                    port = basePort
+                    path("hubs", "household")
+                    parameter("access_token", token)
+                    if (connectionToken != null) {
+                        parameter("id", connectionToken)
                     }
                 }
-            } catch (_: CancellationException) {
-                // Normal disconnect
-            } catch (_: Exception) {
-                // Connection lost
+            }
+        ) {
+            session = this
+
+            // Send handshake
+            send(Frame.Text("{\"protocol\":\"json\",\"version\":1}\u001E"))
+
+            // Read handshake response
+            val handshake = incoming.receive()
+            if (handshake is Frame.Text) {
+                val text = handshake.readText().trimEnd('\u001E')
+                val parsed = json.parseToJsonElement(text).jsonObject
+                if (parsed.containsKey("error")) {
+                    return@webSocket
+                }
+            }
+
+            // Join household group
+            sendInvocation("JoinHousehold", listOf(JsonPrimitive(householdId)))
+
+            _connectionState.value = ConnectionState.Connected
+
+            // Listen for messages
+            for (frame in incoming) {
+                if (frame is Frame.Text) {
+                    val text = frame.readText()
+                    text.split('\u001E').filter { it.isNotBlank() }.forEach { msg ->
+                        processMessage(msg)
+                    }
+                }
             }
         }
     }
 
     suspend fun disconnect() {
+        explicitDisconnect = true
         connectionJob?.cancel()
         connectionJob = null
         try {
             session?.close()
         } catch (_: Exception) {}
         session = null
+        _connectionState.value = ConnectionState.Disconnected
     }
 
     private suspend fun WebSocketSession.sendInvocation(target: String, arguments: List<JsonElement>) {
@@ -144,6 +188,11 @@ class SignalRClient(
                 }
             }
         } catch (_: Exception) {}
+    }
+
+    companion object {
+        private const val INITIAL_RETRY_DELAY_MS = 1_000L
+        private const val MAX_RETRY_DELAY_MS = 30_000L
     }
 }
 

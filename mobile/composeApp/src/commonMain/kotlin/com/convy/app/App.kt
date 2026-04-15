@@ -39,6 +39,7 @@ import com.convy.shared.domain.repository.AuthRepository
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.UserRepository
 import com.convy.shared.data.remote.DeviceTokenManager
+import com.convy.app.util.rememberNotificationPermissionState
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
@@ -54,6 +55,7 @@ fun App() {
         val deviceTokenManager = koinInject<DeviceTokenManager>()
         val currentRoute by navigator.currentRoute.collectAsState()
         var isCheckingAuth by remember { mutableStateOf(true) }
+        val notificationPermission = rememberNotificationPermissionState()
 
         LaunchedEffect(Unit) {
             val user = authRepository.getCurrentUser()
@@ -61,6 +63,9 @@ fun App() {
                 // Ensure user is registered in the backend (idempotent)
                 userRepository.register(user.id, user.displayName, user.email)
                 launch { deviceTokenManager.registerCurrentToken() }
+                if (!notificationPermission.isGranted) {
+                    notificationPermission.launchRequest()
+                }
                 val households = householdRepository.getMyHouseholds().getOrNull()
                 if (!households.isNullOrEmpty()) {
                     navigator.replaceWith(NavRoute.HouseholdLists(households.first().id))

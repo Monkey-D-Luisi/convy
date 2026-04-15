@@ -1,8 +1,9 @@
 appId: com.monkeydluisi.convy
 ---
 # Flow: Register a new user account
-- launchApp:
-    clearState: true
+- stopApp
+- clearState
+- launchApp
 
 # Auth screen should be visible
 - assertVisible: "Convy"
@@ -10,7 +11,7 @@ appId: com.monkeydluisi.convy
 
 # Switch to sign-up mode if needed
 - tapOn:
-    text: "Don't have an account? Create one"
+    text: ".*Create one"
     optional: true
 
 # Fill sign-up form

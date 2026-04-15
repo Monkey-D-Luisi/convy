@@ -12,20 +12,26 @@ public class HouseholdNotificationService : IHouseholdNotificationService
 {
     private readonly IHubContext<HouseholdHub> _hubContext;
     private readonly IPushNotificationService _pushService;
+    private readonly IPushNotificationBatcher _pushBatcher;
     private readonly IHouseholdRepository _householdRepository;
+    private readonly IHouseholdListRepository _listRepository;
     private readonly ICurrentUserService _currentUser;
     private readonly ILogger<HouseholdNotificationService> _logger;
 
     public HouseholdNotificationService(
         IHubContext<HouseholdHub> hubContext,
         IPushNotificationService pushService,
+        IPushNotificationBatcher pushBatcher,
         IHouseholdRepository householdRepository,
+        IHouseholdListRepository listRepository,
         ICurrentUserService currentUser,
         ILogger<HouseholdNotificationService> logger)
     {
         _hubContext = hubContext;
         _pushService = pushService;
+        _pushBatcher = pushBatcher;
         _householdRepository = householdRepository;
+        _listRepository = listRepository;
         _currentUser = currentUser;
         _logger = logger;
     }
@@ -34,7 +40,25 @@ public class HouseholdNotificationService : IHouseholdNotificationService
     {
         await _hubContext.Clients.Group(householdId.ToString())
             .SendAsync("ItemCreated", item, cancellationToken);
-        await SendPushToOtherMembersAsync(householdId, "New item added", $"{item.Title} was added to the list", cancellationToken);
+
+        try
+        {
+            var household = await _householdRepository.GetByIdWithMembersAsync(householdId, cancellationToken);
+            if (household is null) return;
+
+            var otherMemberIds = household.Memberships
+                .Where(m => m.UserId != _currentUser.UserId)
+                .Select(m => m.UserId);
+
+            var list = await _listRepository.GetByIdAsync(item.ListId, cancellationToken);
+            var listName = list?.Name ?? "the list";
+
+            _pushBatcher.EnqueueItemNotification(otherMemberIds, householdId, item.ListId, listName, item.Title);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to enqueue batched push notification for household {HouseholdId}", householdId);
+        }
     }
 
     public async Task NotifyItemUpdated(Guid householdId, ListItemDto item, CancellationToken cancellationToken)

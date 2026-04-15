@@ -22,7 +22,7 @@ val appModule = module {
         HouseholdListsStore(householdId, get(), get(), get(), get())
     }
     factory { (householdId: String, listId: String, listName: String, listType: String) ->
-        ListDetailStore(householdId, listId, listName, listType, get(), get(), get())
+        ListDetailStore(householdId, listId, listName, listType, get(), get(), get(), get(), get(), get())
     }
     factory { (householdId: String, listId: String, itemId: String?) ->
         ItemFormStore(householdId, listId, itemId, get(), get())

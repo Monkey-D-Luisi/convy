@@ -61,6 +61,19 @@ data class JoinHouseholdRequest(
 )
 
 @Serializable
+data class BatchCreateItemsRequest(
+    @SerialName("items") val items: List<BatchCreateItemEntry>,
+)
+
+@Serializable
+data class BatchCreateItemEntry(
+    @SerialName("title") val title: String,
+    @SerialName("quantity") val quantity: Int? = null,
+    @SerialName("unit") val unit: String? = null,
+    @SerialName("note") val note: String? = null,
+)
+
+@Serializable
 data class RegisterDeviceRequest(
     @SerialName("token") val token: String,
     @SerialName("platform") val platform: String,

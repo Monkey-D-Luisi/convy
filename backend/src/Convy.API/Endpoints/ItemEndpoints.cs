@@ -127,6 +127,20 @@ public static class ItemEndpoints
                 : MapError(result.Error!);
         });
 
+        group.MapPost("/batch", async (
+            Guid listId,
+            BatchCreateItemsRequest request,
+            IMediator mediator) =>
+        {
+            var command = new BatchCreateItemsCommand(listId,
+                request.Items.Select(i => new Application.Features.Items.Commands.BatchItemDto(i.Title, i.Quantity, i.Unit, i.Note)).ToList());
+            var result = await mediator.Send(command);
+
+            return result.IsSuccess
+                ? Results.Created($"/api/v1/lists/{listId}/items", new { createdIds = result.Value!.CreatedIds })
+                : MapError(result.Error!);
+        });
+
         group.MapPost("/parse-voice", async (
             Guid listId,
             IFormFile audio,
@@ -154,3 +168,5 @@ public static class ItemEndpoints
 
 public record CreateItemRequest(string Title, int? Quantity, string? Unit, string? Note, RecurrenceFrequency? RecurrenceFrequency, int? RecurrenceInterval);
 public record UpdateItemRequest(string Title, int? Quantity, string? Unit, string? Note, RecurrenceFrequency? RecurrenceFrequency, int? RecurrenceInterval);
+public record BatchCreateItemsRequest(List<BatchCreateItemRequest> Items);
+public record BatchCreateItemRequest(string Title, int? Quantity, string? Unit, string? Note);

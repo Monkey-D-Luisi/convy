@@ -6,6 +6,7 @@ using Convy.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using OpenAI;
 using OpenAI.Audio;
 using OpenAI.Chat;
@@ -29,6 +30,14 @@ public static class DependencyInjection
         services.AddScoped<IHouseholdNotificationService, HouseholdNotificationService>();
         services.AddScoped<IPushNotificationService, PushNotificationService>();
         services.AddScoped<IActivityLogger, ActivityLogger>();
+
+        services.AddSingleton<PushNotificationBatcher>(sp =>
+            new PushNotificationBatcher(
+                sp.GetRequiredService<IServiceScopeFactory>(),
+                configuration,
+                sp.GetRequiredService<ILogger<PushNotificationBatcher>>()));
+        services.AddSingleton<IPushNotificationBatcher>(sp => sp.GetRequiredService<PushNotificationBatcher>());
+        services.AddHostedService(sp => sp.GetRequiredService<PushNotificationBatcher>());
 
         services.AddHostedService<RecurringItemService>();
 

@@ -6,6 +6,8 @@ using Convy.Application.Common.Interfaces;
 using Convy.Infrastructure;
 using Convy.Infrastructure.Hubs;
 using Convy.Infrastructure.Persistence;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -59,6 +61,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 builder.Services.AddAuthorization();
+
+// Firebase Admin SDK — uses Application Default Credentials
+// (GOOGLE_APPLICATION_CREDENTIALS env var locally, metadata server on Cloud Run)
+if (FirebaseApp.DefaultInstance is null)
+{
+    FirebaseApp.Create(new AppOptions
+    {
+        Credential = GoogleCredential.GetApplicationDefault(),
+        ProjectId = builder.Configuration["Firebase:ProjectId"],
+    });
+}
 
 // Application & Infrastructure layers
 builder.Services.AddApplication();

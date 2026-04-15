@@ -2,14 +2,19 @@ package com.convy.app.ui.screens.listdetail
 
 import com.convy.app.generated.resources.*
 import com.convy.app.util.UiText
+import com.convy.shared.data.offline.OfflineActionQueue
+import com.convy.shared.data.remote.ConnectionState
 import com.convy.shared.data.remote.HouseholdEvent
 import com.convy.shared.data.remote.HouseholdRealtimeService
+import com.convy.shared.data.remote.SignalRClient
 import com.convy.shared.domain.repository.ItemRepository
 import com.convy.shared.platform.AudioRecorder
+import com.convy.shared.platform.NetworkMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 
 class ListDetailStore(
     private val householdId: String,
@@ -19,6 +24,9 @@ class ListDetailStore(
     private val itemRepository: ItemRepository,
     private val realtimeService: HouseholdRealtimeService,
     private val audioRecorder: AudioRecorder,
+    private val networkMonitor: NetworkMonitor,
+    private val offlineQueue: OfflineActionQueue,
+    private val signalRClient: SignalRClient,
 ) {
     private val scope = CoroutineScope(Dispatchers.Main)
     private var recordingStartTime: Long = 0L
@@ -38,6 +46,8 @@ class ListDetailStore(
     init {
         loadItems()
         observeRealtimeEvents()
+        observePendingSyncCount()
+        observeReconnection()
     }
 
     fun processIntent(intent: ListDetailIntent) {
@@ -113,6 +123,30 @@ class ListDetailStore(
     }
 
     private fun toggleItem(itemId: String, isCurrentlyCompleted: Boolean) {
+        // Optimistic update: move item between lists immediately
+        val snapshot = _state.value.let { it.pendingItems to it.completedItems }
+
+        _state.update { current ->
+            if (isCurrentlyCompleted) {
+                // Move from completed to pending
+                val item = current.completedItems.find { it.id == itemId } ?: return@update current
+                val toggled = item.copy(isCompleted = false, completedBy = null, completedByName = null, completedAt = null)
+                current.copy(
+                    pendingItems = current.pendingItems + toggled,
+                    completedItems = current.completedItems.filter { it.id != itemId },
+                )
+            } else {
+                // Move from pending to completed
+                val item = current.pendingItems.find { it.id == itemId } ?: return@update current
+                val toggled = item.copy(isCompleted = true)
+                current.copy(
+                    pendingItems = current.pendingItems.filter { it.id != itemId },
+                    completedItems = listOf(toggled) + current.completedItems,
+                )
+            }
+        }
+
+        // Fire API call in background — repository handles queueing on failure
         scope.launch {
             val result = if (isCurrentlyCompleted) {
                 itemRepository.uncomplete(listId, itemId)
@@ -120,30 +154,37 @@ class ListDetailStore(
                 itemRepository.complete(listId, itemId)
             }
 
-            result.fold(
-                onSuccess = { loadItems() },
-                onFailure = { error ->
-                    _sideEffects.emit(ListDetailSideEffect.ShowError(error.message ?: "Failed to update item"))
-                },
-            )
+            result.onFailure { error ->
+                // Revert on non-network failure (network failures return success via queue)
+                _state.update { it.copy(pendingItems = snapshot.first, completedItems = snapshot.second) }
+                _sideEffects.emit(ListDetailSideEffect.ShowError(error.message ?: "Failed to update item"))
+            }
         }
     }
 
     private fun deleteItem(itemId: String) {
-        scope.launch {
-            itemRepository.delete(listId, itemId).fold(
-                onSuccess = { loadItems() },
-                onFailure = { error ->
-                    _sideEffects.emit(ListDetailSideEffect.ShowError(error.message ?: "Failed to delete item"))
-                },
+        // Optimistic: remove from UI immediately
+        val snapshot = _state.value.let { it.pendingItems to it.completedItems }
+
+        _state.update { current ->
+            current.copy(
+                pendingItems = current.pendingItems.filter { it.id != itemId },
+                completedItems = current.completedItems.filter { it.id != itemId },
             )
+        }
+
+        scope.launch {
+            itemRepository.delete(listId, itemId).onFailure { error ->
+                _state.update { it.copy(pendingItems = snapshot.first, completedItems = snapshot.second) }
+                _sideEffects.emit(ListDetailSideEffect.ShowError(error.message ?: "Failed to delete item"))
+            }
         }
     }
 
     private fun startRecording() {
         try {
             audioRecorder.startRecording()
-            recordingStartTime = System.currentTimeMillis()
+            recordingStartTime = Clock.System.now().toEpochMilliseconds()
             _state.update { it.copy(isRecording = true) }
         } catch (e: Exception) {
             scope.launch {
@@ -153,7 +194,7 @@ class ListDetailStore(
     }
 
     private fun stopRecording() {
-        val elapsed = System.currentTimeMillis() - recordingStartTime
+        val elapsed = Clock.System.now().toEpochMilliseconds() - recordingStartTime
         if (elapsed < MIN_RECORDING_DURATION_MS) {
             audioRecorder.stopRecording()
             _state.update { it.copy(isRecording = false) }
@@ -167,6 +208,12 @@ class ListDetailStore(
         if (audioData == null || audioData.isEmpty()) {
             _state.update { it.copy(isProcessingVoice = false) }
             scope.launch { _sideEffects.emit(ListDetailSideEffect.ShowError("No audio recorded")) }
+            return
+        }
+
+        if (!networkMonitor.isCurrentlyOnline()) {
+            _state.update { it.copy(isProcessingVoice = false) }
+            scope.launch { _sideEffects.emit(ListDetailSideEffect.ShowError("No internet connection. Please check your network and try again.")) }
             return
         }
 
@@ -199,12 +246,24 @@ class ListDetailStore(
 
     private fun confirmVoiceItems() {
         val selected = _state.value.parsedVoiceItems.filter { it.isSelected }
-        scope.launch {
-            selected.forEach { item ->
-                itemRepository.create(listId, item.title, item.quantity, item.unit, null)
-            }
+        if (selected.isEmpty()) {
             _state.update { it.copy(showVoiceSheet = false, parsedVoiceItems = emptyList(), voiceTranscription = "") }
-            loadItems()
+            return
+        }
+
+        scope.launch {
+            val parsedItems = selected.map {
+                com.convy.shared.domain.model.ParsedItem(it.title, it.quantity, it.unit, it.matchedExistingItem)
+            }
+            itemRepository.batchCreate(listId, parsedItems).fold(
+                onSuccess = {
+                    _state.update { it.copy(showVoiceSheet = false, parsedVoiceItems = emptyList(), voiceTranscription = "") }
+                    loadItems()
+                },
+                onFailure = { error ->
+                    _sideEffects.emit(ListDetailSideEffect.ShowError(error.message ?: "Failed to add items. Please try again."))
+                },
+            )
         }
     }
 
@@ -220,6 +279,29 @@ class ListDetailStore(
                     else -> {}
                 }
             }
+        }
+    }
+
+    private fun observePendingSyncCount() {
+        scope.launch {
+            offlineQueue.actions
+                .map { it.size }
+                .distinctUntilChanged()
+                .collect { count ->
+                    _state.update { it.copy(pendingSyncCount = count) }
+                }
+        }
+    }
+
+    private fun observeReconnection() {
+        scope.launch {
+            signalRClient.connectionState
+                .collect { connectionState ->
+                    if (connectionState == ConnectionState.Connected) {
+                        // Refresh data to catch any events missed while disconnected
+                        loadItems()
+                    }
+                }
         }
     }
 

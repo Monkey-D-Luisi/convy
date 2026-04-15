@@ -118,6 +118,11 @@ data class IdResponse(
 )
 
 @Serializable
+data class BatchCreateResponse(
+    @SerialName("createdIds") val createdIds: List<String>,
+)
+
+@Serializable
 data class HouseholdIdResponse(
     @SerialName("householdId") val householdId: String,
 )

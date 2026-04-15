@@ -39,10 +39,10 @@ appId: com.monkeydluisi.convy
 - tapOn: "Search"
 
 # Search field should appear
-- assertVisible: "Search items..."
+- assertVisible: "Search items…"
 
 # Type search query
-- tapOn: "Search items..."
+- tapOn: "Search items…"
 - inputText: "Bre"
 
 # Should show Bread, hide Milk

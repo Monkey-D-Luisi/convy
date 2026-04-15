@@ -61,7 +61,7 @@ public class ListItem : Entity
         if (completedBy == Guid.Empty)
             throw new ArgumentException("Completer ID is required.", nameof(completedBy));
         if (IsCompleted)
-            throw new DomainException("Item is already completed.");
+            return; // Idempotent: already completed
 
         IsCompleted = true;
         CompletedBy = completedBy;
@@ -71,7 +71,7 @@ public class ListItem : Entity
     public void Uncomplete()
     {
         if (!IsCompleted)
-            throw new DomainException("Item is not completed.");
+            return; // Idempotent: already uncompleted
 
         IsCompleted = false;
         CompletedBy = null;

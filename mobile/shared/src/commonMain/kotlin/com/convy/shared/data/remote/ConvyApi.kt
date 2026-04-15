@@ -3,6 +3,7 @@ package com.convy.shared.data.remote
 import com.convy.shared.data.remote.dto.*
 import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
@@ -102,6 +103,12 @@ class ConvyApi(private val client: HttpClient) {
         client.post("api/v1/lists/$listId/items/$itemId/uncomplete")
     }
 
+    suspend fun batchCreateItems(listId: String, request: BatchCreateItemsRequest): BatchCreateResponse =
+        client.post("api/v1/lists/$listId/items/batch") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+
     suspend fun checkDuplicate(listId: String, title: String): DuplicateCheckResponseDto =
         client.get("api/v1/lists/$listId/items/check-duplicate") {
             parameter("title", title)
@@ -152,7 +159,12 @@ class ConvyApi(private val client: HttpClient) {
                     append(HttpHeaders.ContentDisposition, "filename=\"recording.m4a\"")
                 })
             },
-        ).body()
+        ) {
+            timeout {
+                requestTimeoutMillis = 90_000
+                socketTimeoutMillis = 90_000
+            }
+        }.body()
 
     // Devices
     suspend fun registerDevice(token: String, platform: String) {
