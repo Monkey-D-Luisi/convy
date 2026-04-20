@@ -5,6 +5,7 @@ data class SettingsState(
     val email: String = "",
     val householdName: String = "",
     val householdId: String = "",
+    val appVersion: String = "",
     val isLoading: Boolean = false,
     val showLeaveConfirmation: Boolean = false,
     val showRenameDialog: Boolean = false,

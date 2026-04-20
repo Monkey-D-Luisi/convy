@@ -16,7 +16,7 @@ val appModule = module {
 
     factory { AuthStore(get(), get(), get(), get()) }
     factory { HouseholdSetupStore(get(), get()) }
-    factory { SettingsStore(get(), get(), get()) }
+    factory { SettingsStore(get(), get(), get(), get()) }
 
     factory { (householdId: String) ->
         HouseholdListsStore(householdId, get(), get(), get(), get())

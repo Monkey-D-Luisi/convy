@@ -84,9 +84,9 @@ builder.Services.AddScoped<ICurrentUserService>(sp => sp.GetRequiredService<Curr
 
 var app = builder.Build();
 
-// Apply pending migrations at startup
-using (var scope = app.Services.CreateScope())
+if (app.Environment.IsDevelopment())
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ConvyDbContext>();
     await db.Database.MigrateAsync();
 }

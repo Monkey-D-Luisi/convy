@@ -63,6 +63,7 @@ docker-compose up -d
 # Backend
 cd backend
 dotnet restore
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<local PostgreSQL connection string>"
 dotnet build
 dotnet run --project src/Convy.API
 

@@ -1,5 +1,6 @@
 package com.convy.app.ui.screens.settings
 
+import com.convy.app.platform.AppInfoProvider
 import com.convy.shared.domain.repository.AuthRepository
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.UserRepository
@@ -12,9 +13,10 @@ class SettingsStore(
     private val authRepository: AuthRepository,
     private val householdRepository: HouseholdRepository,
     private val userRepository: UserRepository,
+    appInfoProvider: AppInfoProvider,
 ) {
     private val scope = CoroutineScope(Dispatchers.Main)
-    private val _state = MutableStateFlow(SettingsState())
+    private val _state = MutableStateFlow(SettingsState(appVersion = appInfoProvider.versionName))
     val state: StateFlow<SettingsState> = _state.asStateFlow()
 
     private val _sideEffects = MutableSharedFlow<SettingsSideEffect>()

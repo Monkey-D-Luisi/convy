@@ -17,7 +17,7 @@ data class MembersState(
 sealed interface MembersIntent {
     data object Refresh : MembersIntent
     data object GenerateInvite : MembersIntent
-    data object CopyInviteCode : MembersIntent
+    data class CopyInviteCode(val inviteId: String) : MembersIntent
     data class RevokeInvite(val inviteId: String) : MembersIntent
     data object NavigateBack : MembersIntent
 }

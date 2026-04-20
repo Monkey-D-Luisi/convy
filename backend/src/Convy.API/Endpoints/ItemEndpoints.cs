@@ -132,6 +132,7 @@ public static class ItemEndpoints
             BatchCreateItemsRequest request,
             IMediator mediator) =>
         {
+            // Membership authorization belongs in the handler so every caller uses the same boundary.
             var command = new BatchCreateItemsCommand(listId,
                 request.Items.Select(i => new Application.Features.Items.Commands.BatchItemDto(i.Title, i.Quantity, i.Unit, i.Note)).ToList());
             var result = await mediator.Send(command);

@@ -92,11 +92,14 @@
     <string name="detail_load_failed">Error al cargar los artículos</string>
     <string name="detail_update_failed">Error al actualizar el artículo</string>
     <string name="detail_delete_failed">Error al eliminar el artículo</string>
+    <string name="detail_voice_permission_required">Se necesita permiso de micrófono para añadir artículos por voz.</string>
     <string name="detail_recording_too_short">Grabación muy corta. Mantén el botón más tiempo.</string>
     <string name="detail_recording_failed">Error al iniciar la grabación</string>
     <string name="detail_no_audio">No se grabó audio</string>
+    <string name="detail_no_connection">Sin conexión a internet. Revisa la red e inténtalo de nuevo.</string>
     <string name="detail_speech_not_recognized">No se pudo reconocer el habla. Inténtalo de nuevo.</string>
     <string name="detail_voice_process_failed">Error al procesar la entrada de voz</string>
+    <string name="detail_add_items_failed">Error al añadir los artículos. Inténtalo de nuevo.</string>
 
     <!-- Item Form -->
     <string name="item_edit_title">Editar artículo</string>

@@ -23,7 +23,7 @@ appId: com.monkeydluisi.convy
 - assertVisible: "Leave household"
 
 - assertVisible: "App version"
-- assertVisible: "0.1.0"
+- assertVisible: "${APP_VERSION}"
 - assertVisible: "Sign out"
 
 # Sign out

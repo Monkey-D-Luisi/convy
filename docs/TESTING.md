@@ -45,8 +45,8 @@ dotnet test backend/Convy.slnx --collect:"XPlat Code Coverage"
 
 ```bash
 cd mobile
-./gradlew :shared:allTests
-./gradlew :composeApp:allTests
+./gradlew :shared:testDebugUnitTest
+./gradlew :composeApp:testDebugUnitTest
 ```
 
 ### Conventions
@@ -79,7 +79,7 @@ cd mobile
 powershell -File e2e/run-e2e.ps1
 
 # Manual equivalent
-maestro test -e EMAIL="e2e_<timestamp>@test.com" -e JOIN_EMAIL="e2e_join_<timestamp>@test.com" e2e/
+maestro test -e EMAIL="e2e_<timestamp>@test.com" -e JOIN_EMAIL="e2e_join_<timestamp>@test.com" -e APP_VERSION="0.1.5" e2e/
 ```
 
 ### Suite Structure
@@ -109,7 +109,7 @@ Flows run sequentially and are **stateful** — each builds on the previous:
 Maestro output variables (`output.*`) do **not** persist between flows in a suite. Use CLI `-e` flags:
 
 ```bash
-maestro test -e EMAIL="unique@test.com" -e JOIN_EMAIL="join@test.com" e2e/
+maestro test -e EMAIL="unique@test.com" -e JOIN_EMAIL="join@test.com" -e APP_VERSION="0.1.5" e2e/
 ```
 
 Reference in flows as `${EMAIL}`, `${JOIN_EMAIL}`.
