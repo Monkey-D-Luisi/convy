@@ -41,7 +41,7 @@
 5. Build the release bundle:
    ```powershell
    cd mobile
-   .\gradlew :androidApp:bundleRelease
+   .\gradlew :androidApp:bundleStagingRelease
    ```
 6. Upload the generated AAB from:
    ```text
