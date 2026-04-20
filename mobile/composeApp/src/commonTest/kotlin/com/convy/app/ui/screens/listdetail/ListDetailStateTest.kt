@@ -20,6 +20,30 @@ class ListDetailStateTest {
     }
 
     @Test
+    fun `entering shopping mode from filtered list should request reload`() {
+        val transition = ListDetailState(
+            activeFilter = "Pending",
+            isSearching = true,
+            searchQuery = "milk",
+        ).toggleShoppingMode()
+
+        assertTrue(transition.state.isShoppingMode)
+        assertFalse(transition.state.isSearching)
+        assertEquals("", transition.state.searchQuery)
+        assertEquals("All", transition.state.activeFilter)
+        assertTrue(transition.shouldReloadItems)
+    }
+
+    @Test
+    fun `entering shopping mode from all items should not request reload`() {
+        val transition = ListDetailState(activeFilter = "All").toggleShoppingMode()
+
+        assertTrue(transition.state.isShoppingMode)
+        assertEquals("All", transition.state.activeFilter)
+        assertFalse(transition.shouldReloadItems)
+    }
+
+    @Test
     fun `should ignore voice item toggle outside list bounds`() {
         val items = listOf(ParsedVoiceItem("Milk", 1, "bottle"))
 

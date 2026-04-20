@@ -33,7 +33,14 @@ try {
         exit $maestroExitCode
     }
 
-    if ($output -match "\d+/\d+ Flows Failed") {
+    $failedFlows = 0
+    foreach ($line in $output) {
+        if ($line -match "(\d+)/\d+\s+Flows Failed") {
+            $failedFlows = [int]$Matches[1]
+        }
+    }
+
+    if ($failedFlows -gt 0) {
         exit 1
     }
 }

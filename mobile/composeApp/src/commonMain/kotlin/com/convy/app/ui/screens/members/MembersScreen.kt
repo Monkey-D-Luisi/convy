@@ -135,10 +135,10 @@ fun MembersContent(
                                     )
                                 }
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                            TextButton(
-                                onClick = { onIntent(MembersIntent.CopyInviteCode(invite.id)) },
-                                modifier = Modifier.testTag("copy-active-invite-code"),
-                            ) {
+                                    TextButton(
+                                        onClick = { onIntent(MembersIntent.CopyInviteCode(invite.id)) },
+                                        modifier = Modifier.testTag("copy-active-invite-code"),
+                                    ) {
                                         Text(stringResource(Res.string.members_copy_code))
                                     }
                                     IconButton(

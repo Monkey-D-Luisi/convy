@@ -76,14 +76,16 @@ class ListDetailStore(
                 _state.update { it.copy(activeFilter = intent.filter) }
                 loadItems()
             }
-            is ListDetailIntent.ToggleShoppingMode -> _state.update {
-                val enteringShoppingMode = !it.isShoppingMode
-                it.copy(
-                    isShoppingMode = enteringShoppingMode,
-                    isSearching = if (enteringShoppingMode) false else it.isSearching,
-                    searchQuery = if (enteringShoppingMode) "" else it.searchQuery,
-                    activeFilter = if (enteringShoppingMode) "All" else it.activeFilter,
-                )
+            is ListDetailIntent.ToggleShoppingMode -> {
+                var shouldReloadItems = false
+                _state.update {
+                    val transition = it.toggleShoppingMode()
+                    shouldReloadItems = transition.shouldReloadItems
+                    transition.state
+                }
+                if (shouldReloadItems) {
+                    loadItems()
+                }
             }
             is ListDetailIntent.StartRecording -> startRecording()
             is ListDetailIntent.StopRecording -> stopRecording()
