@@ -31,6 +31,7 @@
 | 6 | 0.1.4 | 2026-04-17 | Internal testing iteration |
 | 7 | 0.1.4 | 2026-04-17 | V1 hardening baseline |
 | 8 | 0.1.5 | 2026-04-20 | Internal hardening validation build |
+| 9 | 0.1.6 | 2026-04-20 | PR review follow-up hardening build |
 
 ## Release Procedure
 

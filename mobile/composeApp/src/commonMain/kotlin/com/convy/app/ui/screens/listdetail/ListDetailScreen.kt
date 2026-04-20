@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -53,7 +54,8 @@ fun ListDetailScreen(
     val permissionState = rememberRecordAudioPermissionState()
     val snackbarHostState = remember { SnackbarHostState() }
     var pendingRecord by remember { mutableStateOf(false) }
-    var pendingSnackbarMessage by remember { mutableStateOf<UiText?>(null) }
+    var nextSnackbarId by remember { mutableStateOf(0) }
+    val pendingSnackbarMessages = remember { mutableStateListOf<PendingSnackbarMessage>() }
 
     LaunchedEffect(permissionState.isGranted) {
         if (permissionState.isGranted && pendingRecord) {
@@ -77,16 +79,19 @@ fun ListDetailScreen(
                 is ListDetailSideEffect.NavigateToEditItem ->
                     onNavigateToEditItem(effect.householdId, effect.listId, effect.itemId)
                 is ListDetailSideEffect.NavigateBack -> onNavigateBack()
-                is ListDetailSideEffect.ShowError -> pendingSnackbarMessage = effect.message
+                is ListDetailSideEffect.ShowError -> {
+                    pendingSnackbarMessages.add(PendingSnackbarMessage(nextSnackbarId, effect.message))
+                    nextSnackbarId += 1
+                }
             }
         }
     }
 
-    pendingSnackbarMessage?.let { message ->
-        val resolvedMessage = message.asString()
-        LaunchedEffect(resolvedMessage) {
+    pendingSnackbarMessages.firstOrNull()?.let { pendingMessage ->
+        val resolvedMessage = pendingMessage.message.asString()
+        LaunchedEffect(pendingMessage.id, resolvedMessage) {
             snackbarHostState.showSnackbar(resolvedMessage)
-            pendingSnackbarMessage = null
+            pendingSnackbarMessages.remove(pendingMessage)
         }
     }
 
@@ -118,6 +123,11 @@ fun ListDetailScreen(
         snackbarHostState = snackbarHostState,
     )
 }
+
+private data class PendingSnackbarMessage(
+    val id: Int,
+    val message: UiText,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -78,8 +78,8 @@ The `local` build flavor points to `http://10.0.2.2:5062` (emulator's alias for 
 cd mobile
 powershell -File e2e/run-e2e.ps1
 
-# Manual equivalent
-maestro test -e EMAIL="e2e_<timestamp>@test.com" -e JOIN_EMAIL="e2e_join_<timestamp>@test.com" -e APP_VERSION="0.1.5" e2e/
+# Manual equivalent. Prefer the wrapper script because it reads APP_VERSION from Gradle.
+maestro test -e EMAIL="e2e_<timestamp>@test.com" -e JOIN_EMAIL="e2e_join_<timestamp>@test.com" -e APP_VERSION="<current-versionName>" e2e/
 ```
 
 ### Suite Structure
@@ -109,7 +109,7 @@ Flows run sequentially and are **stateful** — each builds on the previous:
 Maestro output variables (`output.*`) do **not** persist between flows in a suite. Use CLI `-e` flags:
 
 ```bash
-maestro test -e EMAIL="unique@test.com" -e JOIN_EMAIL="join@test.com" -e APP_VERSION="0.1.5" e2e/
+maestro test -e EMAIL="unique@test.com" -e JOIN_EMAIL="join@test.com" -e APP_VERSION="<current-versionName>" e2e/
 ```
 
 Reference in flows as `${EMAIL}`, `${JOIN_EMAIL}`.

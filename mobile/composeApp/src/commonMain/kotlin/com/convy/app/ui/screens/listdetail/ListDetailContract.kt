@@ -36,6 +36,26 @@ data class ParsedVoiceItem(
 val ListDetailState.showNormalListChrome: Boolean
     get() = !isShoppingMode
 
+data class ShoppingModeTransition(
+    val state: ListDetailState,
+    val shouldReloadItems: Boolean,
+)
+
+fun ListDetailState.toggleShoppingMode(): ShoppingModeTransition {
+    val enteringShoppingMode = !isShoppingMode
+    val nextState = copy(
+        isShoppingMode = enteringShoppingMode,
+        isSearching = if (enteringShoppingMode) false else isSearching,
+        searchQuery = if (enteringShoppingMode) "" else searchQuery,
+        activeFilter = if (enteringShoppingMode) "All" else activeFilter,
+    )
+
+    return ShoppingModeTransition(
+        state = nextState,
+        shouldReloadItems = enteringShoppingMode && activeFilter != "All",
+    )
+}
+
 fun List<ParsedVoiceItem>.toggleSelectionAt(index: Int): List<ParsedVoiceItem> =
     if (index !in indices) {
         this
