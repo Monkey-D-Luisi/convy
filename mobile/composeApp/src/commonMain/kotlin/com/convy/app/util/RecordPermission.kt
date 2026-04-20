@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 
 class RecordAudioPermissionState(
     val isGranted: Boolean,
+    val deniedRequestCount: Int,
     val launchRequest: () -> Unit,
 )
 

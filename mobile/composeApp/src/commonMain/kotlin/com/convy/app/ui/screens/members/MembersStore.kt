@@ -33,12 +33,7 @@ class MembersStore(
                 loadInvites()
             }
             is MembersIntent.GenerateInvite -> generateInvite()
-            is MembersIntent.CopyInviteCode -> scope.launch {
-                val invite = _state.value.invite
-                if (invite != null) {
-                    _sideEffects.emit(MembersSideEffect.ShareInviteCode(invite.code))
-                }
-            }
+            is MembersIntent.CopyInviteCode -> copyInviteCode(intent.inviteId)
             is MembersIntent.RevokeInvite -> revokeInvite(intent.inviteId)
             is MembersIntent.NavigateBack -> scope.launch {
                 _sideEffects.emit(MembersSideEffect.NavigateBack)
@@ -82,6 +77,17 @@ class MembersStore(
                     _sideEffects.emit(MembersSideEffect.ShowError(error.message ?: "Failed to generate invite"))
                 },
             )
+        }
+    }
+
+    private fun copyInviteCode(inviteId: String) {
+        scope.launch {
+            val currentState = _state.value
+            val code = currentState.invite?.takeIf { it.id == inviteId }?.code
+                ?: currentState.activeInvites.firstOrNull { it.id == inviteId }?.code
+                ?: return@launch
+
+            _sideEffects.emit(MembersSideEffect.ShareInviteCode(code))
         }
     }
 

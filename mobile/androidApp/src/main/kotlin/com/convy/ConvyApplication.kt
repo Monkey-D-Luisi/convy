@@ -9,6 +9,7 @@ import com.convy.shared.config.ApiConfig
 import com.convy.shared.data.offline.SyncManager
 import com.convy.shared.data.remote.PushTokenProvider
 import com.convy.shared.di.sharedModules
+import com.convy.app.platform.AppInfoProvider
 import com.convy.shared.platform.AndroidFileStorage
 import com.convy.shared.platform.AudioRecorder
 import com.convy.shared.platform.FileStorage
@@ -48,6 +49,7 @@ class ConvyApplication : Application() {
 
 private val platformModule = module {
     single { ApiConfig(BuildConfig.API_PROTOCOL, BuildConfig.API_HOST, BuildConfig.API_PORT) }
+    single<AppInfoProvider> { AndroidAppInfoProvider() }
     single<PushTokenProvider> { AndroidPushTokenProvider() }
     single<SpeechRecognizer> { AndroidSpeechRecognizer(androidContext()) }
     single<AudioRecorder> { AndroidAudioRecorder(androidContext()) }

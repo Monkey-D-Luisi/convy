@@ -95,7 +95,7 @@ fun MembersContent(
                         invite = state.invite,
                         isGenerating = state.isGeneratingInvite,
                         onGenerateInvite = { onIntent(MembersIntent.GenerateInvite) },
-                        onCopyCode = { state.invite?.let { onIntent(MembersIntent.CopyInviteCode) } },
+                        onCopyCode = { state.invite?.let { onIntent(MembersIntent.CopyInviteCode(it.id)) } },
                     )
                 }
 
@@ -126,6 +126,7 @@ fun MembersContent(
                                         text = invite.code,
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.testTag("active-invite-code"),
                                     )
                                     Text(
                                         text = stringResource(Res.string.members_expires, invite.expiresAt),
@@ -133,15 +134,23 @@ fun MembersContent(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
-                                IconButton(
-                                    onClick = { onIntent(MembersIntent.RevokeInvite(invite.id)) },
-                                    modifier = Modifier.testTag("Revoke invite"),
-                                ) {
-                                    Icon(
-                                        Icons.Default.Close,
-                                        contentDescription = stringResource(Res.string.members_revoke),
-                                        tint = MaterialTheme.colorScheme.error,
-                                    )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(
+                                onClick = { onIntent(MembersIntent.CopyInviteCode(invite.id)) },
+                                modifier = Modifier.testTag("copy-active-invite-code"),
+                            ) {
+                                        Text(stringResource(Res.string.members_copy_code))
+                                    }
+                                    IconButton(
+                                        onClick = { onIntent(MembersIntent.RevokeInvite(invite.id)) },
+                                        modifier = Modifier.testTag("Revoke invite"),
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = stringResource(Res.string.members_revoke),
+                                            tint = MaterialTheme.colorScheme.error,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -241,6 +250,7 @@ private fun InviteSection(
                             text = invite.code,
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
+                            modifier = Modifier.testTag("generated-invite-code"),
                         )
                     }
                 }

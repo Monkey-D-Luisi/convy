@@ -33,6 +33,18 @@ data class ParsedVoiceItem(
     val isSelected: Boolean = true,
 )
 
+val ListDetailState.showNormalListChrome: Boolean
+    get() = !isShoppingMode
+
+fun List<ParsedVoiceItem>.toggleSelectionAt(index: Int): List<ParsedVoiceItem> =
+    if (index !in indices) {
+        this
+    } else {
+        mapIndexed { itemIndex, item ->
+            if (itemIndex == index) item.copy(isSelected = !item.isSelected) else item
+        }
+    }
+
 sealed interface ListDetailIntent {
     data object Refresh : ListDetailIntent
     data class ToggleItem(val itemId: String, val isCompleted: Boolean) : ListDetailIntent
@@ -47,6 +59,7 @@ sealed interface ListDetailIntent {
     data object ToggleShoppingMode : ListDetailIntent
     data object StartRecording : ListDetailIntent
     data object StopRecording : ListDetailIntent
+    data object VoicePermissionDenied : ListDetailIntent
     data object DismissVoiceSheet : ListDetailIntent
     data class ToggleVoiceItem(val index: Int) : ListDetailIntent
     data object ConfirmVoiceItems : ListDetailIntent
@@ -56,5 +69,5 @@ sealed interface ListDetailSideEffect {
     data class NavigateToCreateItem(val householdId: String, val listId: String) : ListDetailSideEffect
     data class NavigateToEditItem(val householdId: String, val listId: String, val itemId: String) : ListDetailSideEffect
     data object NavigateBack : ListDetailSideEffect
-    data class ShowError(val message: String) : ListDetailSideEffect
+    data class ShowError(val message: UiText) : ListDetailSideEffect
 }

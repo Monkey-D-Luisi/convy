@@ -37,6 +37,7 @@ import com.convy.app.ui.components.ItemCard
 import com.convy.app.ui.components.LoadingContent
 import com.convy.app.ui.components.ShoppingModeItem
 import com.convy.app.ui.components.VoiceInputSheet
+import com.convy.app.util.UiText
 import com.convy.app.util.rememberRecordAudioPermissionState
 import com.convy.app.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -52,11 +53,19 @@ fun ListDetailScreen(
     val permissionState = rememberRecordAudioPermissionState()
     val snackbarHostState = remember { SnackbarHostState() }
     var pendingRecord by remember { mutableStateOf(false) }
+    var pendingSnackbarMessage by remember { mutableStateOf<UiText?>(null) }
 
     LaunchedEffect(permissionState.isGranted) {
         if (permissionState.isGranted && pendingRecord) {
             pendingRecord = false
             store.processIntent(ListDetailIntent.StartRecording)
+        }
+    }
+
+    LaunchedEffect(permissionState.deniedRequestCount) {
+        if (permissionState.deniedRequestCount > 0 && pendingRecord) {
+            pendingRecord = false
+            store.processIntent(ListDetailIntent.VoicePermissionDenied)
         }
     }
 
@@ -68,10 +77,16 @@ fun ListDetailScreen(
                 is ListDetailSideEffect.NavigateToEditItem ->
                     onNavigateToEditItem(effect.householdId, effect.listId, effect.itemId)
                 is ListDetailSideEffect.NavigateBack -> onNavigateBack()
-                is ListDetailSideEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message)
-                }
+                is ListDetailSideEffect.ShowError -> pendingSnackbarMessage = effect.message
             }
+        }
+    }
+
+    pendingSnackbarMessage?.let { message ->
+        val resolvedMessage = message.asString()
+        LaunchedEffect(resolvedMessage) {
+            snackbarHostState.showSnackbar(resolvedMessage)
+            pendingSnackbarMessage = null
         }
     }
 
@@ -155,26 +170,28 @@ fun ListDetailContent(
                 },
                 actions = {
                     if (!state.isSearching) {
-                        if (state.isRecording) {
-                            IconButton(onClick = { onIntent(ListDetailIntent.StopRecording) }) {
-                                Icon(
-                                    Icons.Default.Stop,
-                                    contentDescription = stringResource(Res.string.detail_stop_recording),
-                                    tint = MaterialTheme.colorScheme.error,
-                                )
-                            }
-                        } else {
-                            IconButton(
-                                onClick = { onIntent(ListDetailIntent.StartRecording) },
-                                enabled = !state.isProcessingVoice,
-                            ) {
-                                if (state.isProcessingVoice) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(24.dp),
-                                        strokeWidth = 2.dp,
+                        if (state.showNormalListChrome) {
+                            if (state.isRecording) {
+                                IconButton(onClick = { onIntent(ListDetailIntent.StopRecording) }) {
+                                    Icon(
+                                        Icons.Default.Stop,
+                                        contentDescription = stringResource(Res.string.detail_stop_recording),
+                                        tint = MaterialTheme.colorScheme.error,
                                     )
-                                } else {
-                                    Icon(Icons.Default.Mic, contentDescription = stringResource(Res.string.detail_voice_input))
+                                }
+                            } else {
+                                IconButton(
+                                    onClick = { onIntent(ListDetailIntent.StartRecording) },
+                                    enabled = !state.isProcessingVoice,
+                                ) {
+                                    if (state.isProcessingVoice) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            strokeWidth = 2.dp,
+                                        )
+                                    } else {
+                                        Icon(Icons.Default.Mic, contentDescription = stringResource(Res.string.detail_voice_input))
+                                    }
                                 }
                             }
                         }
@@ -187,8 +204,10 @@ fun ListDetailContent(
                                 )
                             }
                         }
-                        IconButton(onClick = { onIntent(ListDetailIntent.ToggleSearch) }) {
-                            Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.search))
+                        if (state.showNormalListChrome) {
+                            IconButton(onClick = { onIntent(ListDetailIntent.ToggleSearch) }) {
+                                Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.search))
+                            }
                         }
                     } else {
                         IconButton(onClick = { onIntent(ListDetailIntent.ToggleSearch) }) {
@@ -199,11 +218,13 @@ fun ListDetailContent(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { onIntent(ListDetailIntent.AddItem) },
-                modifier = Modifier.testTag("Add item"),
-            ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.detail_add_item))
+            if (state.showNormalListChrome) {
+                FloatingActionButton(
+                    onClick = { onIntent(ListDetailIntent.AddItem) },
+                    modifier = Modifier.testTag("Add item"),
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.detail_add_item))
+                }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -223,17 +244,19 @@ fun ListDetailContent(
                 val filterPending = stringResource(Res.string.detail_filter_pending)
                 val filterCompleted = stringResource(Res.string.detail_filter_completed)
                 val filters = listOf("All" to filterAll, "Pending" to filterPending, "Completed" to filterCompleted)
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(filters.size) { index ->
-                        val (filter, label) = filters[index]
-                        FilterChip(
-                            selected = state.activeFilter == filter,
-                            onClick = { onIntent(ListDetailIntent.SetFilter(filter)) },
-                            label = { Text(label) },
-                        )
+                if (state.showNormalListChrome) {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(filters.size) { index ->
+                            val (filter, label) = filters[index]
+                            FilterChip(
+                                selected = state.activeFilter == filter,
+                                onClick = { onIntent(ListDetailIntent.SetFilter(filter)) },
+                                label = { Text(label) },
+                            )
+                        }
                     }
                 }
 

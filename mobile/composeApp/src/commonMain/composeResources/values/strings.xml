@@ -92,11 +92,14 @@
     <string name="detail_load_failed">Failed to load items</string>
     <string name="detail_update_failed">Failed to update item</string>
     <string name="detail_delete_failed">Failed to delete item</string>
+    <string name="detail_voice_permission_required">Microphone permission is required to add items by voice.</string>
     <string name="detail_recording_too_short">Recording too short. Hold the button longer.</string>
     <string name="detail_recording_failed">Failed to start recording</string>
     <string name="detail_no_audio">No audio recorded</string>
+    <string name="detail_no_connection">No internet connection. Please check your network and try again.</string>
     <string name="detail_speech_not_recognized">Could not recognize speech. Please try again.</string>
     <string name="detail_voice_process_failed">Failed to process voice input</string>
+    <string name="detail_add_items_failed">Failed to add items. Please try again.</string>
 
     <!-- Item Form -->
     <string name="item_edit_title">Edit item</string>

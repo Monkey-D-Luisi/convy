@@ -11,18 +11,23 @@ public class PushNotificationBatcher : BackgroundService, IPushNotificationBatch
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<PushNotificationBatcher> _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly TimeSpan _batchWindow;
     private readonly ConcurrentDictionary<(Guid HouseholdId, Guid ListId), BatchEntry> _pending = new();
 
     internal int PendingCount => _pending.Count;
+    internal BatchEntry? GetPendingEntryForTests(Guid householdId, Guid listId) =>
+        _pending.TryGetValue((householdId, listId), out var entry) ? entry : null;
 
     public PushNotificationBatcher(
         IServiceScopeFactory scopeFactory,
         IConfiguration configuration,
-        ILogger<PushNotificationBatcher> logger)
+        ILogger<PushNotificationBatcher> logger,
+        TimeProvider? timeProvider = null)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _timeProvider = timeProvider ?? TimeProvider.System;
 
         var raw = configuration["PushNotifications:BatchWindowSeconds"];
         var seconds = int.TryParse(raw, out var val) ? val : 60;
@@ -39,26 +44,12 @@ public class PushNotificationBatcher : BackgroundService, IPushNotificationBatch
     {
         var key = (householdId, listId);
         var recipientSet = recipientUserIds.ToHashSet();
+        var now = _timeProvider.GetUtcNow();
 
         _pending.AddOrUpdate(
             key,
-            _ => new BatchEntry(recipientSet, listName, [itemTitle], data, DateTime.UtcNow),
-            (_, existing) =>
-            {
-                lock (existing)
-                {
-                    foreach (var id in recipientSet)
-                        existing.RecipientUserIds.Add(id);
-
-                    existing.ItemTitles.Add(itemTitle);
-                    existing.LastEnqueuedAt = DateTime.UtcNow;
-
-                    if (data is not null)
-                        existing.Data = data;
-                }
-
-                return existing;
-            });
+            _ => new BatchEntry(recipientSet, listName, [itemTitle], data, now),
+            (_, existing) => existing.Append(recipientSet, itemTitle, now, data));
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -77,42 +68,33 @@ public class PushNotificationBatcher : BackgroundService, IPushNotificationBatch
 
     private async Task FlushExpiredBatchesAsync(CancellationToken cancellationToken, bool force = false)
     {
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow();
 
-        foreach (var key in _pending.Keys)
+        foreach (var (key, entry) in _pending.ToArray())
         {
-            if (!_pending.TryGetValue(key, out var entry))
+            if (!force && (now - entry.LastEnqueuedAt) < _batchWindow)
                 continue;
 
-            bool shouldFlush;
-            lock (entry)
-            {
-                shouldFlush = force || (now - entry.LastEnqueuedAt) >= _batchWindow;
-            }
-
-            if (!shouldFlush)
-                continue;
-
-            if (!_pending.TryRemove(key, out var removed))
+            if (!TryRemoveExact(key, entry))
                 continue;
 
             try
             {
-                var (title, body) = ComposeMessage(removed);
+                var (title, body) = ComposeMessage(entry);
 
                 using var scope = _scopeFactory.CreateScope();
                 var pushService = scope.ServiceProvider.GetRequiredService<IPushNotificationService>();
 
                 await pushService.SendToUsersAsync(
-                    removed.RecipientUserIds,
+                    entry.RecipientUserIds,
                     title,
                     body,
-                    removed.Data,
+                    entry.Data is null ? null : new Dictionary<string, string>(entry.Data),
                     cancellationToken);
 
                 _logger.LogInformation(
                     "Flushed batched push: {Count} items for list {ListId} in household {HouseholdId}",
-                    removed.ItemTitles.Count, key.ListId, key.HouseholdId);
+                    entry.ItemTitles.Count, key.ListId, key.HouseholdId);
             }
             catch (Exception ex)
             {
@@ -121,6 +103,12 @@ public class PushNotificationBatcher : BackgroundService, IPushNotificationBatch
                     key.ListId, key.HouseholdId);
             }
         }
+    }
+
+    private bool TryRemoveExact((Guid HouseholdId, Guid ListId) key, BatchEntry entry)
+    {
+        var collection = (ICollection<KeyValuePair<(Guid HouseholdId, Guid ListId), BatchEntry>>)_pending;
+        return collection.Remove(new KeyValuePair<(Guid HouseholdId, Guid ListId), BatchEntry>(key, entry));
     }
 
     internal static (string Title, string Body) ComposeMessage(BatchEntry entry)
@@ -143,24 +131,37 @@ public class PushNotificationBatcher : BackgroundService, IPushNotificationBatch
 
     internal class BatchEntry
     {
-        public HashSet<Guid> RecipientUserIds { get; }
+        public IReadOnlyCollection<Guid> RecipientUserIds { get; }
         public string ListName { get; }
-        public List<string> ItemTitles { get; }
-        public Dictionary<string, string>? Data { get; set; }
-        public DateTime LastEnqueuedAt { get; set; }
+        public IReadOnlyList<string> ItemTitles { get; }
+        public IReadOnlyDictionary<string, string>? Data { get; }
+        public DateTimeOffset LastEnqueuedAt { get; }
 
         public BatchEntry(
-            HashSet<Guid> recipientUserIds,
+            IEnumerable<Guid> recipientUserIds,
             string listName,
-            List<string> itemTitles,
+            IEnumerable<string> itemTitles,
             Dictionary<string, string>? data,
-            DateTime lastEnqueuedAt)
+            DateTimeOffset lastEnqueuedAt)
         {
-            RecipientUserIds = recipientUserIds;
+            RecipientUserIds = recipientUserIds.ToHashSet();
             ListName = listName;
-            ItemTitles = itemTitles;
-            Data = data;
+            ItemTitles = itemTitles.ToList();
+            Data = data is null ? null : new Dictionary<string, string>(data);
             LastEnqueuedAt = lastEnqueuedAt;
+        }
+
+        public BatchEntry Append(
+            IEnumerable<Guid> recipientUserIds,
+            string itemTitle,
+            DateTimeOffset lastEnqueuedAt,
+            Dictionary<string, string>? data = null)
+        {
+            var recipients = RecipientUserIds.Concat(recipientUserIds).ToHashSet();
+            var itemTitles = ItemTitles.Concat([itemTitle]).ToList();
+            var snapshotData = data ?? (Data is null ? null : new Dictionary<string, string>(Data));
+
+            return new BatchEntry(recipients, ListName, itemTitles, snapshotData, lastEnqueuedAt);
         }
     }
 }

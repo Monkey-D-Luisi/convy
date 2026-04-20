@@ -26,5 +26,14 @@ appId: com.monkeydluisi.convy
 - assertVisible:
     text: "Invite code:"
 
+# Copy the generated code to verify the visible copy action.
+- tapOn: "Copy code"
+
+# Active invites should also be directly copyable.
+- extendedWaitUntil:
+    visible:
+      id: "copy-active-invite-code"
+    timeout: 10000
+
 # Go back
 - tapOn: "Back"

@@ -161,7 +161,7 @@ fun SettingsContent(
                     ) {
                         Text(stringResource(Res.string.settings_app_version), style = MaterialTheme.typography.bodyMedium)
                         Text(
-                            "0.1.0",
+                            state.appVersion,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

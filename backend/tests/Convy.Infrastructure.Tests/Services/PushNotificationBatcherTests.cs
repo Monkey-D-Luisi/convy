@@ -100,7 +100,47 @@ public class PushNotificationBatcherTests
         batcher.PendingCount.Should().Be(2);
     }
 
-    private static PushNotificationBatcher CreateBatcher()
+    [Fact]
+    public void BatchEntry_Append_ReturnsNewSnapshotWithoutMutatingExistingEntry()
+    {
+        var firstRecipientId = Guid.NewGuid();
+        var secondRecipientId = Guid.NewGuid();
+        var now = new DateTimeOffset(2026, 4, 17, 10, 0, 0, TimeSpan.Zero);
+        var later = now.AddSeconds(5);
+        var entry = new PushNotificationBatcher.BatchEntry(
+            recipientUserIds: [firstRecipientId],
+            listName: "Groceries",
+            itemTitles: ["Milk"],
+            data: new Dictionary<string, string> { ["listId"] = "list-1" },
+            lastEnqueuedAt: now);
+
+        var appended = entry.Append([secondRecipientId], "Bread", later);
+
+        entry.ItemTitles.Should().ContainSingle().Which.Should().Be("Milk");
+        entry.RecipientUserIds.Should().ContainSingle().Which.Should().Be(firstRecipientId);
+        entry.LastEnqueuedAt.Should().Be(now);
+
+        appended.ItemTitles.Should().ContainInOrder("Milk", "Bread");
+        appended.RecipientUserIds.Should().BeEquivalentTo([firstRecipientId, secondRecipientId]);
+        appended.LastEnqueuedAt.Should().Be(later);
+    }
+
+    [Fact]
+    public void EnqueueItemNotification_UsesInjectedTimeProvider()
+    {
+        var now = new DateTimeOffset(2026, 4, 17, 11, 0, 0, TimeSpan.Zero);
+        var timeProvider = new TestTimeProvider(now);
+        var batcher = CreateBatcher(timeProvider);
+        var householdId = Guid.NewGuid();
+        var listId = Guid.NewGuid();
+
+        batcher.EnqueueItemNotification([Guid.NewGuid()], householdId, listId, "Groceries", "Milk");
+
+        var entry = batcher.GetPendingEntryForTests(householdId, listId);
+        entry!.LastEnqueuedAt.Should().Be(now);
+    }
+
+    private static PushNotificationBatcher CreateBatcher(TimeProvider? timeProvider = null)
     {
         var config = Substitute.For<Microsoft.Extensions.Configuration.IConfiguration>();
         config[Arg.Is("PushNotifications:BatchWindowSeconds")].Returns("60");
@@ -108,6 +148,18 @@ public class PushNotificationBatcherTests
         var scopeFactory = Substitute.For<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>();
         var logger = Substitute.For<Microsoft.Extensions.Logging.ILogger<PushNotificationBatcher>>();
 
-        return new PushNotificationBatcher(scopeFactory, config, logger);
+        return new PushNotificationBatcher(scopeFactory, config, logger, timeProvider ?? TimeProvider.System);
+    }
+
+    private sealed class TestTimeProvider : TimeProvider
+    {
+        private readonly DateTimeOffset _utcNow;
+
+        public TestTimeProvider(DateTimeOffset utcNow)
+        {
+            _utcNow = utcNow;
+        }
+
+        public override DateTimeOffset GetUtcNow() => _utcNow;
     }
 }

@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import org.jetbrains.compose.resources.StringResource
 
 class ListDetailStore(
     private val householdId: String,
@@ -76,17 +77,24 @@ class ListDetailStore(
                 loadItems()
             }
             is ListDetailIntent.ToggleShoppingMode -> _state.update {
-                it.copy(isShoppingMode = !it.isShoppingMode)
+                val enteringShoppingMode = !it.isShoppingMode
+                it.copy(
+                    isShoppingMode = enteringShoppingMode,
+                    isSearching = if (enteringShoppingMode) false else it.isSearching,
+                    searchQuery = if (enteringShoppingMode) "" else it.searchQuery,
+                    activeFilter = if (enteringShoppingMode) "All" else it.activeFilter,
+                )
             }
             is ListDetailIntent.StartRecording -> startRecording()
             is ListDetailIntent.StopRecording -> stopRecording()
+            is ListDetailIntent.VoicePermissionDenied -> scope.launch {
+                _sideEffects.emit(resourceError(Res.string.detail_voice_permission_required))
+            }
             is ListDetailIntent.DismissVoiceSheet -> _state.update {
                 it.copy(showVoiceSheet = false, parsedVoiceItems = emptyList(), voiceTranscription = "")
             }
             is ListDetailIntent.ToggleVoiceItem -> _state.update { state ->
-                val items = state.parsedVoiceItems.toMutableList()
-                items[intent.index] = items[intent.index].copy(isSelected = !items[intent.index].isSelected)
-                state.copy(parsedVoiceItems = items)
+                state.copy(parsedVoiceItems = state.parsedVoiceItems.toggleSelectionAt(intent.index))
             }
             is ListDetailIntent.ConfirmVoiceItems -> confirmVoiceItems()
         }
@@ -157,7 +165,7 @@ class ListDetailStore(
             result.onFailure { error ->
                 // Revert on non-network failure (network failures return success via queue)
                 _state.update { it.copy(pendingItems = snapshot.first, completedItems = snapshot.second) }
-                _sideEffects.emit(ListDetailSideEffect.ShowError(error.message ?: "Failed to update item"))
+                _sideEffects.emit(repositoryError(error.message, Res.string.detail_update_failed))
             }
         }
     }
@@ -176,7 +184,7 @@ class ListDetailStore(
         scope.launch {
             itemRepository.delete(listId, itemId).onFailure { error ->
                 _state.update { it.copy(pendingItems = snapshot.first, completedItems = snapshot.second) }
-                _sideEffects.emit(ListDetailSideEffect.ShowError(error.message ?: "Failed to delete item"))
+                _sideEffects.emit(repositoryError(error.message, Res.string.detail_delete_failed))
             }
         }
     }
@@ -188,7 +196,7 @@ class ListDetailStore(
             _state.update { it.copy(isRecording = true) }
         } catch (e: Exception) {
             scope.launch {
-                _sideEffects.emit(ListDetailSideEffect.ShowError(e.message ?: "Failed to start recording"))
+                _sideEffects.emit(repositoryError(e.message, Res.string.detail_recording_failed))
             }
         }
     }
@@ -198,7 +206,7 @@ class ListDetailStore(
         if (elapsed < MIN_RECORDING_DURATION_MS) {
             audioRecorder.stopRecording()
             _state.update { it.copy(isRecording = false) }
-            scope.launch { _sideEffects.emit(ListDetailSideEffect.ShowError("Recording too short. Hold the button longer.")) }
+            scope.launch { _sideEffects.emit(resourceError(Res.string.detail_recording_too_short)) }
             return
         }
 
@@ -207,13 +215,13 @@ class ListDetailStore(
 
         if (audioData == null || audioData.isEmpty()) {
             _state.update { it.copy(isProcessingVoice = false) }
-            scope.launch { _sideEffects.emit(ListDetailSideEffect.ShowError("No audio recorded")) }
+            scope.launch { _sideEffects.emit(resourceError(Res.string.detail_no_audio)) }
             return
         }
 
         if (!networkMonitor.isCurrentlyOnline()) {
             _state.update { it.copy(isProcessingVoice = false) }
-            scope.launch { _sideEffects.emit(ListDetailSideEffect.ShowError("No internet connection. Please check your network and try again.")) }
+            scope.launch { _sideEffects.emit(resourceError(Res.string.detail_no_connection)) }
             return
         }
 
@@ -222,7 +230,7 @@ class ListDetailStore(
                 onSuccess = { result ->
                     if (result.transcription.isBlank()) {
                         _state.update { it.copy(isProcessingVoice = false) }
-                        _sideEffects.emit(ListDetailSideEffect.ShowError("Could not recognize speech. Please try again."))
+                        _sideEffects.emit(resourceError(Res.string.detail_speech_not_recognized))
                     } else {
                         _state.update {
                             it.copy(
@@ -238,7 +246,7 @@ class ListDetailStore(
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isProcessingVoice = false) }
-                    _sideEffects.emit(ListDetailSideEffect.ShowError(error.message ?: "Failed to process voice input"))
+                    _sideEffects.emit(repositoryError(error.message, Res.string.detail_voice_process_failed))
                 },
             )
         }
@@ -261,11 +269,17 @@ class ListDetailStore(
                     loadItems()
                 },
                 onFailure = { error ->
-                    _sideEffects.emit(ListDetailSideEffect.ShowError(error.message ?: "Failed to add items. Please try again."))
+                    _sideEffects.emit(repositoryError(error.message, Res.string.detail_add_items_failed))
                 },
             )
         }
     }
+
+    private fun resourceError(resource: StringResource) =
+        ListDetailSideEffect.ShowError(UiText.StringResourceText(resource))
+
+    private fun repositoryError(message: String?, fallback: StringResource) =
+        ListDetailSideEffect.ShowError(UiText.fromError(message, fallback))
 
     private fun observeRealtimeEvents() {
         scope.launch {
