@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.convy.app.ui.components.ItemHistorySheet
@@ -114,7 +115,10 @@ fun ItemFormContent(
                     unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
                     focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
                 ),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences,
+                    imeAction = ImeAction.Next,
+                ),
             )
 
             if (state.suggestions.isNotEmpty() && !state.isEditing) {

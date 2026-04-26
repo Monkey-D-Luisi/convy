@@ -1,0 +1,25 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Long lists leave the completed expand control accessible above the FAB.
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
+- tapOn: "Weekly Groceries"
+- extendedWaitUntil:
+    visible:
+      text: "Add item"
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      text: "Completed.*"
+    direction: DOWN
+    timeout: 8000
+- tapOn:
+    text: "Show"
+    optional: true
+- assertVisible:
+    text: "Completed.*"
+- tapOn: "Back"

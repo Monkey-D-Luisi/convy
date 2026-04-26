@@ -18,6 +18,7 @@ import androidx.compose.ui.semantics.testTagsAsResourceId
 import kotlinx.coroutines.launch
 import com.convy.app.navigation.AppNavigator
 import com.convy.app.navigation.NavRoute
+import com.convy.app.platform.PlatformBackHandler
 import com.convy.app.ui.screens.activity.ActivityScreen
 import com.convy.app.ui.screens.activity.ActivityStore
 import com.convy.app.ui.screens.auth.AuthScreen
@@ -34,6 +35,8 @@ import com.convy.app.ui.screens.members.MembersScreen
 import com.convy.app.ui.screens.members.MembersStore
 import com.convy.app.ui.screens.settings.SettingsScreen
 import com.convy.app.ui.screens.settings.SettingsStore
+import com.convy.app.ui.screens.task.TaskFormScreen
+import com.convy.app.ui.screens.task.TaskFormStore
 import com.convy.app.ui.theme.ConvyTheme
 import com.convy.shared.domain.repository.AuthRepository
 import com.convy.shared.domain.repository.HouseholdRepository
@@ -54,8 +57,13 @@ fun App() {
         val householdRepository = koinInject<HouseholdRepository>()
         val deviceTokenManager = koinInject<DeviceTokenManager>()
         val currentRoute by navigator.currentRoute.collectAsState()
+        val canNavigateBack by navigator.canNavigateBack.collectAsState()
         var isCheckingAuth by remember { mutableStateOf(true) }
         val notificationPermission = rememberNotificationPermissionState()
+
+        PlatformBackHandler(enabled = canNavigateBack) {
+            navigator.navigateBack()
+        }
 
         LaunchedEffect(Unit) {
             val user = authRepository.getCurrentUser()
@@ -141,6 +149,12 @@ fun App() {
                     onNavigateToEditItem = { householdId, listId, itemId ->
                         navigator.navigateTo(NavRoute.EditItem(householdId, listId, itemId))
                     },
+                    onNavigateToCreateTask = { householdId, listId ->
+                        navigator.navigateTo(NavRoute.CreateTask(householdId, listId))
+                    },
+                    onNavigateToEditTask = { householdId, listId, taskId ->
+                        navigator.navigateTo(NavRoute.EditTask(householdId, listId, taskId))
+                    },
                     onNavigateBack = { navigator.navigateBack() },
                 )
             }
@@ -150,6 +164,26 @@ fun App() {
                     parametersOf(route.householdId, route.listId, null)
                 }
                 ItemFormScreen(
+                    store = store,
+                    onNavigateBack = { navigator.navigateBack() },
+                )
+            }
+
+            is NavRoute.CreateTask -> {
+                val store = koinInject<TaskFormStore> {
+                    parametersOf(route.householdId, route.listId, null)
+                }
+                TaskFormScreen(
+                    store = store,
+                    onNavigateBack = { navigator.navigateBack() },
+                )
+            }
+
+            is NavRoute.EditTask -> {
+                val store = koinInject<TaskFormStore> {
+                    parametersOf(route.householdId, route.listId, route.taskId)
+                }
+                TaskFormScreen(
                     store = store,
                     onNavigateBack = { navigator.navigateBack() },
                 )

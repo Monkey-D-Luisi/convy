@@ -69,6 +69,20 @@ fun ListItemDto.toDomain(): ListItem = ListItem(
     nextDueDate = nextDueDate,
 )
 
+fun TaskItemDto.toDomain(): TaskItem = TaskItem(
+    id = id,
+    title = title,
+    note = note,
+    listId = listId,
+    createdBy = createdBy,
+    createdByName = createdByName,
+    createdAt = createdAt,
+    isCompleted = isCompleted,
+    completedBy = completedBy,
+    completedByName = completedByName,
+    completedAt = completedAt,
+)
+
 fun InviteDto.toDomain(): Invite = Invite(
     id = id,
     householdId = householdId,

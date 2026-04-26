@@ -75,15 +75,19 @@
 
     <!-- List Detail -->
     <string name="detail_search_placeholder">Search items…</string>
+    <string name="detail_search_tasks_placeholder">Search tasks…</string>
     <string name="detail_voice_input">Voice input</string>
     <string name="detail_stop_recording">Stop recording</string>
     <string name="detail_shopping_mode">Shopping mode</string>
     <string name="detail_add_item">Add item</string>
+    <string name="detail_add_task">Add task</string>
     <string name="detail_filter_all">All</string>
     <string name="detail_filter_pending">Pending</string>
     <string name="detail_filter_completed">Completed</string>
     <string name="detail_no_search_results">No items match your search.</string>
+    <string name="detail_no_task_search_results">No tasks match your search.</string>
     <string name="detail_empty">No items yet. Tap + to add one!</string>
+    <string name="detail_tasks_empty">No tasks yet. Tap + to add one!</string>
     <string name="detail_pending_header">Pending (%1$d)</string>
     <string name="detail_completed_header">Completed (%1$d)</string>
     <string name="detail_done_progress">%1$d of %2$d done</string>
@@ -92,6 +96,17 @@
     <string name="detail_load_failed">Failed to load items</string>
     <string name="detail_update_failed">Failed to update item</string>
     <string name="detail_delete_failed">Failed to delete item</string>
+    <string name="detail_task_load_failed">Failed to load tasks</string>
+    <string name="detail_task_update_failed">Failed to update task</string>
+    <string name="detail_task_delete_failed">Failed to delete task</string>
+    <string name="detail_undo">Undo</string>
+    <string name="detail_redo">Redo</string>
+    <string name="detail_item_completed">Item completed</string>
+    <string name="detail_item_pending">Item marked pending</string>
+    <string name="detail_item_deleted">Item deleted</string>
+    <string name="detail_task_completed">Task completed</string>
+    <string name="detail_task_pending">Task marked pending</string>
+    <string name="detail_task_deleted">Task deleted</string>
     <string name="detail_voice_permission_required">Microphone permission is required to add items by voice.</string>
     <string name="detail_recording_too_short">Recording too short. Hold the button longer.</string>
     <string name="detail_recording_failed">Failed to start recording</string>
@@ -122,6 +137,18 @@
     <string name="item_not_found">Item not found</string>
     <string name="item_save_failed">Failed to save item</string>
     <string name="item_delete_failed">Failed to delete item</string>
+
+    <!-- Task Form -->
+    <string name="task_edit_title">Edit task</string>
+    <string name="task_new_title">New task</string>
+    <string name="task_title_label">Title *</string>
+    <string name="task_note_label">Note</string>
+    <string name="task_note_placeholder">Optional note…</string>
+    <string name="task_save_changes">Save changes</string>
+    <string name="task_add">Add task</string>
+    <string name="task_not_found">Task not found</string>
+    <string name="task_save_failed">Failed to save task</string>
+    <string name="task_delete_failed">Failed to delete task</string>
 
     <!-- Members -->
     <string name="members_title">Members</string>

@@ -106,4 +106,23 @@ public class CreateItemCommandHandlerTests
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("Forbidden");
     }
+
+    [Fact]
+    public async Task Handle_WithTasksList_ReturnsValidationFailure()
+    {
+        // Arrange
+        var household = new Household("Home", _userId);
+        var list = new HouseholdList("Chores", ListType.Tasks, household.Id, _userId);
+        _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
+
+        var command = new CreateItemCommand(list.Id, "Milk", null, null, null, null, null);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("Validation");
+        await _itemRepository.DidNotReceive().AddAsync(Arg.Any<ListItem>(), Arg.Any<CancellationToken>());
+    }
 }
