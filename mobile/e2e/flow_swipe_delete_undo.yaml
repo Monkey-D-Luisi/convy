@@ -1,0 +1,28 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Deliberate swipe delete can be undone before the destructive call is committed.
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
+- tapOn: "House Chores"
+- extendedWaitUntil:
+    visible:
+      text: "Vacuum hallway"
+    timeout: 10000
+- swipe:
+    from:
+      text: "Vacuum hallway"
+    direction: LEFT
+- extendedWaitUntil:
+    visible:
+      text: "Task deleted"
+    timeout: 5000
+- tapOn: "Undo"
+- extendedWaitUntil:
+    visible:
+      text: "Vacuum hallway"
+    timeout: 5000
+- tapOn: "Back"

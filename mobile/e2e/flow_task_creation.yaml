@@ -1,0 +1,30 @@
+appId: com.monkeydluisi.convy
+---
+# Flow: Task creation uses task-specific form fields.
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      text: "Test Home"
+    timeout: 15000
+- tapOn: "House Chores"
+- extendedWaitUntil:
+    visible:
+      text: "Add task"
+    timeout: 10000
+- tapOn: "Add task"
+- assertVisible: "New task"
+- assertNotVisible: "Qty"
+- assertNotVisible: "Unit"
+- tapOn: "Title *"
+- inputText: "Vacuum hallway"
+- tapOn: "Note"
+- inputText: "Use quiet mode"
+- tapOn:
+    point: "50%,5%"
+- tapOn: "Add task"
+- extendedWaitUntil:
+    visible:
+      text: "Vacuum hallway"
+    timeout: 5000
+- tapOn: "Back"

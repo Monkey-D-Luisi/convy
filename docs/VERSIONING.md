@@ -32,6 +32,7 @@
 | 7 | 0.1.4 | 2026-04-17 | V1 hardening baseline |
 | 8 | 0.1.5 | 2026-04-20 | Internal hardening validation build |
 | 9 | 0.1.6 | 2026-04-20 | PR review follow-up hardening build |
+| 10 | 0.1.7 | 2026-04-26 | Mobile list interaction improvements |
 
 ## Release Procedure
 

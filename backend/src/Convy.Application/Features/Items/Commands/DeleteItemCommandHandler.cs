@@ -41,6 +41,9 @@ public class DeleteItemCommandHandler : IRequestHandler<DeleteItemCommand, Resul
         if (list is null)
             return Result.Failure(Error.NotFound("List not found."));
 
+        if (list.Type != ListType.Shopping)
+            return Result.Failure(Error.Validation("Items are only supported for shopping lists."));
+
         var household = await _householdRepository.GetByIdWithMembersAsync(list.HouseholdId, cancellationToken);
         if (household is null || !household.IsMember(_currentUser.UserId))
             return Result.Failure(Error.Forbidden("You are not a member of this household."));

@@ -1,7 +1,8 @@
 package com.convy.app.ui.screens.listdetail
 
-import com.convy.shared.domain.model.ListItem
 import com.convy.app.util.UiText
+import com.convy.shared.domain.model.ListItem
+import com.convy.shared.domain.model.TaskItem
 
 data class ListDetailState(
     val listId: String = "",
@@ -9,8 +10,9 @@ data class ListDetailState(
     val listName: String = "",
     val listType: String = "",
     val isShoppingMode: Boolean = false,
-    val pendingItems: List<ListItem> = emptyList(),
-    val completedItems: List<ListItem> = emptyList(),
+    val pendingEntries: List<ListEntryUi> = emptyList(),
+    val completedEntries: List<ListEntryUi> = emptyList(),
+    val completionExitEntryIds: Set<String> = emptySet(),
     val showCompleted: Boolean = false,
     val isLoading: Boolean = false,
     val error: UiText? = null,
@@ -25,6 +27,21 @@ data class ListDetailState(
     val pendingSyncCount: Int = 0,
 )
 
+data class ListEntryUi(
+    val id: String,
+    val title: String,
+    val note: String?,
+    val listId: String,
+    val createdByName: String,
+    val createdAt: String,
+    val isCompleted: Boolean,
+    val completedByName: String?,
+    val completedAt: String?,
+    val quantity: Int? = null,
+    val unit: String? = null,
+    val recurrenceFrequency: String? = null,
+)
+
 data class ParsedVoiceItem(
     val title: String,
     val quantity: Int?,
@@ -32,6 +49,9 @@ data class ParsedVoiceItem(
     val matchedExistingItem: String? = null,
     val isSelected: Boolean = true,
 )
+
+val ListDetailState.isTaskList: Boolean
+    get() = listType.equals("Tasks", ignoreCase = true)
 
 val ListDetailState.showNormalListChrome: Boolean
     get() = !isShoppingMode
@@ -42,6 +62,10 @@ data class ShoppingModeTransition(
 )
 
 fun ListDetailState.toggleShoppingMode(): ShoppingModeTransition {
+    if (isTaskList) {
+        return ShoppingModeTransition(this, shouldReloadItems = false)
+    }
+
     val enteringShoppingMode = !isShoppingMode
     val nextState = copy(
         isShoppingMode = enteringShoppingMode,
@@ -65,6 +89,33 @@ fun List<ParsedVoiceItem>.toggleSelectionAt(index: Int): List<ParsedVoiceItem> =
         }
     }
 
+fun ListItem.toListEntryUi(): ListEntryUi = ListEntryUi(
+    id = id,
+    title = title,
+    note = note,
+    listId = listId,
+    createdByName = createdByName,
+    createdAt = createdAt,
+    isCompleted = isCompleted,
+    completedByName = completedByName,
+    completedAt = completedAt,
+    quantity = quantity,
+    unit = unit,
+    recurrenceFrequency = recurrenceFrequency,
+)
+
+fun TaskItem.toListEntryUi(): ListEntryUi = ListEntryUi(
+    id = id,
+    title = title,
+    note = note,
+    listId = listId,
+    createdByName = createdByName,
+    createdAt = createdAt,
+    isCompleted = isCompleted,
+    completedByName = completedByName,
+    completedAt = completedAt,
+)
+
 sealed interface ListDetailIntent {
     data object Refresh : ListDetailIntent
     data class ToggleItem(val itemId: String, val isCompleted: Boolean) : ListDetailIntent
@@ -73,6 +124,9 @@ sealed interface ListDetailIntent {
     data object ToggleCompletedVisibility : ListDetailIntent
     data object NavigateBack : ListDetailIntent
     data class DeleteItem(val itemId: String) : ListDetailIntent
+    data class UndoOperation(val operationId: Long) : ListDetailIntent
+    data class RedoOperation(val operationId: Long) : ListDetailIntent
+    data class CommitPendingDelete(val operationId: Long) : ListDetailIntent
     data class UpdateSearchQuery(val query: String) : ListDetailIntent
     data object ToggleSearch : ListDetailIntent
     data class SetFilter(val filter: String) : ListDetailIntent
@@ -88,6 +142,10 @@ sealed interface ListDetailIntent {
 sealed interface ListDetailSideEffect {
     data class NavigateToCreateItem(val householdId: String, val listId: String) : ListDetailSideEffect
     data class NavigateToEditItem(val householdId: String, val listId: String, val itemId: String) : ListDetailSideEffect
+    data class NavigateToCreateTask(val householdId: String, val listId: String) : ListDetailSideEffect
+    data class NavigateToEditTask(val householdId: String, val listId: String, val taskId: String) : ListDetailSideEffect
     data object NavigateBack : ListDetailSideEffect
     data class ShowError(val message: UiText) : ListDetailSideEffect
+    data class ShowUndo(val operationId: Long, val message: UiText, val isPendingDelete: Boolean) : ListDetailSideEffect
+    data class ShowRedo(val operationId: Long, val message: UiText) : ListDetailSideEffect
 }

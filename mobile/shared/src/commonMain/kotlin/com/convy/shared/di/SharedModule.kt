@@ -103,6 +103,7 @@ val repositoryModule = module {
     single<HouseholdRepository> { HouseholdRepositoryImpl(get()) }
     single<ListRepository> { ListRepositoryImpl(get()) }
     single<ItemRepository> { ItemRepositoryImpl(get(), get()) }
+    single<TaskRepository> { TaskRepositoryImpl(get()) }
     single<InviteRepository> { InviteRepositoryImpl(get()) }
     single<ActivityRepository> { ActivityRepositoryImpl(get()) }
 }

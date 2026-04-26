@@ -113,6 +113,7 @@ app.MapHouseholdEndpoints();
 app.MapInviteEndpoints();
 app.MapListEndpoints();
 app.MapItemEndpoints();
+app.MapTaskEndpoints();
 app.MapActivityEndpoints();
 app.MapDeviceEndpoints();
 

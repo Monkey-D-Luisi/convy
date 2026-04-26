@@ -25,7 +25,6 @@ namespace Convy.Infrastructure.Migrations
             modelBuilder.Entity("Convy.Domain.Entities.ActivityLog", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -74,7 +73,6 @@ namespace Convy.Infrastructure.Migrations
             modelBuilder.Entity("Convy.Domain.Entities.DeviceToken", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -113,7 +111,6 @@ namespace Convy.Infrastructure.Migrations
             modelBuilder.Entity("Convy.Domain.Entities.Household", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -139,7 +136,6 @@ namespace Convy.Infrastructure.Migrations
             modelBuilder.Entity("Convy.Domain.Entities.HouseholdList", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -191,7 +187,6 @@ namespace Convy.Infrastructure.Migrations
             modelBuilder.Entity("Convy.Domain.Entities.HouseholdMembership", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -226,7 +221,6 @@ namespace Convy.Infrastructure.Migrations
             modelBuilder.Entity("Convy.Domain.Entities.Invite", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -277,7 +271,6 @@ namespace Convy.Infrastructure.Migrations
             modelBuilder.Entity("Convy.Domain.Entities.ListItem", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -354,10 +347,63 @@ namespace Convy.Infrastructure.Migrations
                     b.ToTable("list_items", (string)null);
                 });
 
+            modelBuilder.Entity("Convy.Domain.Entities.TaskItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<Guid?>("CompletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("completed_by");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsCompleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_completed");
+
+                    b.Property<Guid>("ListId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("list_id");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("note");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ListId")
+                        .HasDatabaseName("ix_task_items_list_id");
+
+                    b.HasIndex("ListId", "IsCompleted")
+                        .HasDatabaseName("ix_task_items_list_id_is_completed");
+
+                    b.ToTable("task_items", (string)null);
+                });
+
             modelBuilder.Entity("Convy.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 

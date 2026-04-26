@@ -1,6 +1,7 @@
 using Convy.Application.Common.Interfaces;
 using Convy.Application.Common.Models;
 using Convy.Domain.Repositories;
+using Convy.Domain.ValueObjects;
 using MediatR;
 
 namespace Convy.Application.Features.Items.Commands;
@@ -29,6 +30,9 @@ public class ParseVoiceAudioCommandHandler : IRequestHandler<ParseVoiceAudioComm
         var list = await _listRepository.GetByIdAsync(request.ListId, cancellationToken);
         if (list is null)
             return Result<VoiceParsingResult>.Failure(Error.NotFound("List not found."));
+
+        if (list.Type != ListType.Shopping)
+            return Result<VoiceParsingResult>.Failure(Error.Validation("Voice item parsing is only supported for shopping lists."));
 
         var household = await _householdRepository.GetByIdWithMembersAsync(list.HouseholdId, cancellationToken);
         if (household is null || !household.IsMember(_currentUser.UserId))

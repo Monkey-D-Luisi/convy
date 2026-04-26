@@ -1,6 +1,7 @@
 package com.convy.shared.data.remote
 
 import com.convy.shared.data.remote.dto.ListItemDto
+import com.convy.shared.data.remote.dto.TaskItemDto
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.*
 
@@ -10,6 +11,11 @@ sealed interface HouseholdEvent {
     data class ItemCompleted(val item: ListItemDto) : HouseholdEvent
     data class ItemUncompleted(val item: ListItemDto) : HouseholdEvent
     data class ItemDeleted(val itemId: String) : HouseholdEvent
+    data class TaskCreated(val task: TaskItemDto) : HouseholdEvent
+    data class TaskUpdated(val task: TaskItemDto) : HouseholdEvent
+    data class TaskCompleted(val task: TaskItemDto) : HouseholdEvent
+    data class TaskUncompleted(val task: TaskItemDto) : HouseholdEvent
+    data class TaskDeleted(val taskId: String) : HouseholdEvent
     data class ListCreated(val listId: String, val listName: String) : HouseholdEvent
     data class ListRenamed(val listId: String, val newName: String) : HouseholdEvent
     data class ListArchived(val listId: String) : HouseholdEvent
@@ -56,6 +62,26 @@ class HouseholdRealtimeService(
                 "ItemDeleted" -> {
                     val itemId = message.arguments[0].jsonPrimitive.content
                     HouseholdEvent.ItemDeleted(itemId)
+                }
+                "TaskCreated" -> {
+                    val task = json.decodeFromJsonElement<TaskItemDto>(message.arguments[0])
+                    HouseholdEvent.TaskCreated(task)
+                }
+                "TaskUpdated" -> {
+                    val task = json.decodeFromJsonElement<TaskItemDto>(message.arguments[0])
+                    HouseholdEvent.TaskUpdated(task)
+                }
+                "TaskCompleted" -> {
+                    val task = json.decodeFromJsonElement<TaskItemDto>(message.arguments[0])
+                    HouseholdEvent.TaskCompleted(task)
+                }
+                "TaskUncompleted" -> {
+                    val task = json.decodeFromJsonElement<TaskItemDto>(message.arguments[0])
+                    HouseholdEvent.TaskUncompleted(task)
+                }
+                "TaskDeleted" -> {
+                    val taskId = message.arguments[0].jsonPrimitive.content
+                    HouseholdEvent.TaskDeleted(taskId)
                 }
                 "ListCreated" -> {
                     val obj = message.arguments[0].jsonObject

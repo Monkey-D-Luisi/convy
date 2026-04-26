@@ -103,6 +103,42 @@ class ConvyApi(private val client: HttpClient) {
         client.post("api/v1/lists/$listId/items/$itemId/uncomplete")
     }
 
+    // Tasks
+    suspend fun createTask(listId: String, request: CreateTaskRequest): IdResponse =
+        client.post("api/v1/lists/$listId/tasks") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+
+    suspend fun getListTasks(
+        listId: String,
+        status: String? = null,
+        createdBy: String? = null,
+    ): List<TaskItemDto> =
+        client.get("api/v1/lists/$listId/tasks") {
+            status?.let { parameter("status", it) }
+            createdBy?.let { parameter("createdBy", it) }
+        }.body()
+
+    suspend fun updateTask(listId: String, taskId: String, request: UpdateTaskRequest) {
+        client.put("api/v1/lists/$listId/tasks/$taskId") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+    }
+
+    suspend fun deleteTask(listId: String, taskId: String) {
+        client.delete("api/v1/lists/$listId/tasks/$taskId")
+    }
+
+    suspend fun completeTask(listId: String, taskId: String) {
+        client.post("api/v1/lists/$listId/tasks/$taskId/complete")
+    }
+
+    suspend fun uncompleteTask(listId: String, taskId: String) {
+        client.post("api/v1/lists/$listId/tasks/$taskId/uncomplete")
+    }
+
     suspend fun batchCreateItems(listId: String, request: BatchCreateItemsRequest): BatchCreateResponse =
         client.post("api/v1/lists/$listId/items/batch") {
             contentType(ContentType.Application.Json)

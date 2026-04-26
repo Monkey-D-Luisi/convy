@@ -70,6 +70,21 @@ data class ListItemDto(
 )
 
 @Serializable
+data class TaskItemDto(
+    @SerialName("id") val id: String,
+    @SerialName("title") val title: String,
+    @SerialName("note") val note: String?,
+    @SerialName("listId") val listId: String,
+    @SerialName("createdBy") val createdBy: String,
+    @SerialName("createdByName") val createdByName: String,
+    @SerialName("createdAt") val createdAt: String,
+    @SerialName("isCompleted") val isCompleted: Boolean,
+    @SerialName("completedBy") val completedBy: String?,
+    @SerialName("completedByName") val completedByName: String?,
+    @SerialName("completedAt") val completedAt: String?,
+)
+
+@Serializable
 data class InviteDto(
     @SerialName("id") val id: String,
     @SerialName("householdId") val householdId: String,

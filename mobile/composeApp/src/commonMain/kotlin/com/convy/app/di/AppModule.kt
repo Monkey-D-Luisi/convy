@@ -9,6 +9,7 @@ import com.convy.app.ui.screens.listdetail.ListDetailStore
 import com.convy.app.ui.screens.lists.HouseholdListsStore
 import com.convy.app.ui.screens.members.MembersStore
 import com.convy.app.ui.screens.settings.SettingsStore
+import com.convy.app.ui.screens.task.TaskFormStore
 import org.koin.dsl.module
 
 val appModule = module {
@@ -22,10 +23,13 @@ val appModule = module {
         HouseholdListsStore(householdId, get(), get(), get(), get())
     }
     factory { (householdId: String, listId: String, listName: String, listType: String) ->
-        ListDetailStore(householdId, listId, listName, listType, get(), get(), get(), get(), get(), get())
+        ListDetailStore(householdId, listId, listName, listType, get(), get(), get(), get(), get(), get(), get())
     }
     factory { (householdId: String, listId: String, itemId: String?) ->
         ItemFormStore(householdId, listId, itemId, get(), get())
+    }
+    factory { (householdId: String, listId: String, taskId: String?) ->
+        TaskFormStore(householdId, listId, taskId, get())
     }
     factory { (householdId: String) ->
         MembersStore(householdId, get(), get())

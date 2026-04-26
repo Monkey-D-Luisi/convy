@@ -7,6 +7,10 @@ executionOrder:
     - flow_create_household
     - flow_create_list
     - flow_create_tasks_list
+    - flow_task_creation
+    - flow_complete_task_undo
+    - flow_swipe_delete_undo
+    - flow_hardware_back
     - flow_rename_list
     - flow_archive_list
     - flow_add_item
@@ -15,6 +19,7 @@ executionOrder:
     - flow_complete_item
     - flow_uncomplete_item
     - flow_delete_item
+    - flow_completed_control_spacing
     - flow_duplicate_warning
     - flow_suggestions
     - flow_search_items

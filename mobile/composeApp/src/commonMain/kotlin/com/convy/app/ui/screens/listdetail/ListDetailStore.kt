@@ -8,11 +8,22 @@ import com.convy.shared.data.remote.HouseholdEvent
 import com.convy.shared.data.remote.HouseholdRealtimeService
 import com.convy.shared.data.remote.SignalRClient
 import com.convy.shared.domain.repository.ItemRepository
+import com.convy.shared.domain.repository.TaskRepository
 import com.convy.shared.platform.AudioRecorder
 import com.convy.shared.platform.NetworkMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import org.jetbrains.compose.resources.StringResource
@@ -23,6 +34,7 @@ class ListDetailStore(
     private val listName: String,
     private val listType: String,
     private val itemRepository: ItemRepository,
+    private val taskRepository: TaskRepository,
     private val realtimeService: HouseholdRealtimeService,
     private val audioRecorder: AudioRecorder,
     private val networkMonitor: NetworkMonitor,
@@ -30,14 +42,19 @@ class ListDetailStore(
     private val signalRClient: SignalRClient,
 ) {
     private val scope = CoroutineScope(Dispatchers.Main)
+    private val isTaskList = listType.equals("Tasks", ignoreCase = true)
     private var recordingStartTime: Long = 0L
+    private var nextOperationId = 1L
+    private val operations = mutableMapOf<Long, EntryOperation>()
+    private val redoOperations = mutableMapOf<Long, EntryOperation>()
+
     private val _state = MutableStateFlow(
         ListDetailState(
             listId = listId,
             householdId = householdId,
             listName = listName,
             listType = listType,
-        )
+        ),
     )
     val state: StateFlow<ListDetailState> = _state.asStateFlow()
 
@@ -56,10 +73,18 @@ class ListDetailStore(
             is ListDetailIntent.Refresh -> loadItems()
             is ListDetailIntent.ToggleItem -> toggleItem(intent.itemId, intent.isCompleted)
             is ListDetailIntent.OpenItem -> scope.launch {
-                _sideEffects.emit(ListDetailSideEffect.NavigateToEditItem(householdId, listId, intent.itemId))
+                if (isTaskList) {
+                    _sideEffects.emit(ListDetailSideEffect.NavigateToEditTask(householdId, listId, intent.itemId))
+                } else {
+                    _sideEffects.emit(ListDetailSideEffect.NavigateToEditItem(householdId, listId, intent.itemId))
+                }
             }
             is ListDetailIntent.AddItem -> scope.launch {
-                _sideEffects.emit(ListDetailSideEffect.NavigateToCreateItem(householdId, listId))
+                if (isTaskList) {
+                    _sideEffects.emit(ListDetailSideEffect.NavigateToCreateTask(householdId, listId))
+                } else {
+                    _sideEffects.emit(ListDetailSideEffect.NavigateToCreateItem(householdId, listId))
+                }
             }
             is ListDetailIntent.ToggleCompletedVisibility -> _state.update {
                 it.copy(showCompleted = !it.showCompleted)
@@ -68,6 +93,9 @@ class ListDetailStore(
                 _sideEffects.emit(ListDetailSideEffect.NavigateBack)
             }
             is ListDetailIntent.DeleteItem -> deleteItem(intent.itemId)
+            is ListDetailIntent.UndoOperation -> undoOperation(intent.operationId)
+            is ListDetailIntent.RedoOperation -> redoOperation(intent.operationId)
+            is ListDetailIntent.CommitPendingDelete -> commitPendingDelete(intent.operationId)
             is ListDetailIntent.UpdateSearchQuery -> _state.update { it.copy(searchQuery = intent.query) }
             is ListDetailIntent.ToggleSearch -> _state.update {
                 if (it.isSearching) it.copy(isSearching = false, searchQuery = "") else it.copy(isSearching = true)
@@ -103,7 +131,7 @@ class ListDetailStore(
     }
 
     fun loadItems() {
-        _state.update { it.copy(isLoading = true, error = null) }
+        _state.update { it.copy(isLoading = true, error = null, completionExitEntryIds = emptySet()) }
         scope.launch {
             val filter = _state.value.activeFilter
             val status = when (filter) {
@@ -113,85 +141,248 @@ class ListDetailStore(
             }
             val createdBy: String? = null
 
-            itemRepository.getByList(listId, status, createdBy).fold(
-                onSuccess = { items ->
-                    val pending = items.filter { !it.isCompleted }
-                    val completed = items.filter { it.isCompleted }
+            val result = if (isTaskList) {
+                taskRepository.getByList(listId, status, createdBy).map { tasks ->
+                    tasks.map { it.toListEntryUi() }
+                }
+            } else {
+                itemRepository.getByList(listId, status, createdBy).map { items ->
+                    items.map { it.toListEntryUi() }
+                }
+            }
+
+            result.fold(
+                onSuccess = { entries ->
                     _state.update {
                         it.copy(
-                            pendingItems = pending,
-                            completedItems = completed,
+                            pendingEntries = entries.filter { entry -> !entry.isCompleted },
+                            completedEntries = entries.filter { entry -> entry.isCompleted },
                             isLoading = false,
                         )
                     }
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, error = UiText.fromError(error.message, Res.string.detail_load_failed)) }
+                    val fallback = if (isTaskList) Res.string.detail_task_load_failed else Res.string.detail_load_failed
+                    _state.update { it.copy(isLoading = false, error = UiText.fromError(error.message, fallback)) }
                 },
             )
         }
     }
 
     private fun toggleItem(itemId: String, isCurrentlyCompleted: Boolean) {
-        // Optimistic update: move item between lists immediately
-        val snapshot = _state.value.let { it.pendingItems to it.completedItems }
+        val entry = findEntry(itemId) ?: return
+        val operation = EntryOperation.Completion(
+            id = nextOperationId++,
+            entry = entry,
+            fromCompleted = isCurrentlyCompleted,
+            toCompleted = !isCurrentlyCompleted,
+        )
+        operations[operation.id] = operation
 
-        _state.update { current ->
-            if (isCurrentlyCompleted) {
-                // Move from completed to pending
-                val item = current.completedItems.find { it.id == itemId } ?: return@update current
-                val toggled = item.copy(isCompleted = false, completedBy = null, completedByName = null, completedAt = null)
-                current.copy(
-                    pendingItems = current.pendingItems + toggled,
-                    completedItems = current.completedItems.filter { it.id != itemId },
-                )
-            } else {
-                // Move from pending to completed
-                val item = current.pendingItems.find { it.id == itemId } ?: return@update current
-                val toggled = item.copy(isCompleted = true)
-                current.copy(
-                    pendingItems = current.pendingItems.filter { it.id != itemId },
-                    completedItems = listOf(toggled) + current.completedItems,
-                )
+        applyCompletionState(itemId, !isCurrentlyCompleted, animateCompletion = !isCurrentlyCompleted)
+        scope.launch {
+            setRemoteCompletion(itemId, !isCurrentlyCompleted).onFailure { error ->
+                operations.remove(operation.id)
+                _state.update { it.copy(completionExitEntryIds = it.completionExitEntryIds - itemId) }
+                applyCompletionState(itemId, isCurrentlyCompleted, animateCompletion = false)
+                _sideEffects.emit(repositoryError(error.message, updateFailureResource()))
+                return@launch
+            }
+
+            if (!isCurrentlyCompleted) {
+                delay(COMPLETION_EXIT_DELAY_MS)
+                moveCompletionExitToCompleted(itemId)
             }
         }
 
-        // Fire API call in background — repository handles queueing on failure
         scope.launch {
-            val result = if (isCurrentlyCompleted) {
-                itemRepository.uncomplete(listId, itemId)
-            } else {
-                itemRepository.complete(listId, itemId)
-            }
-
-            result.onFailure { error ->
-                // Revert on non-network failure (network failures return success via queue)
-                _state.update { it.copy(pendingItems = snapshot.first, completedItems = snapshot.second) }
-                _sideEffects.emit(repositoryError(error.message, Res.string.detail_update_failed))
-            }
+            _sideEffects.emit(
+                ListDetailSideEffect.ShowUndo(
+                    operationId = operation.id,
+                    message = completionMessage(!isCurrentlyCompleted),
+                    isPendingDelete = false,
+                ),
+            )
         }
     }
 
     private fun deleteItem(itemId: String) {
-        // Optimistic: remove from UI immediately
-        val snapshot = _state.value.let { it.pendingItems to it.completedItems }
-
-        _state.update { current ->
-            current.copy(
-                pendingItems = current.pendingItems.filter { it.id != itemId },
-                completedItems = current.completedItems.filter { it.id != itemId },
-            )
-        }
+        val entry = findEntry(itemId) ?: return
+        val operation = EntryOperation.PendingDelete(
+            id = nextOperationId++,
+            entry = entry,
+            wasCompleted = entry.isCompleted,
+        )
+        operations[operation.id] = operation
+        removeEntry(itemId)
 
         scope.launch {
-            itemRepository.delete(listId, itemId).onFailure { error ->
-                _state.update { it.copy(pendingItems = snapshot.first, completedItems = snapshot.second) }
-                _sideEffects.emit(repositoryError(error.message, Res.string.detail_delete_failed))
+            _sideEffects.emit(
+                ListDetailSideEffect.ShowUndo(
+                    operationId = operation.id,
+                    message = deleteMessage(),
+                    isPendingDelete = true,
+                ),
+            )
+        }
+    }
+
+    private fun undoOperation(operationId: Long) {
+        val operation = operations.remove(operationId) ?: return
+        when (operation) {
+            is EntryOperation.Completion -> {
+                applyCompletionState(operation.entry.id, operation.fromCompleted, animateCompletion = false)
+                redoOperations[operation.id] = operation
+                scope.launch {
+                    setRemoteCompletion(operation.entry.id, operation.fromCompleted).onFailure { error ->
+                        _sideEffects.emit(repositoryError(error.message, updateFailureResource()))
+                    }
+                    _sideEffects.emit(ListDetailSideEffect.ShowRedo(operation.id, completionMessage(operation.toCompleted)))
+                }
+            }
+            is EntryOperation.PendingDelete -> {
+                restoreEntry(operation.entry, operation.wasCompleted)
+                redoOperations[operation.id] = operation
+                scope.launch {
+                    _sideEffects.emit(ListDetailSideEffect.ShowRedo(operation.id, deleteMessage()))
+                }
             }
         }
     }
 
+    private fun redoOperation(operationId: Long) {
+        val operation = redoOperations.remove(operationId) ?: return
+        operations[operation.id] = operation
+        when (operation) {
+            is EntryOperation.Completion -> {
+                applyCompletionState(operation.entry.id, operation.toCompleted, animateCompletion = operation.toCompleted)
+                scope.launch {
+                    setRemoteCompletion(operation.entry.id, operation.toCompleted).onFailure { error ->
+                        _sideEffects.emit(repositoryError(error.message, updateFailureResource()))
+                        return@launch
+                    }
+                    if (operation.toCompleted) {
+                        delay(COMPLETION_EXIT_DELAY_MS)
+                        moveCompletionExitToCompleted(operation.entry.id)
+                    }
+                    _sideEffects.emit(
+                        ListDetailSideEffect.ShowUndo(operation.id, completionMessage(operation.toCompleted), isPendingDelete = false),
+                    )
+                }
+            }
+            is EntryOperation.PendingDelete -> {
+                removeEntry(operation.entry.id)
+                scope.launch {
+                    _sideEffects.emit(ListDetailSideEffect.ShowUndo(operation.id, deleteMessage(), isPendingDelete = true))
+                }
+            }
+        }
+    }
+
+    private fun commitPendingDelete(operationId: Long) {
+        val operation = operations.remove(operationId) as? EntryOperation.PendingDelete ?: return
+        scope.launch {
+            deleteRemote(operation.entry.id).onFailure { error ->
+                restoreEntry(operation.entry, operation.wasCompleted)
+                _sideEffects.emit(repositoryError(error.message, deleteFailureResource()))
+            }
+        }
+    }
+
+    private fun applyCompletionState(itemId: String, completed: Boolean, animateCompletion: Boolean) {
+        _state.update { current ->
+            val exitIds = if (animateCompletion) {
+                current.completionExitEntryIds + itemId
+            } else {
+                current.completionExitEntryIds - itemId
+            }
+
+            if (completed) {
+                val entry = current.pendingEntries.find { it.id == itemId }
+                if (entry != null) {
+                    current.copy(
+                        pendingEntries = current.pendingEntries.map {
+                            if (it.id == itemId) it.copy(isCompleted = true) else it
+                        },
+                        completionExitEntryIds = exitIds,
+                    )
+                } else {
+                    current.copy(completionExitEntryIds = exitIds)
+                }
+            } else {
+                val entry = current.completedEntries.find { it.id == itemId }
+                if (entry != null) {
+                    current.copy(
+                        pendingEntries = current.pendingEntries + entry.copy(isCompleted = false, completedByName = null, completedAt = null),
+                        completedEntries = current.completedEntries.filter { it.id != itemId },
+                        completionExitEntryIds = exitIds,
+                    )
+                } else {
+                    current.copy(
+                        pendingEntries = current.pendingEntries.map {
+                            if (it.id == itemId) it.copy(isCompleted = false, completedByName = null, completedAt = null) else it
+                        },
+                        completionExitEntryIds = exitIds,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun moveCompletionExitToCompleted(itemId: String) {
+        _state.update { current ->
+            if (itemId !in current.completionExitEntryIds) {
+                return@update current
+            }
+            val entry = current.pendingEntries.find { it.id == itemId } ?: return@update current.copy(
+                completionExitEntryIds = current.completionExitEntryIds - itemId,
+            )
+            current.copy(
+                pendingEntries = current.pendingEntries.filter { it.id != itemId },
+                completedEntries = listOf(entry.copy(isCompleted = true)) + current.completedEntries.filter { it.id != itemId },
+                completionExitEntryIds = current.completionExitEntryIds - itemId,
+            )
+        }
+    }
+
+    private fun removeEntry(itemId: String) {
+        _state.update { current ->
+            current.copy(
+                pendingEntries = current.pendingEntries.filter { it.id != itemId },
+                completedEntries = current.completedEntries.filter { it.id != itemId },
+                completionExitEntryIds = current.completionExitEntryIds - itemId,
+            )
+        }
+    }
+
+    private fun restoreEntry(entry: ListEntryUi, completed: Boolean) {
+        _state.update { current ->
+            val restored = entry.copy(isCompleted = completed)
+            if (completed) {
+                current.copy(completedEntries = listOf(restored) + current.completedEntries.filter { it.id != entry.id })
+            } else {
+                current.copy(pendingEntries = current.pendingEntries + restored)
+            }
+        }
+    }
+
+    private fun findEntry(itemId: String): ListEntryUi? {
+        val current = _state.value
+        return current.pendingEntries.find { it.id == itemId } ?: current.completedEntries.find { it.id == itemId }
+    }
+
+    private suspend fun setRemoteCompletion(itemId: String, completed: Boolean): Result<Unit> =
+        if (isTaskList) {
+            if (completed) taskRepository.complete(listId, itemId) else taskRepository.uncomplete(listId, itemId)
+        } else {
+            if (completed) itemRepository.complete(listId, itemId) else itemRepository.uncomplete(listId, itemId)
+        }
+
+    private suspend fun deleteRemote(itemId: String): Result<Unit> =
+        if (isTaskList) taskRepository.delete(listId, itemId) else itemRepository.delete(listId, itemId)
+
     private fun startRecording() {
+        if (isTaskList) return
         try {
             audioRecorder.startRecording()
             recordingStartTime = Clock.System.now().toEpochMilliseconds()
@@ -204,6 +395,8 @@ class ListDetailStore(
     }
 
     private fun stopRecording() {
+        if (isTaskList) return
+
         val elapsed = Clock.System.now().toEpochMilliseconds() - recordingStartTime
         if (elapsed < MIN_RECORDING_DURATION_MS) {
             audioRecorder.stopRecording()
@@ -255,6 +448,8 @@ class ListDetailStore(
     }
 
     private fun confirmVoiceItems() {
+        if (isTaskList) return
+
         val selected = _state.value.parsedVoiceItems.filter { it.isSelected }
         if (selected.isEmpty()) {
             _state.update { it.copy(showVoiceSheet = false, parsedVoiceItems = emptyList(), voiceTranscription = "") }
@@ -277,6 +472,25 @@ class ListDetailStore(
         }
     }
 
+    private fun completionMessage(completed: Boolean): UiText {
+        val resource = when {
+            isTaskList && completed -> Res.string.detail_task_completed
+            isTaskList -> Res.string.detail_task_pending
+            completed -> Res.string.detail_item_completed
+            else -> Res.string.detail_item_pending
+        }
+        return UiText.StringResourceText(resource)
+    }
+
+    private fun deleteMessage(): UiText =
+        UiText.StringResourceText(if (isTaskList) Res.string.detail_task_deleted else Res.string.detail_item_deleted)
+
+    private fun updateFailureResource(): StringResource =
+        if (isTaskList) Res.string.detail_task_update_failed else Res.string.detail_update_failed
+
+    private fun deleteFailureResource(): StringResource =
+        if (isTaskList) Res.string.detail_task_delete_failed else Res.string.detail_delete_failed
+
     private fun resourceError(resource: StringResource) =
         ListDetailSideEffect.ShowError(UiText.StringResourceText(resource))
 
@@ -291,7 +505,12 @@ class ListDetailStore(
                     is HouseholdEvent.ItemUpdated,
                     is HouseholdEvent.ItemCompleted,
                     is HouseholdEvent.ItemUncompleted,
-                    is HouseholdEvent.ItemDeleted -> loadItems()
+                    is HouseholdEvent.ItemDeleted,
+                    is HouseholdEvent.TaskCreated,
+                    is HouseholdEvent.TaskUpdated,
+                    is HouseholdEvent.TaskCompleted,
+                    is HouseholdEvent.TaskUncompleted,
+                    is HouseholdEvent.TaskDeleted -> loadItems()
                     else -> {}
                 }
             }
@@ -314,14 +533,29 @@ class ListDetailStore(
             signalRClient.connectionState
                 .collect { connectionState ->
                     if (connectionState == ConnectionState.Connected) {
-                        // Refresh data to catch any events missed while disconnected
                         loadItems()
                     }
                 }
         }
     }
 
+    private sealed class EntryOperation(open val id: Long) {
+        data class Completion(
+            override val id: Long,
+            val entry: ListEntryUi,
+            val fromCompleted: Boolean,
+            val toCompleted: Boolean,
+        ) : EntryOperation(id)
+
+        data class PendingDelete(
+            override val id: Long,
+            val entry: ListEntryUi,
+            val wasCompleted: Boolean,
+        ) : EntryOperation(id)
+    }
+
     companion object {
         private const val MIN_RECORDING_DURATION_MS = 1500L
+        private const val COMPLETION_EXIT_DELAY_MS = 450L
     }
 }

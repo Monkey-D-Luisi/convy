@@ -51,6 +51,18 @@ data class UpdateItemRequest(
 )
 
 @Serializable
+data class CreateTaskRequest(
+    @SerialName("title") val title: String,
+    @SerialName("note") val note: String? = null,
+)
+
+@Serializable
+data class UpdateTaskRequest(
+    @SerialName("title") val title: String,
+    @SerialName("note") val note: String? = null,
+)
+
+@Serializable
 data class CreateInviteRequest(
     @SerialName("householdId") val householdId: String,
 )

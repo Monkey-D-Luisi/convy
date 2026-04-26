@@ -1,6 +1,7 @@
 using Convy.Application.Common.Interfaces;
 using Convy.Application.Features.Activity.DTOs;
 using Convy.Application.Features.Items.DTOs;
+using Convy.Application.Features.Tasks.DTOs;
 using Convy.Domain.Repositories;
 using Convy.Infrastructure.Hubs;
 using Microsoft.AspNetCore.SignalR;
@@ -86,6 +87,40 @@ public class HouseholdNotificationService : IHouseholdNotificationService
         await _hubContext.Clients.Group(householdId.ToString())
             .SendAsync("ItemDeleted", itemId, cancellationToken);
         await SendPushToOtherMembersAsync(householdId, "Item removed", "An item was removed from the list", cancellationToken);
+    }
+
+    public async Task NotifyTaskCreated(Guid householdId, TaskItemDto task, CancellationToken cancellationToken)
+    {
+        await _hubContext.Clients.Group(householdId.ToString())
+            .SendAsync("TaskCreated", task, cancellationToken);
+        await SendPushToOtherMembersAsync(householdId, "Task created", $"{task.Title} was added", cancellationToken);
+    }
+
+    public async Task NotifyTaskUpdated(Guid householdId, TaskItemDto task, CancellationToken cancellationToken)
+    {
+        await _hubContext.Clients.Group(householdId.ToString())
+            .SendAsync("TaskUpdated", task, cancellationToken);
+        await SendPushToOtherMembersAsync(householdId, "Task updated", $"{task.Title} was updated", cancellationToken);
+    }
+
+    public async Task NotifyTaskCompleted(Guid householdId, TaskItemDto task, CancellationToken cancellationToken)
+    {
+        await _hubContext.Clients.Group(householdId.ToString())
+            .SendAsync("TaskCompleted", task, cancellationToken);
+        await SendPushToOtherMembersAsync(householdId, "Task completed", $"{task.Title} was marked as done", cancellationToken);
+    }
+
+    public async Task NotifyTaskUncompleted(Guid householdId, TaskItemDto task, CancellationToken cancellationToken)
+    {
+        await _hubContext.Clients.Group(householdId.ToString())
+            .SendAsync("TaskUncompleted", task, cancellationToken);
+    }
+
+    public async Task NotifyTaskDeleted(Guid householdId, Guid taskId, CancellationToken cancellationToken)
+    {
+        await _hubContext.Clients.Group(householdId.ToString())
+            .SendAsync("TaskDeleted", taskId, cancellationToken);
+        await SendPushToOtherMembersAsync(householdId, "Task removed", "A task was removed from the list", cancellationToken);
     }
 
     public async Task NotifyListCreated(Guid householdId, Guid listId, string listName, CancellationToken cancellationToken)

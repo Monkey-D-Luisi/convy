@@ -1,7 +1,6 @@
 package com.convy.app.ui.screens.listdetail
 
-import com.convy.app.generated.resources.Res
-import com.convy.app.generated.resources.detail_voice_permission_required
+import com.convy.app.generated.resources.*
 import com.convy.app.util.UiText
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -17,6 +16,21 @@ class ListDetailStateTest {
     @Test
     fun `should hide normal list chrome in shopping mode`() {
         assertFalse(ListDetailState(isShoppingMode = true).showNormalListChrome)
+    }
+
+    @Test
+    fun `task lists cannot enter shopping mode`() {
+        val transition = ListDetailState(listType = "Tasks").toggleShoppingMode()
+
+        assertFalse(transition.state.isShoppingMode)
+        assertFalse(transition.shouldReloadItems)
+    }
+
+    @Test
+    fun `completion exit rows are tracked by id`() {
+        val state = ListDetailState(completionExitEntryIds = setOf("entry-1"))
+
+        assertTrue("entry-1" in state.completionExitEntryIds)
     }
 
     @Test
