@@ -32,6 +32,35 @@ public class DeviceTokenTests
         act.Should().Throw<ArgumentException>();
     }
 
+    [Fact]
+    public void ReassignTo_WithValidData_UpdatesOwnerAndPlatform()
+    {
+        // Arrange
+        var token = new DeviceToken(Guid.NewGuid(), "fcm-token-123", "android");
+        var newUserId = Guid.NewGuid();
+
+        // Act
+        token.ReassignTo(newUserId, "ios");
+
+        // Assert
+        token.UserId.Should().Be(newUserId);
+        token.Token.Should().Be("fcm-token-123");
+        token.Platform.Should().Be("ios");
+    }
+
+    [Fact]
+    public void ReassignTo_WithEmptyUserId_ThrowsArgumentException()
+    {
+        // Arrange
+        var token = new DeviceToken(Guid.NewGuid(), "fcm-token-123", "android");
+
+        // Act
+        var act = () => token.ReassignTo(Guid.Empty, "android");
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -53,6 +82,22 @@ public class DeviceTokenTests
     {
         // Act
         var act = () => new DeviceToken(Guid.NewGuid(), "fcm-token-123", platform!);
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ReassignTo_WithEmptyPlatform_ThrowsArgumentException(string? platform)
+    {
+        // Arrange
+        var token = new DeviceToken(Guid.NewGuid(), "fcm-token-123", "android");
+
+        // Act
+        var act = () => token.ReassignTo(Guid.NewGuid(), platform!);
 
         // Assert
         act.Should().Throw<ArgumentException>();

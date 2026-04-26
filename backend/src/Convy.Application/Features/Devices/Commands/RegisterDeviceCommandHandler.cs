@@ -21,7 +21,15 @@ public class RegisterDeviceCommandHandler : IRequestHandler<RegisterDeviceComman
     {
         var existing = await _deviceTokenRepository.GetByTokenAsync(request.Token, cancellationToken);
         if (existing is not null)
+        {
+            if (existing.UserId != _currentUser.UserId)
+            {
+                existing.ReassignTo(_currentUser.UserId, request.Platform);
+                await _deviceTokenRepository.SaveChangesAsync(cancellationToken);
+            }
+
             return Result.Success();
+        }
 
         var deviceToken = new DeviceToken(_currentUser.UserId, request.Token, request.Platform);
         await _deviceTokenRepository.AddAsync(deviceToken, cancellationToken);

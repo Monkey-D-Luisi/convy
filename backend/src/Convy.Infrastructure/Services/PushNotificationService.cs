@@ -1,6 +1,5 @@
 using Convy.Application.Common.Interfaces;
 using Convy.Domain.Repositories;
-using FirebaseAdmin.Messaging;
 using Microsoft.Extensions.Logging;
 
 namespace Convy.Infrastructure.Services;
@@ -8,11 +7,16 @@ namespace Convy.Infrastructure.Services;
 public class PushNotificationService : IPushNotificationService
 {
     private readonly IDeviceTokenRepository _deviceTokenRepository;
+    private readonly IFirebaseMessagingClient _messagingClient;
     private readonly ILogger<PushNotificationService> _logger;
 
-    public PushNotificationService(IDeviceTokenRepository deviceTokenRepository, ILogger<PushNotificationService> logger)
+    public PushNotificationService(
+        IDeviceTokenRepository deviceTokenRepository,
+        IFirebaseMessagingClient messagingClient,
+        ILogger<PushNotificationService> logger)
     {
         _deviceTokenRepository = deviceTokenRepository;
+        _messagingClient = messagingClient;
         _logger = logger;
     }
 
@@ -21,23 +25,39 @@ public class PushNotificationService : IPushNotificationService
         var tokens = await _deviceTokenRepository.GetByUserIdsAsync(userIds, cancellationToken);
         if (tokens.Count == 0) return;
 
-        var message = new MulticastMessage
-        {
-            Tokens = tokens.Select(t => t.Token).ToList(),
-            Notification = new Notification
-            {
-                Title = title,
-                Body = body,
-            },
-            Data = data,
-        };
-
         try
         {
-            var response = await FirebaseMessaging.DefaultInstance.SendEachForMulticastAsync(message, cancellationToken);
-            if (response.FailureCount > 0)
+            var response = await _messagingClient.SendMulticastAsync(
+                tokens.Select(t => t.Token).ToList(),
+                title,
+                body,
+                data,
+                cancellationToken);
+
+            if (response.Failures.Count == 0) return;
+
+            var tokenByValue = tokens.ToDictionary(t => t.Token);
+            foreach (var group in response.Failures.GroupBy(f => f.ErrorCode))
             {
-                _logger.LogWarning("FCM: {FailureCount}/{Total} messages failed", response.FailureCount, tokens.Count);
+                _logger.LogWarning(
+                    "FCM failed {FailureCount}/{Total} messages with {ErrorCode}",
+                    group.Count(),
+                    tokens.Count,
+                    group.Key);
+            }
+
+            var removedAny = false;
+            foreach (var failure in response.Failures.Where(IsInvalidTokenFailure))
+            {
+                if (!tokenByValue.TryGetValue(failure.Token, out var token)) continue;
+
+                _deviceTokenRepository.Remove(token);
+                removedAny = true;
+            }
+
+            if (removedAny)
+            {
+                await _deviceTokenRepository.SaveChangesAsync(cancellationToken);
             }
         }
         catch (Exception ex)
@@ -45,4 +65,7 @@ public class PushNotificationService : IPushNotificationService
             _logger.LogError(ex, "Failed to send FCM notifications");
         }
     }
+
+    private static bool IsInvalidTokenFailure(FirebaseSendFailure failure) =>
+        failure.ErrorCode is "Unregistered" or "SenderIdMismatch";
 }
