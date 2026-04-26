@@ -84,7 +84,7 @@ builder.Services.AddScoped<ICurrentUserService>(sp => sp.GetRequiredService<Curr
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ConvyDbContext>();

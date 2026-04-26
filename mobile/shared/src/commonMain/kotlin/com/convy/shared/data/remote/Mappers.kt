@@ -10,6 +10,27 @@ fun UserDto.toDomain(): User = User(
     createdAt = createdAt,
 )
 
+fun NotificationPreferencesDto.toDomain(): NotificationPreferences = NotificationPreferences(
+    itemsAdded = itemsAdded,
+    tasksAdded = tasksAdded,
+    itemsCompleted = itemsCompleted,
+    tasksCompleted = tasksCompleted,
+    itemTaskChanges = itemTaskChanges,
+    listChanges = listChanges,
+    memberChanges = memberChanges,
+)
+
+fun NotificationPreferences.toRequest(): UpdateNotificationPreferencesRequest =
+    UpdateNotificationPreferencesRequest(
+        itemsAdded = itemsAdded,
+        tasksAdded = tasksAdded,
+        itemsCompleted = itemsCompleted,
+        tasksCompleted = tasksCompleted,
+        itemTaskChanges = itemTaskChanges,
+        listChanges = listChanges,
+        memberChanges = memberChanges,
+    )
+
 fun HouseholdDto.toDomain(): Household = Household(
     id = id,
     name = name,

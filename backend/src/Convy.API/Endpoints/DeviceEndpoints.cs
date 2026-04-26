@@ -14,7 +14,7 @@ public static class DeviceEndpoints
 
         group.MapPost("/register", async (RegisterDeviceRequest request, IMediator mediator) =>
         {
-            var command = new RegisterDeviceCommand(request.Token, request.Platform);
+            var command = new RegisterDeviceCommand(request.Token, request.Platform, request.Locale);
             var result = await mediator.Send(command);
             return result.IsSuccess ? Results.Ok() : MapError(result.Error!);
         });
@@ -35,4 +35,4 @@ public static class DeviceEndpoints
     };
 }
 
-public record RegisterDeviceRequest(string Token, string Platform);
+public record RegisterDeviceRequest(string Token, string Platform, string? Locale = null);

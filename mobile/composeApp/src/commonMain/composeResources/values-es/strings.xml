@@ -75,15 +75,19 @@
 
     <!-- List Detail -->
     <string name="detail_search_placeholder">Buscar artículos…</string>
+    <string name="detail_search_tasks_placeholder">Buscar tareas…</string>
     <string name="detail_voice_input">Entrada de voz</string>
     <string name="detail_stop_recording">Detener grabación</string>
     <string name="detail_shopping_mode">Modo compra</string>
     <string name="detail_add_item">Añadir artículo</string>
+    <string name="detail_add_task">Añadir tarea</string>
     <string name="detail_filter_all">Todos</string>
     <string name="detail_filter_pending">Pendientes</string>
     <string name="detail_filter_completed">Completados</string>
     <string name="detail_no_search_results">Ningún artículo coincide con tu búsqueda.</string>
+    <string name="detail_no_task_search_results">Ninguna tarea coincide con tu búsqueda.</string>
     <string name="detail_empty">Aún no hay artículos. ¡Toca + para añadir uno!</string>
+    <string name="detail_tasks_empty">Aún no hay tareas. ¡Toca + para añadir una!</string>
     <string name="detail_pending_header">Pendientes (%1$d)</string>
     <string name="detail_completed_header">Completados (%1$d)</string>
     <string name="detail_done_progress">%1$d de %2$d completados</string>
@@ -92,6 +96,17 @@
     <string name="detail_load_failed">Error al cargar los artículos</string>
     <string name="detail_update_failed">Error al actualizar el artículo</string>
     <string name="detail_delete_failed">Error al eliminar el artículo</string>
+    <string name="detail_task_load_failed">Error al cargar las tareas</string>
+    <string name="detail_task_update_failed">Error al actualizar la tarea</string>
+    <string name="detail_task_delete_failed">Error al eliminar la tarea</string>
+    <string name="detail_undo">Deshacer</string>
+    <string name="detail_redo">Rehacer</string>
+    <string name="detail_item_completed">Artículo completado</string>
+    <string name="detail_item_pending">Artículo marcado como pendiente</string>
+    <string name="detail_item_deleted">Artículo eliminado</string>
+    <string name="detail_task_completed">Tarea completada</string>
+    <string name="detail_task_pending">Tarea marcada como pendiente</string>
+    <string name="detail_task_deleted">Tarea eliminada</string>
     <string name="detail_voice_permission_required">Se necesita permiso de micrófono para añadir artículos por voz.</string>
     <string name="detail_recording_too_short">Grabación muy corta. Mantén el botón más tiempo.</string>
     <string name="detail_recording_failed">Error al iniciar la grabación</string>
@@ -122,6 +137,18 @@
     <string name="item_not_found">Artículo no encontrado</string>
     <string name="item_save_failed">Error al guardar el artículo</string>
     <string name="item_delete_failed">Error al eliminar el artículo</string>
+
+    <!-- Task Form -->
+    <string name="task_edit_title">Editar tarea</string>
+    <string name="task_new_title">Nueva tarea</string>
+    <string name="task_title_label">Título *</string>
+    <string name="task_note_label">Nota</string>
+    <string name="task_note_placeholder">Nota opcional…</string>
+    <string name="task_save_changes">Guardar cambios</string>
+    <string name="task_add">Añadir tarea</string>
+    <string name="task_not_found">Tarea no encontrada</string>
+    <string name="task_save_failed">Error al guardar la tarea</string>
+    <string name="task_delete_failed">Error al eliminar la tarea</string>
 
     <!-- Members -->
     <string name="members_title">Miembros</string>
@@ -168,6 +195,15 @@
     <string name="settings_leave_message">¿Seguro que quieres abandonar \"%1$s\"? Necesitarás una nueva invitación para volver.</string>
     <string name="settings_leave">Abandonar</string>
     <string name="settings_sign_out">Cerrar sesión</string>
+    <string name="settings_notifications">Notificaciones</string>
+    <string name="settings_notify_items_added">Artículos añadidos</string>
+    <string name="settings_notify_tasks_added">Tareas añadidas</string>
+    <string name="settings_notify_items_completed">Artículos completados</string>
+    <string name="settings_notify_tasks_completed">Tareas completadas</string>
+    <string name="settings_notify_item_task_changes">Ediciones y eliminaciones de artículos y tareas</string>
+    <string name="settings_notify_list_changes">Cambios en listas</string>
+    <string name="settings_notify_member_changes">Cambios de miembros</string>
+    <string name="settings_notifications_error">No se pudieron guardar los ajustes de notificaciones</string>
 
     <!-- Voice Input Sheet -->
     <string name="voice_title">Entrada de voz</string>

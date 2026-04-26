@@ -20,6 +20,15 @@ class ConvyApi(private val client: HttpClient) {
     suspend fun getUserProfile(): UserDto =
         client.get("api/v1/users/me").body()
 
+    suspend fun getNotificationPreferences(): NotificationPreferencesDto =
+        client.get("api/v1/users/me/notification-preferences").body()
+
+    suspend fun updateNotificationPreferences(request: UpdateNotificationPreferencesRequest): NotificationPreferencesDto =
+        client.put("api/v1/users/me/notification-preferences") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+
     // Households
     suspend fun createHousehold(request: CreateHouseholdRequest): IdResponse =
         client.post("api/v1/households") {
@@ -203,10 +212,10 @@ class ConvyApi(private val client: HttpClient) {
         }.body()
 
     // Devices
-    suspend fun registerDevice(token: String, platform: String) {
+    suspend fun registerDevice(token: String, platform: String, locale: String? = null) {
         client.post("api/v1/devices/register") {
             contentType(ContentType.Application.Json)
-            setBody(RegisterDeviceRequest(token, platform))
+            setBody(RegisterDeviceRequest(token, platform, locale))
         }
     }
 

@@ -89,4 +89,16 @@ data class BatchCreateItemEntry(
 data class RegisterDeviceRequest(
     @SerialName("token") val token: String,
     @SerialName("platform") val platform: String,
+    @SerialName("locale") val locale: String? = null,
+)
+
+@Serializable
+data class UpdateNotificationPreferencesRequest(
+    @SerialName("itemsAdded") val itemsAdded: Boolean,
+    @SerialName("tasksAdded") val tasksAdded: Boolean,
+    @SerialName("itemsCompleted") val itemsCompleted: Boolean,
+    @SerialName("tasksCompleted") val tasksCompleted: Boolean,
+    @SerialName("itemTaskChanges") val itemTaskChanges: Boolean,
+    @SerialName("listChanges") val listChanges: Boolean,
+    @SerialName("memberChanges") val memberChanges: Boolean,
 )

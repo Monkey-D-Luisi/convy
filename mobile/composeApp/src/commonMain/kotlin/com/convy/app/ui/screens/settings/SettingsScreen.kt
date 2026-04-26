@@ -2,6 +2,8 @@ package com.convy.app.ui.screens.settings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -71,6 +73,7 @@ fun SettingsContent(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
         ) {
             // Profile card with avatar
@@ -169,7 +172,88 @@ fun SettingsContent(
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        stringResource(Res.string.settings_notifications),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    NotificationSwitchRow(
+                        label = stringResource(Res.string.settings_notify_items_added),
+                        checked = state.notificationPreferences.itemsAdded,
+                        enabled = !state.isSavingNotificationPreferences,
+                        onCheckedChange = {
+                            onIntent(SettingsIntent.ToggleNotificationPreference(NotificationPreferenceKey.ItemsAdded, it))
+                        },
+                    )
+                    NotificationSwitchRow(
+                        label = stringResource(Res.string.settings_notify_tasks_added),
+                        checked = state.notificationPreferences.tasksAdded,
+                        enabled = !state.isSavingNotificationPreferences,
+                        onCheckedChange = {
+                            onIntent(SettingsIntent.ToggleNotificationPreference(NotificationPreferenceKey.TasksAdded, it))
+                        },
+                    )
+                    NotificationSwitchRow(
+                        label = stringResource(Res.string.settings_notify_items_completed),
+                        checked = state.notificationPreferences.itemsCompleted,
+                        enabled = !state.isSavingNotificationPreferences,
+                        onCheckedChange = {
+                            onIntent(SettingsIntent.ToggleNotificationPreference(NotificationPreferenceKey.ItemsCompleted, it))
+                        },
+                    )
+                    NotificationSwitchRow(
+                        label = stringResource(Res.string.settings_notify_tasks_completed),
+                        checked = state.notificationPreferences.tasksCompleted,
+                        enabled = !state.isSavingNotificationPreferences,
+                        onCheckedChange = {
+                            onIntent(SettingsIntent.ToggleNotificationPreference(NotificationPreferenceKey.TasksCompleted, it))
+                        },
+                    )
+                    NotificationSwitchRow(
+                        label = stringResource(Res.string.settings_notify_item_task_changes),
+                        checked = state.notificationPreferences.itemTaskChanges,
+                        enabled = !state.isSavingNotificationPreferences,
+                        onCheckedChange = {
+                            onIntent(SettingsIntent.ToggleNotificationPreference(NotificationPreferenceKey.ItemTaskChanges, it))
+                        },
+                    )
+                    NotificationSwitchRow(
+                        label = stringResource(Res.string.settings_notify_list_changes),
+                        checked = state.notificationPreferences.listChanges,
+                        enabled = !state.isSavingNotificationPreferences,
+                        onCheckedChange = {
+                            onIntent(SettingsIntent.ToggleNotificationPreference(NotificationPreferenceKey.ListChanges, it))
+                        },
+                    )
+                    NotificationSwitchRow(
+                        label = stringResource(Res.string.settings_notify_member_changes),
+                        checked = state.notificationPreferences.memberChanges,
+                        enabled = !state.isSavingNotificationPreferences,
+                        onCheckedChange = {
+                            onIntent(SettingsIntent.ToggleNotificationPreference(NotificationPreferenceKey.MemberChanges, it))
+                        },
+                    )
+                    if (state.notificationPreferencesError) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(Res.string.settings_notifications_error),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             OutlinedButton(
                 onClick = { onIntent(SettingsIntent.ShowLeaveConfirmation) },
@@ -256,5 +340,32 @@ fun SettingsContent(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun NotificationSwitchRow(
+    label: String,
+    checked: Boolean,
+    enabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
+        Switch(
+            checked = checked,
+            enabled = enabled,
+            onCheckedChange = onCheckedChange,
+        )
     }
 }

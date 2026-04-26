@@ -27,6 +27,12 @@ public class DeviceTokenConfiguration : IEntityTypeConfiguration<DeviceToken>
             .HasMaxLength(20)
             .IsRequired();
 
+        builder.Property(d => d.Locale)
+            .HasColumnName("locale")
+            .HasMaxLength(20)
+            .HasDefaultValue("en")
+            .IsRequired();
+
         builder.Property(d => d.CreatedAt)
             .HasColumnName("created_at")
             .IsRequired();

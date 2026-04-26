@@ -83,7 +83,7 @@ val networkModule = module {
 
     single { ConvyApi(get()) }
 
-    single { DeviceTokenManager(get(), get()) }
+    single { DeviceTokenManager(get(), get(), get()) }
 
     single {
         val apiConfig = get<ApiConfig>()

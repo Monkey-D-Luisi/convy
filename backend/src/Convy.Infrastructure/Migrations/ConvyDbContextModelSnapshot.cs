@@ -80,6 +80,14 @@ namespace Convy.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("Locale")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("en")
+                        .HasColumnName("locale");
+
                     b.Property<string>("Platform")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -345,6 +353,61 @@ namespace Convy.Infrastructure.Migrations
                         .HasDatabaseName("ix_list_items_list_id_is_completed");
 
                     b.ToTable("list_items", (string)null);
+                });
+
+            modelBuilder.Entity("Convy.Domain.Entities.NotificationPreferences", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("ItemTaskChanges")
+                        .HasColumnType("boolean")
+                        .HasColumnName("item_task_changes");
+
+                    b.Property<bool>("ItemsAdded")
+                        .HasColumnType("boolean")
+                        .HasColumnName("items_added");
+
+                    b.Property<bool>("ItemsCompleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("items_completed");
+
+                    b.Property<bool>("ListChanges")
+                        .HasColumnType("boolean")
+                        .HasColumnName("list_changes");
+
+                    b.Property<bool>("MemberChanges")
+                        .HasColumnType("boolean")
+                        .HasColumnName("member_changes");
+
+                    b.Property<bool>("TasksAdded")
+                        .HasColumnType("boolean")
+                        .HasColumnName("tasks_added");
+
+                    b.Property<bool>("TasksCompleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("tasks_completed");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_notification_preferences_user_id");
+
+                    b.ToTable("notification_preferences", (string)null);
                 });
 
             modelBuilder.Entity("Convy.Domain.Entities.TaskItem", b =>

@@ -1,12 +1,16 @@
+using Convy.Application.Common.Models;
+
 namespace Convy.Application.Common.Interfaces;
 
 public interface IPushNotificationBatcher
 {
-    void EnqueueItemNotification(
+    void EnqueueNotification(
         IEnumerable<Guid> recipientUserIds,
         Guid householdId,
         Guid listId,
+        string actorName,
         string listName,
-        string itemTitle,
+        string entryTitle,
+        NotificationCategory category,
         Dictionary<string, string>? data = null);
 }
