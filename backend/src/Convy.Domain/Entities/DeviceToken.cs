@@ -22,4 +22,13 @@ public class DeviceToken : Entity
         Platform = platform;
         CreatedAt = DateTime.UtcNow;
     }
+
+    public void ReassignTo(Guid userId, string platform)
+    {
+        if (userId == Guid.Empty) throw new ArgumentException("User ID is required.", nameof(userId));
+        if (string.IsNullOrWhiteSpace(platform)) throw new ArgumentException("Platform is required.", nameof(platform));
+
+        UserId = userId;
+        Platform = platform;
+    }
 }

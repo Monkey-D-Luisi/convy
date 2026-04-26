@@ -290,43 +290,7 @@ class ListDetailStore(
     }
 
     private fun applyCompletionState(itemId: String, completed: Boolean, animateCompletion: Boolean) {
-        _state.update { current ->
-            val exitIds = if (animateCompletion) {
-                current.completionExitEntryIds + itemId
-            } else {
-                current.completionExitEntryIds - itemId
-            }
-
-            if (completed) {
-                val entry = current.pendingEntries.find { it.id == itemId }
-                if (entry != null) {
-                    current.copy(
-                        pendingEntries = current.pendingEntries.map {
-                            if (it.id == itemId) it.copy(isCompleted = true) else it
-                        },
-                        completionExitEntryIds = exitIds,
-                    )
-                } else {
-                    current.copy(completionExitEntryIds = exitIds)
-                }
-            } else {
-                val entry = current.completedEntries.find { it.id == itemId }
-                if (entry != null) {
-                    current.copy(
-                        pendingEntries = current.pendingEntries + entry.copy(isCompleted = false, completedByName = null, completedAt = null),
-                        completedEntries = current.completedEntries.filter { it.id != itemId },
-                        completionExitEntryIds = exitIds,
-                    )
-                } else {
-                    current.copy(
-                        pendingEntries = current.pendingEntries.map {
-                            if (it.id == itemId) it.copy(isCompleted = false, completedByName = null, completedAt = null) else it
-                        },
-                        completionExitEntryIds = exitIds,
-                    )
-                }
-            }
-        }
+        _state.update { it.applyCompletionState(itemId, completed, animateCompletion) }
     }
 
     private fun moveCompletionExitToCompleted(itemId: String) {

@@ -80,6 +80,56 @@ fun ListDetailState.toggleShoppingMode(): ShoppingModeTransition {
     )
 }
 
+fun ListDetailState.applyCompletionState(
+    itemId: String,
+    completed: Boolean,
+    animateCompletion: Boolean,
+): ListDetailState {
+    val exitIds = if (animateCompletion) {
+        completionExitEntryIds + itemId
+    } else {
+        completionExitEntryIds - itemId
+    }
+
+    return if (completed) {
+        val entry = pendingEntries.find { it.id == itemId }
+        if (entry != null) {
+            if (animateCompletion) {
+                copy(
+                    pendingEntries = pendingEntries.map {
+                        if (it.id == itemId) it.copy(isCompleted = true) else it
+                    },
+                    completionExitEntryIds = exitIds,
+                )
+            } else {
+                copy(
+                    pendingEntries = pendingEntries.filter { it.id != itemId },
+                    completedEntries = listOf(entry.copy(isCompleted = true)) + completedEntries.filter { it.id != itemId },
+                    completionExitEntryIds = exitIds,
+                )
+            }
+        } else {
+            copy(completionExitEntryIds = exitIds)
+        }
+    } else {
+        val entry = completedEntries.find { it.id == itemId }
+        if (entry != null) {
+            copy(
+                pendingEntries = pendingEntries + entry.copy(isCompleted = false, completedByName = null, completedAt = null),
+                completedEntries = completedEntries.filter { it.id != itemId },
+                completionExitEntryIds = exitIds,
+            )
+        } else {
+            copy(
+                pendingEntries = pendingEntries.map {
+                    if (it.id == itemId) it.copy(isCompleted = false, completedByName = null, completedAt = null) else it
+                },
+                completionExitEntryIds = exitIds,
+            )
+        }
+    }
+}
+
 fun List<ParsedVoiceItem>.toggleSelectionAt(index: Int): List<ParsedVoiceItem> =
     if (index !in indices) {
         this

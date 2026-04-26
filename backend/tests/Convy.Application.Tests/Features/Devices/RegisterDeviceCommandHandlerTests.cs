@@ -55,4 +55,26 @@ public class RegisterDeviceCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         await _deviceTokenRepository.DidNotReceive().AddAsync(Arg.Any<DeviceToken>(), Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task Handle_WithExistingTokenForDifferentUser_ReassignsExistingToken()
+    {
+        // Arrange
+        var existing = new DeviceToken(Guid.NewGuid(), "fcm-token-123", "android");
+        _deviceTokenRepository.GetByTokenAsync("fcm-token-123", Arg.Any<CancellationToken>())
+            .Returns(existing);
+
+        var command = new RegisterDeviceCommand("fcm-token-123", "android");
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        existing.UserId.Should().Be(_userId);
+        existing.Token.Should().Be("fcm-token-123");
+        _deviceTokenRepository.DidNotReceive().Remove(Arg.Any<DeviceToken>());
+        await _deviceTokenRepository.DidNotReceive().AddAsync(Arg.Any<DeviceToken>(), Arg.Any<CancellationToken>());
+        await _deviceTokenRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
 }
