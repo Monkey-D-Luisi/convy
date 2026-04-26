@@ -38,6 +38,7 @@ public class UpdateTaskCommandHandler : IRequestHandler<UpdateTaskCommand, Resul
     public async Task<Result> Handle(UpdateTaskCommand request, CancellationToken cancellationToken)
     {
         var access = await TaskListAccess.GetAuthorizedTaskAsync(
+            request.ListId,
             request.TaskId,
             _taskRepository,
             _listRepository,

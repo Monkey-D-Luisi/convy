@@ -10,15 +10,23 @@ public class DeleteItemCommandValidatorTests
     [Fact]
     public void Validate_WithValidData_PassesValidation()
     {
-        var command = new DeleteItemCommand(Guid.NewGuid());
+        var command = new DeleteItemCommand(Guid.NewGuid(), Guid.NewGuid());
         var result = _validator.TestValidate(command);
         result.ShouldNotHaveAnyValidationErrors();
     }
 
     [Fact]
+    public void Validate_WithEmptyListId_FailsValidation()
+    {
+        var command = new DeleteItemCommand(Guid.Empty, Guid.NewGuid());
+        var result = _validator.TestValidate(command);
+        result.ShouldHaveValidationErrorFor(x => x.ListId);
+    }
+
+    [Fact]
     public void Validate_WithEmptyItemId_FailsValidation()
     {
-        var command = new DeleteItemCommand(Guid.Empty);
+        var command = new DeleteItemCommand(Guid.NewGuid(), Guid.Empty);
         var result = _validator.TestValidate(command);
         result.ShouldHaveValidationErrorFor(x => x.ItemId);
     }

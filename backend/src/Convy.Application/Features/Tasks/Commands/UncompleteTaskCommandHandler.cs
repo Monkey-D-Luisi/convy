@@ -38,6 +38,7 @@ public class UncompleteTaskCommandHandler : IRequestHandler<UncompleteTaskComman
     public async Task<Result> Handle(UncompleteTaskCommand request, CancellationToken cancellationToken)
     {
         var access = await TaskListAccess.GetAuthorizedTaskAsync(
+            request.ListId,
             request.TaskId,
             _taskRepository,
             _listRepository,

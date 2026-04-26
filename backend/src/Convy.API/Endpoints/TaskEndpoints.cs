@@ -48,7 +48,7 @@ public static class TaskEndpoints
             UpdateTaskRequest request,
             IMediator mediator) =>
         {
-            var command = new UpdateTaskCommand(taskId, request.Title, request.Note);
+            var command = new UpdateTaskCommand(listId, taskId, request.Title, request.Note);
             var result = await mediator.Send(command);
 
             return result.IsSuccess
@@ -61,7 +61,7 @@ public static class TaskEndpoints
             Guid taskId,
             IMediator mediator) =>
         {
-            var command = new DeleteTaskCommand(taskId);
+            var command = new DeleteTaskCommand(listId, taskId);
             var result = await mediator.Send(command);
 
             return result.IsSuccess
@@ -74,7 +74,7 @@ public static class TaskEndpoints
             Guid taskId,
             IMediator mediator) =>
         {
-            var command = new CompleteTaskCommand(taskId);
+            var command = new CompleteTaskCommand(listId, taskId);
             var result = await mediator.Send(command);
 
             return result.IsSuccess
@@ -87,7 +87,7 @@ public static class TaskEndpoints
             Guid taskId,
             IMediator mediator) =>
         {
-            var command = new UncompleteTaskCommand(taskId);
+            var command = new UncompleteTaskCommand(listId, taskId);
             var result = await mediator.Send(command);
 
             return result.IsSuccess

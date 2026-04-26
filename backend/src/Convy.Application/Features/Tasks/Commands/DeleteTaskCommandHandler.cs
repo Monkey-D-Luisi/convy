@@ -34,6 +34,7 @@ public class DeleteTaskCommandHandler : IRequestHandler<DeleteTaskCommand, Resul
     public async Task<Result> Handle(DeleteTaskCommand request, CancellationToken cancellationToken)
     {
         var access = await TaskListAccess.GetAuthorizedTaskAsync(
+            request.ListId,
             request.TaskId,
             _taskRepository,
             _listRepository,

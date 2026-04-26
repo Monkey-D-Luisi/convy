@@ -49,7 +49,7 @@ public static class ItemEndpoints
             UpdateItemRequest request,
             IMediator mediator) =>
         {
-            var command = new UpdateItemCommand(itemId, request.Title, request.Quantity, request.Unit, request.Note, request.RecurrenceFrequency, request.RecurrenceInterval);
+            var command = new UpdateItemCommand(listId, itemId, request.Title, request.Quantity, request.Unit, request.Note, request.RecurrenceFrequency, request.RecurrenceInterval);
             var result = await mediator.Send(command);
 
             return result.IsSuccess
@@ -62,7 +62,7 @@ public static class ItemEndpoints
             Guid itemId,
             IMediator mediator) =>
         {
-            var command = new DeleteItemCommand(itemId);
+            var command = new DeleteItemCommand(listId, itemId);
             var result = await mediator.Send(command);
 
             return result.IsSuccess
@@ -75,7 +75,7 @@ public static class ItemEndpoints
             Guid itemId,
             IMediator mediator) =>
         {
-            var command = new CompleteItemCommand(itemId);
+            var command = new CompleteItemCommand(listId, itemId);
             var result = await mediator.Send(command);
 
             return result.IsSuccess
@@ -88,7 +88,7 @@ public static class ItemEndpoints
             Guid itemId,
             IMediator mediator) =>
         {
-            var command = new UncompleteItemCommand(itemId);
+            var command = new UncompleteItemCommand(listId, itemId);
             var result = await mediator.Send(command);
 
             return result.IsSuccess

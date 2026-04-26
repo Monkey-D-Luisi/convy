@@ -10,15 +10,23 @@ public class UncompleteItemCommandValidatorTests
     [Fact]
     public void Validate_WithValidData_PassesValidation()
     {
-        var command = new UncompleteItemCommand(Guid.NewGuid());
+        var command = new UncompleteItemCommand(Guid.NewGuid(), Guid.NewGuid());
         var result = _validator.TestValidate(command);
         result.ShouldNotHaveAnyValidationErrors();
     }
 
     [Fact]
+    public void Validate_WithEmptyListId_FailsValidation()
+    {
+        var command = new UncompleteItemCommand(Guid.Empty, Guid.NewGuid());
+        var result = _validator.TestValidate(command);
+        result.ShouldHaveValidationErrorFor(x => x.ListId);
+    }
+
+    [Fact]
     public void Validate_WithEmptyItemId_FailsValidation()
     {
-        var command = new UncompleteItemCommand(Guid.Empty);
+        var command = new UncompleteItemCommand(Guid.NewGuid(), Guid.Empty);
         var result = _validator.TestValidate(command);
         result.ShouldHaveValidationErrorFor(x => x.ItemId);
     }

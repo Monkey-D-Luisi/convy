@@ -40,7 +40,7 @@ public class CompleteItemCommandHandlerTests
         _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
         _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
 
-        var command = new CompleteItemCommand(item.Id);
+        var command = new CompleteItemCommand(list.Id, item.Id);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -60,7 +60,7 @@ public class CompleteItemCommandHandlerTests
         _itemRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((ListItem?)null);
 
-        var command = new CompleteItemCommand(Guid.NewGuid());
+        var command = new CompleteItemCommand(Guid.NewGuid(), Guid.NewGuid());
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -83,7 +83,7 @@ public class CompleteItemCommandHandlerTests
         _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
         _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
 
-        var command = new CompleteItemCommand(item.Id);
+        var command = new CompleteItemCommand(list.Id, item.Id);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -91,5 +91,27 @@ public class CompleteItemCommandHandlerTests
         // Assert
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("Forbidden");
+    }
+
+    [Fact]
+    public async Task Handle_WhenItemBelongsToDifferentList_ReturnsNotFound()
+    {
+        // Arrange
+        var household = new Household("Home", _userId);
+        var list = new HouseholdList("Shopping", ListType.Shopping, household.Id, _userId);
+        var item = new ListItem("Milk", list.Id, _userId);
+        _itemRepository.GetByIdAsync(item.Id, Arg.Any<CancellationToken>()).Returns(item);
+
+        var command = new CompleteItemCommand(Guid.NewGuid(), item.Id);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("NotFound");
+        item.IsCompleted.Should().BeFalse();
+        await _itemRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _notifications.DidNotReceive().NotifyItemCompleted(Arg.Any<Guid>(), Arg.Any<ListItemDto>(), Arg.Any<CancellationToken>());
     }
 }

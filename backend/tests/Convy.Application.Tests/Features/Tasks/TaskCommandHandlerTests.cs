@@ -35,7 +35,7 @@ public class TaskCommandHandlerTests
         var (household, list, task) = ArrangeTaskList();
         var handler = new UpdateTaskCommandHandler(_taskRepository, _listRepository, _householdRepository, _userRepository, _currentUser, _notifications, _activityLogger);
 
-        var result = await handler.Handle(new UpdateTaskCommand(task.Id, "Mop kitchen", null), CancellationToken.None);
+        var result = await handler.Handle(new UpdateTaskCommand(list.Id, task.Id, "Mop kitchen", null), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         task.Title.Should().Be("Mop kitchen");
@@ -47,10 +47,10 @@ public class TaskCommandHandlerTests
     [Fact]
     public async Task Complete_WithTaskList_CompletesTask()
     {
-        var (household, _, task) = ArrangeTaskList();
+        var (household, list, task) = ArrangeTaskList();
         var handler = new CompleteTaskCommandHandler(_taskRepository, _listRepository, _householdRepository, _userRepository, _currentUser, _notifications, _activityLogger);
 
-        var result = await handler.Handle(new CompleteTaskCommand(task.Id), CancellationToken.None);
+        var result = await handler.Handle(new CompleteTaskCommand(list.Id, task.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         task.IsCompleted.Should().BeTrue();
@@ -60,11 +60,11 @@ public class TaskCommandHandlerTests
     [Fact]
     public async Task Uncomplete_WithTaskList_UncompletesTask()
     {
-        var (household, _, task) = ArrangeTaskList();
+        var (household, list, task) = ArrangeTaskList();
         task.Complete(_userId);
         var handler = new UncompleteTaskCommandHandler(_taskRepository, _listRepository, _householdRepository, _userRepository, _currentUser, _notifications, _activityLogger);
 
-        var result = await handler.Handle(new UncompleteTaskCommand(task.Id), CancellationToken.None);
+        var result = await handler.Handle(new UncompleteTaskCommand(list.Id, task.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         task.IsCompleted.Should().BeFalse();
@@ -74,10 +74,10 @@ public class TaskCommandHandlerTests
     [Fact]
     public async Task Delete_WithTaskList_RemovesTask()
     {
-        var (household, _, task) = ArrangeTaskList();
+        var (household, list, task) = ArrangeTaskList();
         var handler = new DeleteTaskCommandHandler(_taskRepository, _listRepository, _householdRepository, _currentUser, _notifications, _activityLogger);
 
-        var result = await handler.Handle(new DeleteTaskCommand(task.Id), CancellationToken.None);
+        var result = await handler.Handle(new DeleteTaskCommand(list.Id, task.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         _taskRepository.Received(1).Remove(task);
@@ -94,11 +94,26 @@ public class TaskCommandHandlerTests
         _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
         var handler = new CompleteTaskCommandHandler(_taskRepository, _listRepository, _householdRepository, _userRepository, _currentUser, _notifications, _activityLogger);
 
-        var result = await handler.Handle(new CompleteTaskCommand(task.Id), CancellationToken.None);
+        var result = await handler.Handle(new CompleteTaskCommand(list.Id, task.Id), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("Validation");
         await _taskRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Complete_WhenTaskBelongsToDifferentList_ReturnsNotFound()
+    {
+        var (_, _, task) = ArrangeTaskList();
+        var handler = new CompleteTaskCommandHandler(_taskRepository, _listRepository, _householdRepository, _userRepository, _currentUser, _notifications, _activityLogger);
+
+        var result = await handler.Handle(new CompleteTaskCommand(Guid.NewGuid(), task.Id), CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("NotFound");
+        task.IsCompleted.Should().BeFalse();
+        await _taskRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _notifications.DidNotReceive().NotifyTaskCompleted(Arg.Any<Guid>(), Arg.Any<TaskItemDto>(), Arg.Any<CancellationToken>());
     }
 
     private (Household Household, HouseholdList List, TaskItem Task) ArrangeTaskList()

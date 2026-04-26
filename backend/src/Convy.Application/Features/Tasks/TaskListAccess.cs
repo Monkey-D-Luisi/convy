@@ -30,6 +30,7 @@ internal static class TaskListAccess
     }
 
     public static async Task<Result<(TaskItem Task, HouseholdList List, Household Household)>> GetAuthorizedTaskAsync(
+        Guid listId,
         Guid taskId,
         ITaskItemRepository taskRepository,
         IHouseholdListRepository listRepository,
@@ -41,8 +42,11 @@ internal static class TaskListAccess
         if (task is null)
             return Result<(TaskItem, HouseholdList, Household)>.Failure(Error.NotFound("Task not found."));
 
+        if (task.ListId != listId)
+            return Result<(TaskItem, HouseholdList, Household)>.Failure(Error.NotFound("Task not found."));
+
         var access = await GetAuthorizedTaskListAsync(
-            task.ListId,
+            listId,
             listRepository,
             householdRepository,
             currentUser,
