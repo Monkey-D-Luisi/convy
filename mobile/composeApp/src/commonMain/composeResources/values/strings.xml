@@ -195,6 +195,15 @@
     <string name="settings_leave_message">Are you sure you want to leave \"%1$s\"? You will need a new invite to rejoin.</string>
     <string name="settings_leave">Leave</string>
     <string name="settings_sign_out">Sign out</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_notify_items_added">Shopping items added</string>
+    <string name="settings_notify_tasks_added">Tasks added</string>
+    <string name="settings_notify_items_completed">Shopping items completed</string>
+    <string name="settings_notify_tasks_completed">Tasks completed</string>
+    <string name="settings_notify_item_task_changes">Item and task edits/removals</string>
+    <string name="settings_notify_list_changes">List changes</string>
+    <string name="settings_notify_member_changes">Member changes</string>
+    <string name="settings_notifications_error">Could not save notification settings</string>
 
     <!-- Voice Input Sheet -->
     <string name="voice_title">Voice Input</string>

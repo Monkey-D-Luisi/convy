@@ -36,6 +36,34 @@ public static class UserEndpoints
                 ? Results.Ok(result.Value)
                 : MapError(result.Error!);
         });
+
+        group.MapGet("/me/notification-preferences", [Authorize] async (IMediator mediator) =>
+        {
+            var result = await mediator.Send(new GetNotificationPreferencesQuery());
+
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : MapError(result.Error!);
+        });
+
+        group.MapPut("/me/notification-preferences", [Authorize] async (
+            UpdateNotificationPreferencesRequest request,
+            IMediator mediator) =>
+        {
+            var command = new UpdateNotificationPreferencesCommand(
+                request.ItemsAdded,
+                request.TasksAdded,
+                request.ItemsCompleted,
+                request.TasksCompleted,
+                request.ItemTaskChanges,
+                request.ListChanges,
+                request.MemberChanges);
+            var result = await mediator.Send(command);
+
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : MapError(result.Error!);
+        });
     }
 
     private static IResult MapError(Error error) => error.Code switch
@@ -49,3 +77,12 @@ public static class UserEndpoints
 }
 
 public record RegisterUserRequest(string DisplayName, string Email);
+
+public record UpdateNotificationPreferencesRequest(
+    bool ItemsAdded,
+    bool TasksAdded,
+    bool ItemsCompleted,
+    bool TasksCompleted,
+    bool ItemTaskChanges,
+    bool ListChanges,
+    bool MemberChanges);

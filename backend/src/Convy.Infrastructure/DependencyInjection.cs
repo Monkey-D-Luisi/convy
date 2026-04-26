@@ -28,8 +28,10 @@ public static class DependencyInjection
         services.AddScoped<ITaskItemRepository, TaskItemRepository>();
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<IDeviceTokenRepository, DeviceTokenRepository>();
+        services.AddScoped<INotificationPreferencesRepository, NotificationPreferencesRepository>();
         services.AddScoped<IHouseholdNotificationService, HouseholdNotificationService>();
         services.AddScoped<IFirebaseMessagingClient, FirebaseMessagingClient>();
+        services.AddScoped<IPushNotificationTextProvider, PushNotificationTextProvider>();
         services.AddScoped<IPushNotificationService, PushNotificationService>();
         services.AddScoped<IActivityLogger, ActivityLogger>();
 

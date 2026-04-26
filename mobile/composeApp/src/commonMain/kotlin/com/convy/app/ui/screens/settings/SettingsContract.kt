@@ -1,5 +1,7 @@
 package com.convy.app.ui.screens.settings
 
+import com.convy.shared.domain.model.NotificationPreferences
+
 data class SettingsState(
     val displayName: String = "",
     val email: String = "",
@@ -12,7 +14,20 @@ data class SettingsState(
     val renameText: String = "",
     val isRenaming: Boolean = false,
     val isLeaving: Boolean = false,
+    val notificationPreferences: NotificationPreferences = NotificationPreferences(),
+    val isSavingNotificationPreferences: Boolean = false,
+    val notificationPreferencesError: Boolean = false,
 )
+
+enum class NotificationPreferenceKey {
+    ItemsAdded,
+    TasksAdded,
+    ItemsCompleted,
+    TasksCompleted,
+    ItemTaskChanges,
+    ListChanges,
+    MemberChanges,
+}
 
 sealed interface SettingsIntent {
     data object SignOut : SettingsIntent
@@ -24,6 +39,10 @@ sealed interface SettingsIntent {
     data object DismissRenameDialog : SettingsIntent
     data class UpdateRenameText(val text: String) : SettingsIntent
     data object ConfirmRename : SettingsIntent
+    data class ToggleNotificationPreference(
+        val key: NotificationPreferenceKey,
+        val enabled: Boolean,
+    ) : SettingsIntent
 }
 
 sealed interface SettingsSideEffect {

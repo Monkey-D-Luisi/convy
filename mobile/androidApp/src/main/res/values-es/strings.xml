@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Convy</string>
+    <string name="notification_channel_list_updates_name">Actualizaciones de listas</string>
+    <string name="notification_channel_list_updates_description">Notificaciones cuando cambian listas, artículos, tareas o miembros</string>
+</resources>

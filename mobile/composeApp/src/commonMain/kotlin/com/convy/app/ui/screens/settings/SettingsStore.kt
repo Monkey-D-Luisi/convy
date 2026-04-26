@@ -4,6 +4,7 @@ import com.convy.app.platform.AppInfoProvider
 import com.convy.shared.domain.repository.AuthRepository
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.UserRepository
+import com.convy.shared.domain.model.NotificationPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -45,6 +46,7 @@ class SettingsStore(
                 it.copy(renameText = intent.text)
             }
             is SettingsIntent.ConfirmRename -> renameHousehold()
+            is SettingsIntent.ToggleNotificationPreference -> updateNotificationPreference(intent.key, intent.enabled)
         }
     }
 
@@ -68,6 +70,9 @@ class SettingsStore(
                         email = profile.email,
                     )
                 }
+            }
+            userRepository.getNotificationPreferences().onSuccess { preferences ->
+                _state.update { it.copy(notificationPreferences = preferences, notificationPreferencesError = false) }
             }
             householdRepository.getMyHouseholds().onSuccess { households ->
                 if (households.isNotEmpty()) {
@@ -124,5 +129,51 @@ class SettingsStore(
                 },
             )
         }
+    }
+
+    private fun updateNotificationPreference(key: NotificationPreferenceKey, enabled: Boolean) {
+        val updated = _state.value.notificationPreferences.withValue(key, enabled)
+        _state.update {
+            it.copy(
+                notificationPreferences = updated,
+                isSavingNotificationPreferences = true,
+                notificationPreferencesError = false,
+            )
+        }
+
+        scope.launch {
+            userRepository.updateNotificationPreferences(updated).fold(
+                onSuccess = { preferences ->
+                    _state.update {
+                        it.copy(
+                            notificationPreferences = preferences,
+                            isSavingNotificationPreferences = false,
+                            notificationPreferencesError = false,
+                        )
+                    }
+                },
+                onFailure = {
+                    _state.update {
+                        it.copy(
+                            isSavingNotificationPreferences = false,
+                            notificationPreferencesError = true,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    private fun NotificationPreferences.withValue(
+        key: NotificationPreferenceKey,
+        enabled: Boolean,
+    ): NotificationPreferences = when (key) {
+        NotificationPreferenceKey.ItemsAdded -> copy(itemsAdded = enabled)
+        NotificationPreferenceKey.TasksAdded -> copy(tasksAdded = enabled)
+        NotificationPreferenceKey.ItemsCompleted -> copy(itemsCompleted = enabled)
+        NotificationPreferenceKey.TasksCompleted -> copy(tasksCompleted = enabled)
+        NotificationPreferenceKey.ItemTaskChanges -> copy(itemTaskChanges = enabled)
+        NotificationPreferenceKey.ListChanges -> copy(listChanges = enabled)
+        NotificationPreferenceKey.MemberChanges -> copy(memberChanges = enabled)
     }
 }

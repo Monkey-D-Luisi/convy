@@ -19,11 +19,26 @@ appId: com.monkeydluisi.convy
 # Verify household section with rename button
 - assertVisible: "Household"
 
-# Verify leave household button
-- assertVisible: "Leave household"
-
 - assertVisible: "App version"
 - assertVisible: "${APP_VERSION}"
+
+# Verify notification settings section
+- assertVisible: "Notifications"
+- assertVisible: "Shopping items added"
+- assertVisible: "Tasks added"
+- scrollUntilVisible:
+    element:
+      text: "Member changes"
+    direction: DOWN
+    timeout: 5000
+
+# Verify account actions after the scrollable notification section
+- scrollUntilVisible:
+    element:
+      text: "Leave household"
+    direction: DOWN
+    timeout: 5000
+- assertVisible: "Leave household"
 - assertVisible: "Sign out"
 
 # Sign out

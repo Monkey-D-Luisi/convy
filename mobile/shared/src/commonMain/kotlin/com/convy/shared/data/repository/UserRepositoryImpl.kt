@@ -3,6 +3,8 @@ package com.convy.shared.data.repository
 import com.convy.shared.data.remote.ConvyApi
 import com.convy.shared.data.remote.dto.RegisterUserRequest
 import com.convy.shared.data.remote.toDomain
+import com.convy.shared.data.remote.toRequest
+import com.convy.shared.domain.model.NotificationPreferences
 import com.convy.shared.domain.model.User
 import com.convy.shared.domain.repository.UserRepository
 
@@ -21,5 +23,15 @@ class UserRepositoryImpl(
     override suspend fun getProfile(): Result<User> =
         runCatching {
             api.getUserProfile().toDomain()
+        }
+
+    override suspend fun getNotificationPreferences(): Result<NotificationPreferences> =
+        runCatching {
+            api.getNotificationPreferences().toDomain()
+        }
+
+    override suspend fun updateNotificationPreferences(preferences: NotificationPreferences): Result<NotificationPreferences> =
+        runCatching {
+            api.updateNotificationPreferences(preferences.toRequest()).toDomain()
         }
 }

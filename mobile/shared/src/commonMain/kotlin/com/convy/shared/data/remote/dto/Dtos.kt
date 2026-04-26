@@ -12,6 +12,17 @@ data class UserDto(
 )
 
 @Serializable
+data class NotificationPreferencesDto(
+    @SerialName("itemsAdded") val itemsAdded: Boolean,
+    @SerialName("tasksAdded") val tasksAdded: Boolean,
+    @SerialName("itemsCompleted") val itemsCompleted: Boolean,
+    @SerialName("tasksCompleted") val tasksCompleted: Boolean,
+    @SerialName("itemTaskChanges") val itemTaskChanges: Boolean,
+    @SerialName("listChanges") val listChanges: Boolean,
+    @SerialName("memberChanges") val memberChanges: Boolean,
+)
+
+@Serializable
 data class HouseholdDto(
     @SerialName("id") val id: String,
     @SerialName("name") val name: String,

@@ -1,4 +1,5 @@
 using Convy.Infrastructure.Services;
+using Convy.Application.Common.Models;
 using FluentAssertions;
 using NSubstitute;
 
@@ -7,86 +8,22 @@ namespace Convy.Infrastructure.Tests.Services;
 public class PushNotificationBatcherTests
 {
     [Fact]
-    public void ComposeMessage_SingleItem_ReturnsSingularMessage()
-    {
-        var entry = new PushNotificationBatcher.BatchEntry(
-            recipientUserIds: [Guid.NewGuid()],
-            listName: "Groceries",
-            itemTitles: ["Milk"],
-            data: null,
-            lastEnqueuedAt: DateTime.UtcNow);
-
-        var (title, body) = PushNotificationBatcher.ComposeMessage(entry);
-
-        title.Should().Be("New item added");
-        body.Should().Be("Milk was added to Groceries");
-    }
-
-    [Fact]
-    public void ComposeMessage_TwoItems_ReturnsCommaSeparated()
-    {
-        var entry = new PushNotificationBatcher.BatchEntry(
-            recipientUserIds: [Guid.NewGuid()],
-            listName: "Groceries",
-            itemTitles: ["Milk", "Bread"],
-            data: null,
-            lastEnqueuedAt: DateTime.UtcNow);
-
-        var (title, body) = PushNotificationBatcher.ComposeMessage(entry);
-
-        title.Should().Be("Items added");
-        body.Should().Be("Milk, Bread were added to Groceries");
-    }
-
-    [Fact]
-    public void ComposeMessage_FourItems_ShowsTwoAndMore()
-    {
-        var entry = new PushNotificationBatcher.BatchEntry(
-            recipientUserIds: [Guid.NewGuid()],
-            listName: "Groceries",
-            itemTitles: ["Milk", "Bread", "Eggs", "Butter"],
-            data: null,
-            lastEnqueuedAt: DateTime.UtcNow);
-
-        var (title, body) = PushNotificationBatcher.ComposeMessage(entry);
-
-        title.Should().Be("Items added");
-        body.Should().Be("Milk, Bread and 2 more were added to Groceries");
-    }
-
-    [Fact]
-    public void ComposeMessage_ThreeItems_ShowsTwoAndOneMore()
-    {
-        var entry = new PushNotificationBatcher.BatchEntry(
-            recipientUserIds: [Guid.NewGuid()],
-            listName: "Shopping",
-            itemTitles: ["Milk", "Bread", "Eggs"],
-            data: null,
-            lastEnqueuedAt: DateTime.UtcNow);
-
-        var (title, body) = PushNotificationBatcher.ComposeMessage(entry);
-
-        title.Should().Be("Items added");
-        body.Should().Be("Milk, Bread and 1 more were added to Shopping");
-    }
-
-    [Fact]
-    public void EnqueueItemNotification_MultipleItems_BatchesTogether()
+    public void EnqueueNotification_MultipleItemsInSameCategory_BatchesTogether()
     {
         var batcher = CreateBatcher();
         var recipientId = Guid.NewGuid();
         var householdId = Guid.NewGuid();
         var listId = Guid.NewGuid();
 
-        batcher.EnqueueItemNotification([recipientId], householdId, listId, "Groceries", "Milk");
-        batcher.EnqueueItemNotification([recipientId], householdId, listId, "Groceries", "Bread");
-        batcher.EnqueueItemNotification([recipientId], householdId, listId, "Groceries", "Eggs");
+        batcher.EnqueueNotification([recipientId], householdId, listId, "Luis", "Groceries", "Milk", NotificationCategory.ItemsAdded);
+        batcher.EnqueueNotification([recipientId], householdId, listId, "Luis", "Groceries", "Bread", NotificationCategory.ItemsAdded);
+        batcher.EnqueueNotification([recipientId], householdId, listId, "Luis", "Groceries", "Eggs", NotificationCategory.ItemsAdded);
 
         batcher.PendingCount.Should().Be(1);
     }
 
     [Fact]
-    public void EnqueueItemNotification_DifferentLists_CreatesSeparateBatches()
+    public void EnqueueNotification_DifferentLists_CreatesSeparateBatches()
     {
         var batcher = CreateBatcher();
         var recipientId = Guid.NewGuid();
@@ -94,10 +31,44 @@ public class PushNotificationBatcherTests
         var listId1 = Guid.NewGuid();
         var listId2 = Guid.NewGuid();
 
-        batcher.EnqueueItemNotification([recipientId], householdId, listId1, "Groceries", "Milk");
-        batcher.EnqueueItemNotification([recipientId], householdId, listId2, "Hardware", "Nails");
+        batcher.EnqueueNotification([recipientId], householdId, listId1, "Luis", "Groceries", "Milk", NotificationCategory.ItemsAdded);
+        batcher.EnqueueNotification([recipientId], householdId, listId2, "Luis", "Hardware", "Nails", NotificationCategory.ItemsAdded);
 
         batcher.PendingCount.Should().Be(2);
+    }
+
+    [Fact]
+    public void EnqueueNotification_DifferentCategories_CreatesSeparateBatches()
+    {
+        var batcher = CreateBatcher();
+        var recipientId = Guid.NewGuid();
+        var householdId = Guid.NewGuid();
+        var listId = Guid.NewGuid();
+
+        batcher.EnqueueNotification([recipientId], householdId, listId, "Luis", "Groceries", "Milk", NotificationCategory.ItemsAdded);
+        batcher.EnqueueNotification([recipientId], householdId, listId, "Luis", "Groceries", "Milk", NotificationCategory.ItemsCompleted);
+
+        batcher.PendingCount.Should().Be(2);
+    }
+
+    [Fact]
+    public void CreateTemplate_ForTaskCompletionBatch_ReturnsTaskCompletionTemplate()
+    {
+        var entry = new PushNotificationBatcher.BatchEntry(
+            recipientUserIds: [Guid.NewGuid()],
+            actorName: "Luis",
+            listName: "Home",
+            entryTitles: ["Clean kitchen", "Pay bills"],
+            category: NotificationCategory.TasksCompleted,
+            data: null,
+            lastEnqueuedAt: DateTime.UtcNow);
+
+        var template = PushNotificationBatcher.CreateTemplate(entry);
+
+        template.Key.Should().Be(NotificationTemplateKey.TasksCompleted);
+        template.Parameters["actorName"].Should().Be("Luis");
+        template.Parameters["listName"].Should().Be("Home");
+        template.Parameters["count"].Should().Be("2");
     }
 
     [Fact]
@@ -109,24 +80,26 @@ public class PushNotificationBatcherTests
         var later = now.AddSeconds(5);
         var entry = new PushNotificationBatcher.BatchEntry(
             recipientUserIds: [firstRecipientId],
+            actorName: "Luis",
             listName: "Groceries",
-            itemTitles: ["Milk"],
+            entryTitles: ["Milk"],
+            category: NotificationCategory.ItemsAdded,
             data: new Dictionary<string, string> { ["listId"] = "list-1" },
             lastEnqueuedAt: now);
 
         var appended = entry.Append([secondRecipientId], "Bread", later);
 
-        entry.ItemTitles.Should().ContainSingle().Which.Should().Be("Milk");
+        entry.EntryTitles.Should().ContainSingle().Which.Should().Be("Milk");
         entry.RecipientUserIds.Should().ContainSingle().Which.Should().Be(firstRecipientId);
         entry.LastEnqueuedAt.Should().Be(now);
 
-        appended.ItemTitles.Should().ContainInOrder("Milk", "Bread");
+        appended.EntryTitles.Should().ContainInOrder("Milk", "Bread");
         appended.RecipientUserIds.Should().BeEquivalentTo([firstRecipientId, secondRecipientId]);
         appended.LastEnqueuedAt.Should().Be(later);
     }
 
     [Fact]
-    public void EnqueueItemNotification_UsesInjectedTimeProvider()
+    public void EnqueueNotification_UsesInjectedTimeProvider()
     {
         var now = new DateTimeOffset(2026, 4, 17, 11, 0, 0, TimeSpan.Zero);
         var timeProvider = new TestTimeProvider(now);
@@ -134,7 +107,7 @@ public class PushNotificationBatcherTests
         var householdId = Guid.NewGuid();
         var listId = Guid.NewGuid();
 
-        batcher.EnqueueItemNotification([Guid.NewGuid()], householdId, listId, "Groceries", "Milk");
+        batcher.EnqueueNotification([Guid.NewGuid()], householdId, listId, "Luis", "Groceries", "Milk", NotificationCategory.ItemsAdded);
 
         var entry = batcher.GetPendingEntryForTests(householdId, listId);
         entry!.LastEnqueuedAt.Should().Be(now);

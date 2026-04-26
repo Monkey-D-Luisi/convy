@@ -18,8 +18,22 @@ public class DeviceTokenTests
         token.UserId.Should().Be(userId);
         token.Token.Should().Be("fcm-token-123");
         token.Platform.Should().Be("android");
+        token.Locale.Should().Be("en");
         token.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(2));
         token.Id.Should().NotBeEmpty();
+    }
+
+    [Theory]
+    [InlineData("es-ES", "es")]
+    [InlineData("es", "es")]
+    [InlineData("en-US", "en")]
+    [InlineData("pl-PL", "en")]
+    [InlineData(null, "en")]
+    public void Constructor_WithLocale_NormalizesSupportedLanguageOrFallsBackToEnglish(string? locale, string expected)
+    {
+        var token = new DeviceToken(Guid.NewGuid(), "fcm-token-123", "android", locale);
+
+        token.Locale.Should().Be(expected);
     }
 
     [Fact]
@@ -46,6 +60,20 @@ public class DeviceTokenTests
         token.UserId.Should().Be(newUserId);
         token.Token.Should().Be("fcm-token-123");
         token.Platform.Should().Be("ios");
+        token.Locale.Should().Be("en");
+    }
+
+    [Fact]
+    public void ReassignTo_WithLocale_UpdatesOwnerPlatformAndLocale()
+    {
+        var token = new DeviceToken(Guid.NewGuid(), "fcm-token-123", "android", "en");
+        var newUserId = Guid.NewGuid();
+
+        token.ReassignTo(newUserId, "ios", "es-ES");
+
+        token.UserId.Should().Be(newUserId);
+        token.Platform.Should().Be("ios");
+        token.Locale.Should().Be("es");
     }
 
     [Fact]

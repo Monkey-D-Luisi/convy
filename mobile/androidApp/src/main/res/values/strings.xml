@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Convy</string>
+    <string name="notification_channel_list_updates_name">List updates</string>
+    <string name="notification_channel_list_updates_description">Notifications when lists, items, tasks, or members change</string>
 </resources>

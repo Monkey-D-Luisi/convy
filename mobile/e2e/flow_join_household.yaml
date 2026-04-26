@@ -43,6 +43,11 @@ appId: com.monkeydluisi.convy
 # Sign out original user so the second user can register and join.
 - tapOn: "Settings"
 - assertVisible: "Settings"
+- scrollUntilVisible:
+    element:
+      text: "Sign out"
+    direction: DOWN
+    timeout: 5000
 - tapOn: "Sign out"
 
 - extendedWaitUntil:
@@ -94,6 +99,11 @@ appId: com.monkeydluisi.convy
 # Leave the app signed out for flow_sign_in.
 - tapOn: "Settings"
 - assertVisible: "Settings"
+- scrollUntilVisible:
+    element:
+      text: "Sign out"
+    direction: DOWN
+    timeout: 5000
 - tapOn: "Sign out"
 
 - extendedWaitUntil:
