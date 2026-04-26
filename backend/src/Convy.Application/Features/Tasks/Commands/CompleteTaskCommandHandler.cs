@@ -38,6 +38,7 @@ public class CompleteTaskCommandHandler : IRequestHandler<CompleteTaskCommand, R
     public async Task<Result> Handle(CompleteTaskCommand request, CancellationToken cancellationToken)
     {
         var access = await TaskListAccess.GetAuthorizedTaskAsync(
+            request.ListId,
             request.TaskId,
             _taskRepository,
             _listRepository,

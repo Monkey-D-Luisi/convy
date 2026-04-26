@@ -37,6 +37,9 @@ public class DeleteItemCommandHandler : IRequestHandler<DeleteItemCommand, Resul
         if (item is null)
             return Result.Failure(Error.NotFound("Item not found."));
 
+        if (item.ListId != request.ListId)
+            return Result.Failure(Error.NotFound("Item not found."));
+
         var list = await _listRepository.GetByIdAsync(item.ListId, cancellationToken);
         if (list is null)
             return Result.Failure(Error.NotFound("List not found."));

@@ -6,6 +6,9 @@ public class UpdateItemCommandValidator : AbstractValidator<UpdateItemCommand>
 {
     public UpdateItemCommandValidator()
     {
+        RuleFor(x => x.ListId)
+            .NotEmpty().WithMessage("List ID is required.");
+
         RuleFor(x => x.ItemId)
             .NotEmpty().WithMessage("Item ID is required.");
 

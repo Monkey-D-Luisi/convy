@@ -3,4 +3,4 @@ using MediatR;
 
 namespace Convy.Application.Features.Tasks.Commands;
 
-public record CompleteTaskCommand(Guid TaskId) : IRequest<Result>;
+public record CompleteTaskCommand(Guid ListId, Guid TaskId) : IRequest<Result>;

@@ -3,4 +3,4 @@ using MediatR;
 
 namespace Convy.Application.Features.Tasks.Commands;
 
-public record UpdateTaskCommand(Guid TaskId, string Title, string? Note) : IRequest<Result>;
+public record UpdateTaskCommand(Guid ListId, Guid TaskId, string Title, string? Note) : IRequest<Result>;
