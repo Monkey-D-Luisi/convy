@@ -38,6 +38,20 @@ variable "availability_domain_index" {
   default     = 0
 }
 
+variable "fault_domain" {
+  description = "Optional OCI fault domain for A1 placement retries. Leave null for OCI default placement."
+  type        = string
+  default     = null
+
+  validation {
+    condition = (
+      var.fault_domain == null ||
+      contains(["FAULT-DOMAIN-1", "FAULT-DOMAIN-2", "FAULT-DOMAIN-3"], var.fault_domain)
+    )
+    error_message = "fault_domain must be null, FAULT-DOMAIN-1, FAULT-DOMAIN-2, or FAULT-DOMAIN-3."
+  }
+}
+
 variable "allowed_ssh_cidr" {
   description = "CIDR allowed to reach SSH. Keep key-only SSH enabled on the host."
   type        = string

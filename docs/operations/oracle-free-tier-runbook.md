@@ -10,6 +10,13 @@ This runbook moves Convy from GCP Cloud Run and Cloud SQL to Oracle Cloud Infras
 - Firebase Auth and FCM remain enabled through a Firebase Admin JSON mounted into the API container
 - OpenAI voice parsing remains enabled through `OPENAI_API_KEY`
 
+## Infrastructure Layout
+
+- `infra/gcp`: current GCP Terraform stack for rollback and reference during migration.
+- `infra/oci`: OCI Always Free Terraform stack for the target production host.
+
+Run Terraform from the provider directory you intend to manage. Do not run OCI commands from `infra/gcp`, and do not run GCP commands from `infra/oci`.
+
 ## Provision
 
 ```powershell
@@ -20,7 +27,15 @@ terraform plan
 terraform apply
 ```
 
-Use the tenancy OCID as `compartment_ocid` for a strict Free Tier account. If OCI reports no A1 capacity, set `availability_domain_index` to another value and retry.
+Use the tenancy OCID as `compartment_ocid` for a strict Free Tier account.
+
+If OCI reports no A1 capacity, retry all free placement options:
+
+```powershell
+..\..\ops\oci\retry-a1-provision.ps1
+```
+
+The retry script keeps `VM.Standard.A1.Flex`, 1 OCPU, and 6 GB RAM, then tries default placement and `FAULT-DOMAIN-1` through `FAULT-DOMAIN-3`. Do not switch to paid shapes.
 
 After apply:
 

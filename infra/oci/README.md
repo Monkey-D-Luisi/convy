@@ -7,7 +7,7 @@ This Terraform stack provisions the free hosting target for Convy:
 - One attached block volume mounted later at `/opt/convy`
 - One private Object Storage bucket for encrypted PostgreSQL backups
 
-The stack intentionally lives next to the existing GCP Terraform instead of replacing it. Keep GCP running until the data migration and mobile smoke tests pass.
+The stack lives under `infra/oci`. The existing GCP stack lives under `infra/gcp`; keep it running until the data migration and mobile smoke tests pass.
 
 ## Preconditions
 
@@ -25,4 +25,10 @@ terraform plan
 terraform apply
 ```
 
-If OCI returns an Ampere capacity error, update `availability_domain_index` to `1` or `2` and retry. Do not change the shape to a paid shape.
+Madrid currently exposes a single availability domain for this tenancy. If OCI returns `Out of host capacity`, keep `VM.Standard.A1.Flex` and retry the free shape with:
+
+```powershell
+..\..\ops\oci\retry-a1-provision.ps1
+```
+
+The retry script attempts default placement and `FAULT-DOMAIN-1` through `FAULT-DOMAIN-3` with 1 OCPU and 6 GB RAM. Do not switch to a paid shape.

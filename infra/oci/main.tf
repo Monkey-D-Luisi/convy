@@ -113,6 +113,7 @@ resource "oci_core_instance" "api" {
   availability_domain = local.availability_domain
   compartment_id      = var.compartment_ocid
   display_name        = "${local.resource_prefix}-api"
+  fault_domain        = var.fault_domain
   shape               = "VM.Standard.A1.Flex"
 
   shape_config {
