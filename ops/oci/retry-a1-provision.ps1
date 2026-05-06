@@ -1,8 +1,8 @@
 [CmdletBinding()]
 param(
-    [string]$TerraformDirectory = (Join-Path $PSScriptRoot "..\..\infra\oci"),
+    [string]$TerraformDirectory,
     [string]$CompartmentOcid,
-    [string]$SshPublicKeyPath = (Join-Path $env:USERPROFILE ".ssh\convy_oci_deploy.pub"),
+    [string]$SshPublicKeyPath,
     [double]$InstanceOcpus = 1,
     [double]$InstanceMemoryGb = 6
 )
@@ -75,6 +75,14 @@ function Write-RelevantTerraformOutput {
 
 if (-not $CompartmentOcid) {
     $CompartmentOcid = Get-TenancyOcidFromOciConfig
+}
+
+if (-not $TerraformDirectory) {
+    $TerraformDirectory = Join-Path $PSScriptRoot "..\..\infra\oci"
+}
+
+if (-not $SshPublicKeyPath) {
+    $SshPublicKeyPath = Join-Path $env:USERPROFILE ".ssh\convy_oci_deploy.pub"
 }
 
 $resolvedTerraformDirectory = (Resolve-Path -LiteralPath $TerraformDirectory).Path
