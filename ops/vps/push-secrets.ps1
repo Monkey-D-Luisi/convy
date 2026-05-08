@@ -21,19 +21,30 @@ if (-not (Test-Path $FirebaseAdminJsonPath)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($ConvyHostname)) {
-    $ConvyHostname = "$HostName.sslip.io"
+    $ConvyHostname = "$HostName.nip.io"
 }
 
 if ([string]::IsNullOrWhiteSpace($PostgresPassword)) {
-    $bytes = [byte[]]::new(32)
-    $randomNumberGenerator = [System.Security.Cryptography.RandomNumberGenerator]::Create()
-    try {
-        $randomNumberGenerator.GetBytes($bytes)
+    $existingPostgresPasswordCommand = "if [ -f /opt/convy/shared/api.env ]; then sed -n 's/^POSTGRES_PASSWORD=//p' /opt/convy/shared/api.env | head -n 1; fi"
+    $existingPostgresPasswordOutput = & ssh -i $SshKeyPath "${SshUser}@${HostName}" $existingPostgresPasswordCommand 2>$null
+    if ($LASTEXITCODE -eq 0) {
+        $existingPostgresPassword = $existingPostgresPasswordOutput | Select-Object -First 1
+        if (-not [string]::IsNullOrWhiteSpace($existingPostgresPassword)) {
+            $PostgresPassword = $existingPostgresPassword.Trim()
+        }
     }
-    finally {
-        $randomNumberGenerator.Dispose()
+
+    if ([string]::IsNullOrWhiteSpace($PostgresPassword)) {
+        $bytes = [byte[]]::new(32)
+        $randomNumberGenerator = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+        try {
+            $randomNumberGenerator.GetBytes($bytes)
+        }
+        finally {
+            $randomNumberGenerator.Dispose()
+        }
+        $PostgresPassword = [Convert]::ToBase64String($bytes)
     }
-    $PostgresPassword = [Convert]::ToBase64String($bytes)
 }
 
 $openAiApiKey = $env:OPENAI_API_KEY
@@ -69,7 +80,7 @@ try {
     scp -i $SshKeyPath $apiEnv "${SshUser}@${HostName}:/tmp/convy-api.env"
     scp -i $SshKeyPath $FirebaseAdminJsonPath "${SshUser}@${HostName}:/tmp/convy-firebase-admin.json"
 
-    ssh -i $SshKeyPath "${SshUser}@${HostName}" "install -m 600 -o root -g root /tmp/convy-api.env /opt/convy/shared/api.env && install -m 600 -o root -g root /tmp/convy-firebase-admin.json /opt/convy/shared/firebase-admin.json && rm -f /tmp/convy-api.env /tmp/convy-firebase-admin.json"
+    ssh -i $SshKeyPath "${SshUser}@${HostName}" "sed -i 's/\r$//' /tmp/convy-api.env && install -m 600 -o root -g root /tmp/convy-api.env /opt/convy/shared/api.env && install -m 644 -o root -g root /tmp/convy-firebase-admin.json /opt/convy/shared/firebase-admin.json && rm -f /tmp/convy-api.env /tmp/convy-firebase-admin.json"
 }
 finally {
     Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue
