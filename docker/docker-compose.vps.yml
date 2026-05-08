@@ -1,0 +1,68 @@
+name: convy
+
+x-convy-env-file: &convy-env-file
+  - ${CONVY_ENV_FILE:-/opt/convy/shared/api.env}
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: convy-db
+    restart: unless-stopped
+    env_file: *convy-env-file
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - /opt/convy/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - convy
+
+  api:
+    build:
+      context: ../backend
+      dockerfile: ../docker/backend/Dockerfile
+    container_name: convy-api
+    restart: unless-stopped
+    env_file: *convy-env-file
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Firebase__ProjectId: ${FIREBASE_PROJECT_ID}
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase-admin.json
+      OpenAI__ApiKey: ${OPENAI_API_KEY}
+      Database__MigrateOnStartup: ${DATABASE_MIGRATE_ON_STARTUP:-true}
+    volumes:
+      - /opt/convy/shared/firebase-admin.json:/run/secrets/firebase-admin.json:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - convy
+
+  caddy:
+    image: caddy:2.10.0-alpine
+    container_name: convy-caddy
+    restart: unless-stopped
+    env_file: *convy-env-file
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.vps:/etc/caddy/Caddyfile:ro
+      - /opt/convy/caddy/data:/data
+      - /opt/convy/caddy/config:/config
+    depends_on:
+      - api
+    networks:
+      - convy
+
+networks:
+  convy:
+    name: convy

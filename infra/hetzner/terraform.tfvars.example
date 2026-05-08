@@ -1,0 +1,9 @@
+ssh_public_key_path = "C:/Users/luiss/.ssh/convy_vps_deploy.pub"
+
+# Low-cost fallback defaults.
+server_type = "cx23"
+image       = "ubuntu-24.04"
+location    = "fsn1"
+
+# Keep the default if GitHub Actions will deploy by SSH.
+allowed_ssh_cidr = "0.0.0.0/0"
