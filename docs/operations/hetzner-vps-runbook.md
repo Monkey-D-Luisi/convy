@@ -20,6 +20,7 @@ Set-Content -Path "$env:USERPROFILE\.config\convy\secrets\hcloud-token.txt" -Val
 ```
 
 Do not paste the token into chat and do not put it in `terraform.tfvars`.
+The Terraform helper also accepts the local fallback path `C:\Users\luiss\secrets\hetzner`, or any explicit path passed with `-TokenPath`.
 
 ## Provision
 

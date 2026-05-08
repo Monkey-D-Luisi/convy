@@ -13,7 +13,7 @@ New-Item -ItemType Directory -Force "$env:USERPROFILE\.config\convy\secrets"
 Set-Content -Path "$env:USERPROFILE\.config\convy\secrets\hcloud-token.txt" -Value "<token>"
 ```
 
-The helper script `ops/hetzner/invoke-terraform.ps1` reads that file and exports `HCLOUD_TOKEN` only for the Terraform process.
+The helper script `ops/hetzner/invoke-terraform.ps1` reads that file and exports `HCLOUD_TOKEN` only for the Terraform process. It also accepts the local fallback path `C:\Users\luiss\secrets\hetzner`, or any explicit path passed with `-TokenPath`.
 
 ## First Plan
 

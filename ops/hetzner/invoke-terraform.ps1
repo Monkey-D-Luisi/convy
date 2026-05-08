@@ -1,9 +1,9 @@
 param(
-    [Parameter(ValueFromRemainingArguments = $true)]
-    [string[]] $TerraformArguments = @("plan"),
+    [string] $TerraformDirectory,
+    [string] $TokenPath,
 
-    [string] $TerraformDirectory = (Join-Path $PSScriptRoot "..\..\infra\hetzner"),
-    [string] $TokenPath = "$env:USERPROFILE\.config\convy\secrets\hcloud-token.txt"
+    [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
+    [string[]] $TerraformArguments
 )
 
 Set-StrictMode -Version Latest
@@ -11,6 +11,16 @@ $ErrorActionPreference = "Stop"
 
 if (-not $TerraformArguments -or $TerraformArguments.Count -eq 0) {
     $TerraformArguments = @("plan")
+}
+
+if (-not $TerraformDirectory) {
+    $TerraformDirectory = Join-Path $PSScriptRoot "..\..\infra\hetzner"
+}
+
+if (-not $TokenPath) {
+    $defaultTokenPath = "$env:USERPROFILE\.config\convy\secrets\hcloud-token.txt"
+    $legacyTokenPath = "$env:USERPROFILE\secrets\hetzner"
+    $TokenPath = if (Test-Path -LiteralPath $defaultTokenPath) { $defaultTokenPath } else { $legacyTokenPath }
 }
 
 if (-not (Test-Path -LiteralPath $TokenPath)) {
