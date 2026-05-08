@@ -5,6 +5,7 @@
 .terraform.lock.hcl
 *.tfvars
 !*.tfvars.example
+tfplan*
 
 # Secrets
 *.pem

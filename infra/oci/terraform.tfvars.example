@@ -1,0 +1,15 @@
+compartment_ocid    = "replace-with-your-tenancy-or-compartment-ocid"
+ssh_public_key_path = "C:/Users/luiss/.ssh/convy_oci_deploy.pub"
+region              = "eu-madrid-1"
+
+# Free Tier strict defaults.
+instance_ocpus      = 2
+instance_memory_gb  = 8
+boot_volume_size_gb = 50
+data_volume_size_gb = 100
+
+# Leave null for default placement, or retry with FAULT-DOMAIN-1, FAULT-DOMAIN-2, or FAULT-DOMAIN-3.
+fault_domain = null
+
+# Keep the default if GitHub Actions will deploy by SSH.
+allowed_ssh_cidr = "0.0.0.0/0"
