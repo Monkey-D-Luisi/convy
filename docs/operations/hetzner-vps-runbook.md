@@ -43,7 +43,7 @@ Only run `apply` after confirming the planned server type:
 $ip = terraform output -raw public_ip
 scp -i "$env:USERPROFILE\.ssh\convy_vps_deploy" ..\..\ops\vps\bootstrap-server.sh "root@${ip}:/tmp/bootstrap-server.sh"
 ssh -i "$env:USERPROFILE\.ssh\convy_vps_deploy" "root@${ip}" "bash /tmp/bootstrap-server.sh"
-..\..\ops\vps\push-secrets.ps1 -HostName $ip -ConvyHostname "$(terraform output -raw sslip_hostname)"
+..\..\ops\vps\push-secrets.ps1 -HostName $ip -ConvyHostname "$(terraform output -raw public_hostname)"
 ```
 
 ## First Deploy
@@ -53,6 +53,21 @@ git archive --format=tar.gz -o "$env:TEMP\convy-release.tar.gz" HEAD
 scp -i "$env:USERPROFILE\.ssh\convy_vps_deploy" "$env:TEMP\convy-release.tar.gz" "root@${ip}:/tmp/convy-release.tar.gz"
 ssh -i "$env:USERPROFILE\.ssh\convy_vps_deploy" "root@${ip}" "mkdir -p /opt/convy/releases/manual && tar -xzf /tmp/convy-release.tar.gz -C /opt/convy/releases/manual && /opt/convy/releases/manual/ops/vps/deploy-release.sh manual"
 ```
+
+## GitHub CD
+
+The CD workflow is provider-neutral and deploys the commit that passed CI.
+
+Set these repository secrets:
+
+- `PRODUCTION_DEPLOY_HOST`: public IPv4 address of the VPS.
+- `PRODUCTION_PUBLIC_HOSTNAME`: public HTTPS hostname, for example `178.105.70.69.nip.io`.
+- `PRODUCTION_SSH_PRIVATE_KEY`: private deploy key matching the public key provisioned in Hetzner.
+
+Set these repository variables:
+
+- `PRODUCTION_DEPLOY_USER`: `root` for Hetzner.
+- `PRODUCTION_DEPLOY_SCRIPT`: `ops/vps/deploy-release.sh` for Hetzner.
 
 ## Data Migration
 

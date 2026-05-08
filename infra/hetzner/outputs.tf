@@ -8,9 +8,9 @@ output "ipv6_address" {
   value       = hcloud_server.api.ipv6_address
 }
 
-output "sslip_hostname" {
+output "public_hostname" {
   description = "Free TLS-capable hostname derived from the public IPv4 address."
-  value       = "${hcloud_server.api.ipv4_address}.sslip.io"
+  value       = "${hcloud_server.api.ipv4_address}.nip.io"
 }
 
 output "ssh_command" {

@@ -7,11 +7,12 @@ on:
     types: [completed]
 
 env:
-  DEPLOY_USER: ubuntu
+  DEPLOY_USER: ${{ vars.PRODUCTION_DEPLOY_USER || 'root' }}
+  DEPLOY_SCRIPT: ${{ vars.PRODUCTION_DEPLOY_SCRIPT || 'ops/vps/deploy-release.sh' }}
 
 jobs:
   deploy-production:
-    name: Deploy to OCI
+    name: Deploy production
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     environment: production
@@ -23,11 +24,14 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Configure SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.PRODUCTION_DEPLOY_HOST }}
+          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.OCI_SSH_PRIVATE_KEY }}" > ~/.ssh/convy_oci_deploy
-          chmod 600 ~/.ssh/convy_oci_deploy
-          ssh-keyscan -H "${{ secrets.OCI_DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+          printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/convy_deploy
+          chmod 600 ~/.ssh/convy_deploy
+          ssh-keyscan -H "${DEPLOY_HOST}" >> ~/.ssh/known_hosts
 
       - name: Package release
         run: |
@@ -37,20 +41,51 @@ jobs:
             --exclude='backend/**/obj' \
             --exclude='mobile/**/build' \
             --exclude='mobile/.gradle' \
-            --exclude='infra/.terraform' \
+            --exclude='infra/**/.terraform' \
+            --exclude='infra/**/terraform.tfstate*' \
+            --exclude='infra/**/terraform.tfvars' \
+            --exclude='infra/**/tfplan-*' \
             -czf /tmp/convy-release.tar.gz .
 
       - name: Upload release
+        env:
+          DEPLOY_HOST: ${{ secrets.PRODUCTION_DEPLOY_HOST }}
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          ssh -i ~/.ssh/convy_oci_deploy "${DEPLOY_USER}@${{ secrets.OCI_DEPLOY_HOST }}" \
-            "sudo mkdir -p /opt/convy/releases/${{ github.event.workflow_run.head_sha }}"
-          scp -i ~/.ssh/convy_oci_deploy /tmp/convy-release.tar.gz \
-            "${DEPLOY_USER}@${{ secrets.OCI_DEPLOY_HOST }}:/tmp/convy-release.tar.gz"
+          ssh -i ~/.ssh/convy_deploy "${DEPLOY_USER}@${DEPLOY_HOST}" "bash -s" <<EOF
+          set -euo pipefail
+          release_dir="/opt/convy/releases/${RELEASE_SHA}"
+          if [ "\$(id -u)" -eq 0 ]; then
+            mkdir -p "\$release_dir"
+          else
+            sudo mkdir -p "\$release_dir"
+          fi
+          EOF
+          scp -i ~/.ssh/convy_deploy /tmp/convy-release.tar.gz \
+            "${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/convy-release.tar.gz"
 
       - name: Activate release
+        env:
+          DEPLOY_HOST: ${{ secrets.PRODUCTION_DEPLOY_HOST }}
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          ssh -i ~/.ssh/convy_oci_deploy "${DEPLOY_USER}@${{ secrets.OCI_DEPLOY_HOST }}" \
-            "sudo tar -xzf /tmp/convy-release.tar.gz -C /opt/convy/releases/${{ github.event.workflow_run.head_sha }} && sudo /opt/convy/releases/${{ github.event.workflow_run.head_sha }}/ops/oci/deploy-release.sh ${{ github.event.workflow_run.head_sha }}"
+          ssh -i ~/.ssh/convy_deploy "${DEPLOY_USER}@${DEPLOY_HOST}" "bash -s" <<EOF
+          set -euo pipefail
+          release_dir="/opt/convy/releases/${RELEASE_SHA}"
+          deploy_script="${DEPLOY_SCRIPT}"
+          run_as_root() {
+            if [ "\$(id -u)" -eq 0 ]; then
+              "\$@"
+            else
+              sudo "\$@"
+            fi
+          }
+          run_as_root tar -xzf /tmp/convy-release.tar.gz -C "\$release_dir"
+          run_as_root find "\$release_dir" -name '*.sh' -exec sed -i 's/\r$//' {} +
+          run_as_root bash "\$release_dir/\$deploy_script" "${RELEASE_SHA}"
+          EOF
 
       - name: External health check
-        run: curl -fsS --retry 10 --retry-delay 5 "https://${{ secrets.OCI_PUBLIC_HOSTNAME }}/health"
+        env:
+          PUBLIC_HOSTNAME: ${{ secrets.PRODUCTION_PUBLIC_HOSTNAME }}
+        run: curl -fsS --retry 10 --retry-delay 5 "https://${PUBLIC_HOSTNAME}/health"

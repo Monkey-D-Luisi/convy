@@ -32,3 +32,4 @@ Do not run `apply` until the planned server type and monthly cost are accepted.
 - `fsn1`
 - Ports `22`, `80`, and `443`
 - Docker Compose stack with PostgreSQL, Convy API, and Caddy
+- Public hostname defaults to the public IPv4 plus `nip.io`, for example `203.0.113.10.nip.io`
