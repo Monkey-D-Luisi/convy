@@ -26,7 +26,13 @@ if ([string]::IsNullOrWhiteSpace($ConvyHostname)) {
 
 if ([string]::IsNullOrWhiteSpace($PostgresPassword)) {
     $bytes = [byte[]]::new(32)
-    [System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+    $randomNumberGenerator = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $randomNumberGenerator.GetBytes($bytes)
+    }
+    finally {
+        $randomNumberGenerator.Dispose()
+    }
     $PostgresPassword = [Convert]::ToBase64String($bytes)
 }
 
