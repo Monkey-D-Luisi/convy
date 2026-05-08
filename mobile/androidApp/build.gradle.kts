@@ -26,8 +26,8 @@ android {
         applicationId = "com.monkeydluisi.convy"
         minSdk = 26
         targetSdk = 35
-        versionCode = 12
-        versionName = "0.1.9"
+        versionCode = 13
+        versionName = "0.1.10"
     }
 
     signingConfigs {
