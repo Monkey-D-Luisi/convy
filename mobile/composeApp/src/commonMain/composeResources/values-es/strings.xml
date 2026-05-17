@@ -214,6 +214,7 @@
     <string name="item_card_completed_by">Completado por %1$s</string>
     <string name="item_card_completed_by_at">Completado por %1$s · %2$s</string>
     <string name="item_card_added_by">Añadido por %1$s · %2$s</string>
+    <string name="item_card_returned_to_pending_by_at">Devuelto a pendientes por %1$s · %2$s</string>
     <string name="item_card_recurring">Recurrente</string>
     <string name="item_card_completed">Completado</string>
 

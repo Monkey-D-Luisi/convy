@@ -92,8 +92,21 @@ fun ItemCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = if (item.isCompleted) {
-                        item.completedAt?.let { stringResource(Res.string.item_card_completed_by_at, item.completedByName ?: stringResource(Res.string.unknown), formatTimestamp(it)) }
+                        item.completedAt?.let {
+                            stringResource(
+                                Res.string.item_card_completed_by_at,
+                                item.completedByName ?: stringResource(Res.string.unknown),
+                                formatTimestamp(it),
+                            )
+                        }
                             ?: stringResource(Res.string.item_card_completed_by, item.completedByName ?: stringResource(Res.string.unknown))
+                    } else if (item.returnedToPendingAt != null) {
+                        val returnedToPendingAt = item.returnedToPendingAt ?: item.createdAt
+                        stringResource(
+                            Res.string.item_card_returned_to_pending_by_at,
+                            item.returnedToPendingByName ?: stringResource(Res.string.unknown),
+                            formatTimestamp(returnedToPendingAt),
+                        )
                     } else {
                         stringResource(Res.string.item_card_added_by, item.createdByName, formatTimestamp(item.createdAt))
                     },

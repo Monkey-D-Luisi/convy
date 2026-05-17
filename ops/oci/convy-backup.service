@@ -1,0 +1,8 @@
+[Unit]
+Description=Convy PostgreSQL backup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/convy/current/ops/oci/backup-postgres.sh

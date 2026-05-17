@@ -24,6 +24,8 @@ public class ListItemTests
         item.IsCompleted.Should().BeFalse();
         item.CompletedBy.Should().BeNull();
         item.CompletedAt.Should().BeNull();
+        item.ReturnedToPendingBy.Should().BeNull();
+        item.ReturnedToPendingAt.Should().BeNull();
         item.Id.Should().NotBeEmpty();
     }
 
@@ -139,6 +141,20 @@ public class ListItemTests
     }
 
     [Fact]
+    public void Complete_WhenReturnedToPending_ClearsReturnedMetadata()
+    {
+        var item = new ListItem("Milk", _listId, _creatorId);
+        item.Complete(Guid.NewGuid());
+        item.Uncomplete(Guid.NewGuid());
+
+        item.Complete(Guid.NewGuid());
+
+        item.IsCompleted.Should().BeTrue();
+        item.ReturnedToPendingBy.Should().BeNull();
+        item.ReturnedToPendingAt.Should().BeNull();
+    }
+
+    [Fact]
     public void Complete_WithEmptyUserId_ThrowsArgumentException()
     {
         var item = new ListItem("Milk", _listId, _creatorId);
@@ -168,12 +184,27 @@ public class ListItemTests
     {
         var item = new ListItem("Milk", _listId, _creatorId);
         item.Complete(Guid.NewGuid());
+        var returnedBy = Guid.NewGuid();
 
-        item.Uncomplete();
+        item.Uncomplete(returnedBy);
 
         item.IsCompleted.Should().BeFalse();
         item.CompletedBy.Should().BeNull();
         item.CompletedAt.Should().BeNull();
+        item.ReturnedToPendingBy.Should().Be(returnedBy);
+        item.ReturnedToPendingAt.Should().NotBeNull();
+        item.ReturnedToPendingAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public void Uncomplete_WithEmptyUserId_ThrowsArgumentException()
+    {
+        var item = new ListItem("Milk", _listId, _creatorId);
+        item.Complete(Guid.NewGuid());
+
+        var act = () => item.Uncomplete(Guid.Empty);
+
+        act.Should().Throw<ArgumentException>();
     }
 
     [Fact]
@@ -181,11 +212,13 @@ public class ListItemTests
     {
         var item = new ListItem("Milk", _listId, _creatorId);
 
-        item.Uncomplete();
+        item.Uncomplete(Guid.NewGuid());
 
         item.IsCompleted.Should().BeFalse();
         item.CompletedBy.Should().BeNull();
         item.CompletedAt.Should().BeNull();
+        item.ReturnedToPendingBy.Should().BeNull();
+        item.ReturnedToPendingAt.Should().BeNull();
     }
 
     [Fact]

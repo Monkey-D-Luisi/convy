@@ -37,10 +37,28 @@ data class ListEntryUi(
     val isCompleted: Boolean,
     val completedByName: String?,
     val completedAt: String?,
+    val returnedToPendingByName: String?,
+    val returnedToPendingAt: String?,
     val quantity: Int? = null,
     val unit: String? = null,
     val recurrenceFrequency: String? = null,
 )
+
+enum class ListEntryMetadataKind {
+    Added,
+    ReturnedToPending,
+    Completed,
+}
+
+val ListEntryUi.metadataKind: ListEntryMetadataKind
+    get() = when {
+        isCompleted -> ListEntryMetadataKind.Completed
+        returnedToPendingAt != null -> ListEntryMetadataKind.ReturnedToPending
+        else -> ListEntryMetadataKind.Added
+    }
+
+fun List<ListEntryUi>.sortedByPendingEvent(): List<ListEntryUi> =
+    sortedByDescending { it.returnedToPendingAt ?: it.createdAt }
 
 data class ParsedVoiceItem(
     val title: String,
@@ -84,6 +102,10 @@ fun ListDetailState.applyCompletionState(
     itemId: String,
     completed: Boolean,
     animateCompletion: Boolean,
+    completedByName: String? = null,
+    completedAt: String? = null,
+    returnedToPendingByName: String? = null,
+    returnedToPendingAt: String? = null,
 ): ListDetailState {
     val exitIds = if (animateCompletion) {
         completionExitEntryIds + itemId
@@ -97,14 +119,32 @@ fun ListDetailState.applyCompletionState(
             if (animateCompletion) {
                 copy(
                     pendingEntries = pendingEntries.map {
-                        if (it.id == itemId) it.copy(isCompleted = true) else it
+                        if (it.id == itemId) {
+                            it.copy(
+                                isCompleted = true,
+                                completedByName = completedByName,
+                                completedAt = completedAt,
+                                returnedToPendingByName = null,
+                                returnedToPendingAt = null,
+                            )
+                        } else {
+                            it
+                        }
                     },
                     completionExitEntryIds = exitIds,
                 )
             } else {
                 copy(
                     pendingEntries = pendingEntries.filter { it.id != itemId },
-                    completedEntries = listOf(entry.copy(isCompleted = true)) + completedEntries.filter { it.id != itemId },
+                    completedEntries = listOf(
+                        entry.copy(
+                            isCompleted = true,
+                            completedByName = completedByName,
+                            completedAt = completedAt,
+                            returnedToPendingByName = null,
+                            returnedToPendingAt = null,
+                        ),
+                    ) + completedEntries.filter { it.id != itemId },
                     completionExitEntryIds = exitIds,
                 )
             }
@@ -114,16 +154,33 @@ fun ListDetailState.applyCompletionState(
     } else {
         val entry = completedEntries.find { it.id == itemId }
         if (entry != null) {
+            val returnedEntry = entry.copy(
+                isCompleted = false,
+                completedByName = null,
+                completedAt = null,
+                returnedToPendingByName = returnedToPendingByName,
+                returnedToPendingAt = returnedToPendingAt,
+            )
             copy(
-                pendingEntries = pendingEntries + entry.copy(isCompleted = false, completedByName = null, completedAt = null),
+                pendingEntries = (listOf(returnedEntry) + pendingEntries).sortedByPendingEvent(),
                 completedEntries = completedEntries.filter { it.id != itemId },
                 completionExitEntryIds = exitIds,
             )
         } else {
             copy(
                 pendingEntries = pendingEntries.map {
-                    if (it.id == itemId) it.copy(isCompleted = false, completedByName = null, completedAt = null) else it
-                },
+                    if (it.id == itemId) {
+                        it.copy(
+                            isCompleted = false,
+                            completedByName = null,
+                            completedAt = null,
+                            returnedToPendingByName = returnedToPendingByName,
+                            returnedToPendingAt = returnedToPendingAt,
+                        )
+                    } else {
+                        it
+                    }
+                }.sortedByPendingEvent(),
                 completionExitEntryIds = exitIds,
             )
         }
@@ -149,6 +206,8 @@ fun ListItem.toListEntryUi(): ListEntryUi = ListEntryUi(
     isCompleted = isCompleted,
     completedByName = completedByName,
     completedAt = completedAt,
+    returnedToPendingByName = returnedToPendingByName,
+    returnedToPendingAt = returnedToPendingAt,
     quantity = quantity,
     unit = unit,
     recurrenceFrequency = recurrenceFrequency,
@@ -164,6 +223,8 @@ fun TaskItem.toListEntryUi(): ListEntryUi = ListEntryUi(
     isCompleted = isCompleted,
     completedByName = completedByName,
     completedAt = completedAt,
+    returnedToPendingByName = null,
+    returnedToPendingAt = null,
 )
 
 sealed interface ListDetailIntent {

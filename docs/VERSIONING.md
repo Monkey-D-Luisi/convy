@@ -35,6 +35,8 @@
 | 10 | 0.1.7 | 2026-04-26 | Mobile list interaction improvements |
 | 11 | 0.1.8 | 2026-04-26 | Mobile list interaction review follow-up |
 | 12 | 0.1.9 | 2026-04-26 | Notification preferences and localization |
+| 13 | 0.1.10 | 2026-05-08 | Low-cost VPS production hosting path |
+| 14 | 0.1.11 | 2026-05-17 | Shopping item state metadata |
 
 ## Release Procedure
 

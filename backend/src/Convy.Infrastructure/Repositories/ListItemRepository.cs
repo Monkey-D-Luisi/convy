@@ -44,7 +44,9 @@ public class ListItemRepository : IListItemRepository
             query = query.Where(i => i.CreatedAt <= toDate.Value);
 
         return await query
-            .OrderByDescending(i => i.CreatedAt)
+            .OrderByDescending(i => i.IsCompleted
+                ? i.CompletedAt ?? i.CreatedAt
+                : i.ReturnedToPendingAt ?? i.CreatedAt)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }

@@ -9,6 +9,7 @@ using Convy.Infrastructure.Persistence;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text.Json.Serialization;
@@ -28,6 +29,14 @@ if (!string.IsNullOrEmpty(dbHost))
 
 // Health checks
 builder.Services.AddHealthChecks();
+
+// Reverse proxy headers (Caddy/Cloud Run) must be applied before HTTPS redirection.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // OpenAPI
 builder.Services.AddOpenApi();
@@ -84,7 +93,8 @@ builder.Services.AddScoped<ICurrentUserService>(sp => sp.GetRequiredService<Curr
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
+var migrateOnStartup = builder.Configuration.GetValue<bool>("Database:MigrateOnStartup");
+if (app.Environment.IsDevelopment() || app.Environment.IsStaging() || migrateOnStartup)
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ConvyDbContext>();
@@ -92,6 +102,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
 }
 
 // Middleware pipeline
+app.UseForwardedHeaders();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())

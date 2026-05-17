@@ -329,6 +329,14 @@ namespace Convy.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("recurrence_interval");
 
+                    b.Property<DateTime?>("ReturnedToPendingAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("returned_to_pending_at");
+
+                    b.Property<Guid?>("ReturnedToPendingBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("returned_to_pending_by");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)

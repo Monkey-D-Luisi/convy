@@ -14,6 +14,9 @@ public record ListItemDto(
     Guid? CompletedBy,
     string? CompletedByName,
     DateTime? CompletedAt,
+    Guid? ReturnedToPendingBy,
+    string? ReturnedToPendingByName,
+    DateTime? ReturnedToPendingAt,
     string? RecurrenceFrequency,
     int? RecurrenceInterval,
     DateTime? NextDueDate);

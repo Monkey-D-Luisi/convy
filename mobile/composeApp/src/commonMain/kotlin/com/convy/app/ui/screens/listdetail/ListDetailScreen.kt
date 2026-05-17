@@ -660,8 +660,8 @@ private fun ListEntryCard(
                 }
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = if (entry.isCompleted) {
-                        entry.completedAt?.let {
+                    text = when (entry.metadataKind) {
+                        ListEntryMetadataKind.Completed -> entry.completedAt?.let {
                             stringResource(
                                 Res.string.item_card_completed_by_at,
                                 entry.completedByName ?: stringResource(Res.string.unknown),
@@ -671,8 +671,16 @@ private fun ListEntryCard(
                             Res.string.item_card_completed_by,
                             entry.completedByName ?: stringResource(Res.string.unknown),
                         )
-                    } else {
-                        stringResource(Res.string.item_card_added_by, entry.createdByName, formatTimestamp(entry.createdAt))
+                        ListEntryMetadataKind.ReturnedToPending -> stringResource(
+                            Res.string.item_card_returned_to_pending_by_at,
+                            entry.returnedToPendingByName ?: stringResource(Res.string.unknown),
+                            formatTimestamp(entry.returnedToPendingAt ?: entry.createdAt),
+                        )
+                        ListEntryMetadataKind.Added -> stringResource(
+                            Res.string.item_card_added_by,
+                            entry.createdByName,
+                            formatTimestamp(entry.createdAt),
+                        )
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,

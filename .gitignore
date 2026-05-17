@@ -81,6 +81,14 @@ docker-compose.override.yml
 docker/.env
 
 # =====================
+# Terraform local state
+# =====================
+infra/**/.terraform/
+infra/**/terraform.tfstate*
+infra/**/terraform.tfvars
+infra/**/tfplan-*
+
+# =====================
 # Secrets / Environment
 # =====================
 .env

@@ -52,6 +52,7 @@ public class GetListItemsQueryHandler : IRequestHandler<GetListItemsQuery, Resul
 
         var userIds = items.Select(i => i.CreatedBy)
             .Concat(items.Where(i => i.CompletedBy.HasValue).Select(i => i.CompletedBy!.Value))
+            .Concat(items.Where(i => i.ReturnedToPendingBy.HasValue).Select(i => i.ReturnedToPendingBy!.Value))
             .Distinct();
         var users = await _userRepository.GetByIdsAsync(userIds, cancellationToken);
         var userNames = users.ToDictionary(u => u.Id, u => u.DisplayName);
@@ -70,6 +71,9 @@ public class GetListItemsQueryHandler : IRequestHandler<GetListItemsQuery, Resul
             i.CompletedBy,
             i.CompletedBy.HasValue ? userNames.GetValueOrDefault(i.CompletedBy.Value, "Unknown") : null,
             i.CompletedAt,
+            i.ReturnedToPendingBy,
+            i.ReturnedToPendingBy.HasValue ? userNames.GetValueOrDefault(i.ReturnedToPendingBy.Value, "Unknown") : null,
+            i.ReturnedToPendingAt,
             i.RecurrenceFrequency?.ToString(),
             i.RecurrenceInterval,
             i.NextDueDate)).ToList();

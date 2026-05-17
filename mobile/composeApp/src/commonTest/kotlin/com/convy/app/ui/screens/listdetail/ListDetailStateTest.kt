@@ -62,10 +62,54 @@ class ListDetailStateTest {
         val entry = listEntry(isCompleted = true, completedByName = "Luis", completedAt = "2026-04-26T10:00:00Z")
 
         val state = ListDetailState(completedEntries = listOf(entry))
-            .applyCompletionState(entry.id, completed = false, animateCompletion = false)
+            .applyCompletionState(
+                entry.id,
+                completed = false,
+                animateCompletion = false,
+                returnedToPendingByName = "Ana",
+                returnedToPendingAt = "2026-04-26T11:00:00Z",
+            )
 
-        assertEquals(listOf(entry.copy(isCompleted = false, completedByName = null, completedAt = null)), state.pendingEntries)
+        assertEquals(
+            listOf(
+                entry.copy(
+                    isCompleted = false,
+                    completedByName = null,
+                    completedAt = null,
+                    returnedToPendingByName = "Ana",
+                    returnedToPendingAt = "2026-04-26T11:00:00Z",
+                ),
+            ),
+            state.pendingEntries,
+        )
         assertEquals(emptyList(), state.completedEntries)
+    }
+
+    @Test
+    fun `pending entries are sorted by returned timestamp before creation timestamp`() {
+        val oldPending = listEntry(id = "old", isCompleted = false, createdAt = "2026-04-26T09:00:00Z")
+        val newPending = listEntry(id = "new", isCompleted = false, createdAt = "2026-04-26T10:00:00Z")
+        val returnedPending = listEntry(
+            id = "returned",
+            isCompleted = false,
+            createdAt = "2026-04-26T08:00:00Z",
+            returnedToPendingAt = "2026-04-26T11:00:00Z",
+        )
+
+        val sorted = listOf(oldPending, returnedPending, newPending).sortedByPendingEvent()
+
+        assertEquals(listOf("returned", "new", "old"), sorted.map { it.id })
+    }
+
+    @Test
+    fun `metadata kind reflects current entry state`() {
+        val added = listEntry(isCompleted = false)
+        val returned = listEntry(isCompleted = false, returnedToPendingAt = "2026-04-26T11:00:00Z")
+        val completed = listEntry(isCompleted = true, completedAt = "2026-04-26T10:00:00Z")
+
+        assertEquals(ListEntryMetadataKind.Added, added.metadataKind)
+        assertEquals(ListEntryMetadataKind.ReturnedToPending, returned.metadataKind)
+        assertEquals(ListEntryMetadataKind.Completed, completed.metadataKind)
     }
 
     @Test
@@ -110,18 +154,24 @@ class ListDetailStateTest {
     }
 
     private fun listEntry(
+        id: String = "entry-1",
         isCompleted: Boolean,
         completedByName: String? = null,
         completedAt: String? = null,
+        createdAt: String = "2026-04-26T09:00:00Z",
+        returnedToPendingByName: String? = null,
+        returnedToPendingAt: String? = null,
     ) = ListEntryUi(
-        id = "entry-1",
+        id = id,
         title = "Milk",
         note = null,
         listId = "list-1",
         createdByName = "Luis",
-        createdAt = "2026-04-26T09:00:00Z",
+        createdAt = createdAt,
         isCompleted = isCompleted,
         completedByName = completedByName,
         completedAt = completedAt,
+        returnedToPendingByName = returnedToPendingByName,
+        returnedToPendingAt = returnedToPendingAt,
     )
 }

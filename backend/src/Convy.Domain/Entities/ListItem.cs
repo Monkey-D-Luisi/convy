@@ -16,6 +16,8 @@ public class ListItem : Entity
     public bool IsCompleted { get; private set; }
     public Guid? CompletedBy { get; private set; }
     public DateTime? CompletedAt { get; private set; }
+    public Guid? ReturnedToPendingBy { get; private set; }
+    public DateTime? ReturnedToPendingAt { get; private set; }
     public RecurrenceFrequency? RecurrenceFrequency { get; private set; }
     public int? RecurrenceInterval { get; private set; }
     public DateTime? NextDueDate { get; private set; }
@@ -66,16 +68,22 @@ public class ListItem : Entity
         IsCompleted = true;
         CompletedBy = completedBy;
         CompletedAt = DateTime.UtcNow;
+        ReturnedToPendingBy = null;
+        ReturnedToPendingAt = null;
     }
 
-    public void Uncomplete()
+    public void Uncomplete(Guid returnedToPendingBy)
     {
+        if (returnedToPendingBy == Guid.Empty)
+            throw new ArgumentException("Returner ID is required.", nameof(returnedToPendingBy));
         if (!IsCompleted)
             return; // Idempotent: already uncompleted
 
         IsCompleted = false;
         CompletedBy = null;
         CompletedAt = null;
+        ReturnedToPendingBy = returnedToPendingBy;
+        ReturnedToPendingAt = DateTime.UtcNow;
     }
 
     public void SetRecurrence(RecurrenceFrequency frequency, int interval)

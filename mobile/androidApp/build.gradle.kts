@@ -7,12 +7,16 @@ plugins {
 
 import java.util.Properties
 import java.io.FileInputStream
+import org.gradle.api.provider.ProviderFactory
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
+
+fun ProviderFactory.envOrProperty(name: String, fallback: String): String =
+    gradleProperty(name).orElse(environmentVariable(name)).orElse(fallback).get()
 
 android {
     namespace = "com.convy"
@@ -22,8 +26,8 @@ android {
         applicationId = "com.monkeydluisi.convy"
         minSdk = 26
         targetSdk = 35
-        versionCode = 12
-        versionName = "0.1.9"
+        versionCode = 14
+        versionName = "0.1.11"
     }
 
     signingConfigs {
@@ -48,7 +52,7 @@ android {
         create("staging") {
             dimension = "environment"
             buildConfigField("String", "API_PROTOCOL", "\"https\"")
-            buildConfigField("String", "API_HOST", "\"convy-staging-api-863271144614.europe-southwest1.run.app\"")
+            buildConfigField("String", "API_HOST", "\"${providers.envOrProperty("CONVY_STAGING_API_HOST", "convy-staging-api-863271144614.europe-southwest1.run.app")}\"")
             buildConfigField("int", "API_PORT", "443")
         }
     }

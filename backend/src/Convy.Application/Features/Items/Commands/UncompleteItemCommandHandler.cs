@@ -55,14 +55,20 @@ public class UncompleteItemCommandHandler : IRequestHandler<UncompleteItemComman
         if (household is null || !household.IsMember(_currentUser.UserId))
             return Result.Failure(Error.Forbidden("You are not a member of this household."));
 
-        item.Uncomplete();
+        item.Uncomplete(_currentUser.UserId);
 
         await _itemRepository.SaveChangesAsync(cancellationToken);
 
-        var user = await _userRepository.GetByIdAsync(item.CreatedBy, cancellationToken);
+        var createdByUser = await _userRepository.GetByIdAsync(item.CreatedBy, cancellationToken);
+        var returnedToPendingByUser = item.ReturnedToPendingBy.HasValue
+            ? await _userRepository.GetByIdAsync(item.ReturnedToPendingBy.Value, cancellationToken)
+            : null;
         var dto = new ListItemDto(item.Id, item.Title, item.Quantity, item.Unit, item.Note,
-            item.ListId, item.CreatedBy, user?.DisplayName ?? "Unknown", item.CreatedAt,
+            item.ListId, item.CreatedBy, createdByUser?.DisplayName ?? "Unknown", item.CreatedAt,
             item.IsCompleted, item.CompletedBy, null, item.CompletedAt,
+            item.ReturnedToPendingBy,
+            item.ReturnedToPendingBy.HasValue ? returnedToPendingByUser?.DisplayName ?? "Unknown" : null,
+            item.ReturnedToPendingAt,
             item.RecurrenceFrequency?.ToString(), item.RecurrenceInterval, item.NextDueDate);
         await _notifications.NotifyItemUncompleted(list.HouseholdId, dto, cancellationToken);
         await _activityLogger.LogAsync(list.HouseholdId, ActivityEntityType.Item, item.Id, ActivityActionType.Uncompleted, _currentUser.UserId, item.Title, cancellationToken);

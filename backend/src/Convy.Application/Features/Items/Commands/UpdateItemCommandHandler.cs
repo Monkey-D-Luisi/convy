@@ -64,8 +64,10 @@ public class UpdateItemCommandHandler : IRequestHandler<UpdateItemCommand, Resul
 
         await _itemRepository.SaveChangesAsync(cancellationToken);
 
-        var userIds = new[] { item.CreatedBy }.Concat(
-            item.CompletedBy.HasValue ? new[] { item.CompletedBy.Value } : Array.Empty<Guid>()).Distinct();
+        var userIds = new[] { item.CreatedBy }
+            .Concat(item.CompletedBy.HasValue ? new[] { item.CompletedBy.Value } : Array.Empty<Guid>())
+            .Concat(item.ReturnedToPendingBy.HasValue ? new[] { item.ReturnedToPendingBy.Value } : Array.Empty<Guid>())
+            .Distinct();
         var users = await _userRepository.GetByIdsAsync(userIds, cancellationToken);
         var userNames = users.ToDictionary(u => u.Id, u => u.DisplayName);
         var dto = new ListItemDto(item.Id, item.Title, item.Quantity, item.Unit, item.Note,
@@ -73,6 +75,9 @@ public class UpdateItemCommandHandler : IRequestHandler<UpdateItemCommand, Resul
             item.IsCompleted, item.CompletedBy,
             item.CompletedBy.HasValue ? userNames.GetValueOrDefault(item.CompletedBy.Value, "Unknown") : null,
             item.CompletedAt,
+            item.ReturnedToPendingBy,
+            item.ReturnedToPendingBy.HasValue ? userNames.GetValueOrDefault(item.ReturnedToPendingBy.Value, "Unknown") : null,
+            item.ReturnedToPendingAt,
             item.RecurrenceFrequency?.ToString(), item.RecurrenceInterval, item.NextDueDate);
         await _notifications.NotifyItemUpdated(list.HouseholdId, dto, cancellationToken);
         await _activityLogger.LogAsync(list.HouseholdId, ActivityEntityType.Item, item.Id, ActivityActionType.Updated, _currentUser.UserId, item.Title, cancellationToken);

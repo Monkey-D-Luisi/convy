@@ -67,6 +67,9 @@ public class CompleteItemCommandHandler : IRequestHandler<CompleteItemCommand, R
             item.IsCompleted, item.CompletedBy,
             item.CompletedBy.HasValue ? userNames.GetValueOrDefault(item.CompletedBy.Value, "Unknown") : null,
             item.CompletedAt,
+            item.ReturnedToPendingBy,
+            item.ReturnedToPendingBy.HasValue ? userNames.GetValueOrDefault(item.ReturnedToPendingBy.Value, "Unknown") : null,
+            item.ReturnedToPendingAt,
             item.RecurrenceFrequency?.ToString(), item.RecurrenceInterval, item.NextDueDate);
         await _notifications.NotifyItemCompleted(list.HouseholdId, dto, cancellationToken);
         await _activityLogger.LogAsync(list.HouseholdId, ActivityEntityType.Item, item.Id, ActivityActionType.Completed, _currentUser.UserId, item.Title, cancellationToken);

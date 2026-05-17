@@ -52,6 +52,12 @@ public class ListItemConfiguration : IEntityTypeConfiguration<ListItem>
         builder.Property(i => i.CompletedAt)
             .HasColumnName("completed_at");
 
+        builder.Property(i => i.ReturnedToPendingBy)
+            .HasColumnName("returned_to_pending_by");
+
+        builder.Property(i => i.ReturnedToPendingAt)
+            .HasColumnName("returned_to_pending_at");
+
         builder.Property(i => i.RecurrenceFrequency)
             .HasColumnName("recurrence_frequency")
             .HasConversion<int?>();

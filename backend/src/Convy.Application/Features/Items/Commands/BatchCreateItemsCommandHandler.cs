@@ -67,6 +67,7 @@ public class BatchCreateItemsCommandHandler : IRequestHandler<BatchCreateItemsCo
             var itemDto = new ListItemDto(item.Id, item.Title, item.Quantity, item.Unit, item.Note,
                 item.ListId, item.CreatedBy, userName, item.CreatedAt,
                 item.IsCompleted, item.CompletedBy, null, item.CompletedAt,
+                item.ReturnedToPendingBy, null, item.ReturnedToPendingAt,
                 item.RecurrenceFrequency?.ToString(), item.RecurrenceInterval, item.NextDueDate);
             await _notifications.NotifyItemCreated(list.HouseholdId, itemDto, cancellationToken);
             await _activityLogger.LogAsync(list.HouseholdId, ActivityEntityType.Item, item.Id, ActivityActionType.Created, _currentUser.UserId, item.Title, cancellationToken);

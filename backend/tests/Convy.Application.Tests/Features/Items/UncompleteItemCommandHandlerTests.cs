@@ -52,8 +52,16 @@ public class UncompleteItemCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         item.IsCompleted.Should().BeFalse();
         item.CompletedBy.Should().BeNull();
+        item.ReturnedToPendingBy.Should().Be(_userId);
+        item.ReturnedToPendingAt.Should().NotBeNull();
         await _itemRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await _notifications.Received(1).NotifyItemUncompleted(household.Id, Arg.Any<ListItemDto>(), Arg.Any<CancellationToken>());
+        await _notifications.Received(1).NotifyItemUncompleted(
+            household.Id,
+            Arg.Is<ListItemDto>(dto =>
+                dto.ReturnedToPendingBy == _userId &&
+                dto.ReturnedToPendingByName == "Test User" &&
+                dto.ReturnedToPendingAt.HasValue),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]

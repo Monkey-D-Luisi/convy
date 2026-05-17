@@ -7,6 +7,7 @@ import com.convy.shared.data.remote.ConnectionState
 import com.convy.shared.data.remote.HouseholdEvent
 import com.convy.shared.data.remote.HouseholdRealtimeService
 import com.convy.shared.data.remote.SignalRClient
+import com.convy.shared.domain.repository.AuthRepository
 import com.convy.shared.domain.repository.ItemRepository
 import com.convy.shared.domain.repository.TaskRepository
 import com.convy.shared.platform.AudioRecorder
@@ -40,6 +41,7 @@ class ListDetailStore(
     private val networkMonitor: NetworkMonitor,
     private val offlineQueue: OfflineActionQueue,
     private val signalRClient: SignalRClient,
+    private val authRepository: AuthRepository,
 ) {
     private val scope = CoroutineScope(Dispatchers.Main)
     private val isTaskList = listType.equals("Tasks", ignoreCase = true)
@@ -155,7 +157,7 @@ class ListDetailStore(
                 onSuccess = { entries ->
                     _state.update {
                         it.copy(
-                            pendingEntries = entries.filter { entry -> !entry.isCompleted },
+                            pendingEntries = entries.filter { entry -> !entry.isCompleted }.sortedByPendingEvent(),
                             completedEntries = entries.filter { entry -> entry.isCompleted },
                             isLoading = false,
                         )
@@ -179,12 +181,13 @@ class ListDetailStore(
         )
         operations[operation.id] = operation
 
-        applyCompletionState(itemId, !isCurrentlyCompleted, animateCompletion = !isCurrentlyCompleted)
         scope.launch {
+            applyOptimisticCompletionState(itemId, !isCurrentlyCompleted, animateCompletion = !isCurrentlyCompleted)
             setRemoteCompletion(itemId, !isCurrentlyCompleted).onFailure { error ->
                 operations.remove(operation.id)
                 _state.update { it.copy(completionExitEntryIds = it.completionExitEntryIds - itemId) }
-                applyCompletionState(itemId, isCurrentlyCompleted, animateCompletion = false)
+                removeEntry(itemId)
+                restoreEntry(operation.entry, isCurrentlyCompleted)
                 _sideEffects.emit(repositoryError(error.message, updateFailureResource()))
                 return@launch
             }
@@ -231,9 +234,9 @@ class ListDetailStore(
         val operation = operations.remove(operationId) ?: return
         when (operation) {
             is EntryOperation.Completion -> {
-                applyCompletionState(operation.entry.id, operation.fromCompleted, animateCompletion = false)
                 redoOperations[operation.id] = operation
                 scope.launch {
+                    applyOptimisticCompletionState(operation.entry.id, operation.fromCompleted, animateCompletion = false)
                     setRemoteCompletion(operation.entry.id, operation.fromCompleted).onFailure { error ->
                         _sideEffects.emit(repositoryError(error.message, updateFailureResource()))
                     }
@@ -255,8 +258,8 @@ class ListDetailStore(
         operations[operation.id] = operation
         when (operation) {
             is EntryOperation.Completion -> {
-                applyCompletionState(operation.entry.id, operation.toCompleted, animateCompletion = operation.toCompleted)
                 scope.launch {
+                    applyOptimisticCompletionState(operation.entry.id, operation.toCompleted, animateCompletion = operation.toCompleted)
                     setRemoteCompletion(operation.entry.id, operation.toCompleted).onFailure { error ->
                         _sideEffects.emit(repositoryError(error.message, updateFailureResource()))
                         return@launch
@@ -289,8 +292,20 @@ class ListDetailStore(
         }
     }
 
-    private fun applyCompletionState(itemId: String, completed: Boolean, animateCompletion: Boolean) {
-        _state.update { it.applyCompletionState(itemId, completed, animateCompletion) }
+    private suspend fun applyOptimisticCompletionState(itemId: String, completed: Boolean, animateCompletion: Boolean) {
+        val currentUserName = authRepository.getCurrentUser()?.displayName
+        val changedAt = Clock.System.now().toString()
+        _state.update {
+            it.applyCompletionState(
+                itemId,
+                completed,
+                animateCompletion,
+                completedByName = if (completed) currentUserName else null,
+                completedAt = if (completed) changedAt else null,
+                returnedToPendingByName = if (!completed && !isTaskList) currentUserName else null,
+                returnedToPendingAt = if (!completed && !isTaskList) changedAt else null,
+            )
+        }
     }
 
     private fun moveCompletionExitToCompleted(itemId: String) {

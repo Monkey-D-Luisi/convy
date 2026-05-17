@@ -1,6 +1,7 @@
 using Convy.Application.Common.Interfaces;
 using Convy.Application.Features.Items.DTOs;
 using Convy.Application.Features.Items.Queries;
+using Convy.Domain.Common;
 using Convy.Domain.Entities;
 using Convy.Domain.Repositories;
 using Convy.Domain.ValueObjects;
@@ -33,15 +34,24 @@ public class GetListItemsQueryHandlerTests
         // Arrange
         var household = new Household("Home", _userId);
         var list = new HouseholdList("Shopping", ListType.Shopping, household.Id, _userId);
+        var returnedBy = Guid.NewGuid();
         var items = new List<ListItem>
         {
             new("Milk", list.Id, _userId, 2, "liters", null),
             new("Bread", list.Id, _userId)
         };
+        items[1].Complete(_userId);
+        items[1].Uncomplete(returnedBy);
 
         _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
         _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
         _itemRepository.GetByListIdAsync(list.Id, null, null, null, null, Arg.Any<CancellationToken>()).Returns(items);
+        _userRepository.GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<User>
+            {
+                UserWithId(_userId, "Creator"),
+                UserWithId(returnedBy, "Restorer"),
+            });
 
         var query = new GetListItemsQuery(list.Id);
 
@@ -53,7 +63,9 @@ public class GetListItemsQueryHandlerTests
         result.Value.Should().HaveCount(2);
         result.Value![0].Title.Should().Be("Milk");
         result.Value[1].Title.Should().Be("Bread");
-        result.Value[0].CreatedByName.Should().NotBeNullOrEmpty();
+        result.Value[0].CreatedByName.Should().Be("Creator");
+        result.Value[1].ReturnedToPendingByName.Should().Be("Restorer");
+        result.Value[1].ReturnedToPendingAt.Should().NotBeNull();
     }
 
     [Fact]
@@ -91,5 +103,12 @@ public class GetListItemsQueryHandlerTests
         // Assert
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("Forbidden");
+    }
+
+    private static User UserWithId(Guid id, string displayName)
+    {
+        var user = new User($"firebase-{id}", displayName, $"{displayName.ToLowerInvariant()}@example.com");
+        typeof(Entity).GetProperty(nameof(Entity.Id))!.SetValue(user, id);
+        return user;
     }
 }
