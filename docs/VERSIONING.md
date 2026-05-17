@@ -37,6 +37,7 @@
 | 12 | 0.1.9 | 2026-04-26 | Notification preferences and localization |
 | 13 | 0.1.10 | 2026-05-08 | Low-cost VPS production hosting path |
 | 14 | 0.1.11 | 2026-05-17 | Shopping item state metadata |
+| 15 | 0.1.12 | 2026-05-17 | Android VPS host hotfix |
 
 ## Release Procedure
 
