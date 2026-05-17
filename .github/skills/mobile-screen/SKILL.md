@@ -67,7 +67,7 @@ sealed interface ListDetailSideEffect {
 ### Step 7: Verify
 ```bash
 cd mobile
-./gradlew :composeApp:assembleDebug
+./gradlew :shared:testDebugUnitTest :composeApp:testDebugUnitTest :androidApp:assembleLocalDebug
 ```
 
 ## Checklist

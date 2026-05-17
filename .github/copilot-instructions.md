@@ -82,7 +82,7 @@ dotnet build backend/Convy.slnx
 dotnet test backend/Convy.slnx
 
 # Mobile
-cd mobile && ./gradlew :composeApp:assembleDebug
+cd mobile && ./gradlew :shared:testDebugUnitTest :composeApp:testDebugUnitTest :androidApp:assembleLocalDebug
 ```
 
 Do not mark a feature as complete if any build or test fails.

@@ -39,7 +39,7 @@ dotnet test backend/Convy.slnx --collect:"XPlat Code Coverage"
 
 - `kotlin.test` — assertions
 - `kotlinx.coroutines.test` — coroutine testing
-- Turbine (add later) — Flow testing
+- Add Turbine only when Flow assertion complexity justifies the dependency.
 
 ### Running Tests
 
@@ -65,9 +65,9 @@ End-to-end UI tests run on an Android emulator using [Maestro](https://maestro.m
 |---|---|
 | Android emulator running | `adb devices` → shows `emulator-5554` |
 | Backend API running on port 5062 | `dotnet run --project backend/src/Convy.API --launch-profile http` |
-| PostgreSQL running via Docker | `docker-compose up -d` in `docker/` |
+| PostgreSQL running via Docker | `cd docker && docker compose up -d db` |
 | Maestro CLI installed | `maestro --version` → 2.4.0+ |
-| App installed on emulator | Build `local` flavor: `./gradlew :androidApp:assembleLocalDebug` then `adb install -r` |
+| App installed on emulator | `cd mobile && ./gradlew :androidApp:installLocalDebug` |
 
 The `local` build flavor points to `http://10.0.2.2:5062` (emulator's alias for host localhost).
 

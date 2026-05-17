@@ -38,4 +38,4 @@ You are the **Mobile Developer** for the Convy project — a Kotlin Multiplatfor
 
 ## Output
 - Clean Kotlin code following project MVI conventions.
-- Compilable for Android: `./gradlew :composeApp:assembleDebug`.
+- Verified with mobile unit tests and a local Android build: `./gradlew :shared:testDebugUnitTest :composeApp:testDebugUnitTest :androidApp:assembleLocalDebug`.

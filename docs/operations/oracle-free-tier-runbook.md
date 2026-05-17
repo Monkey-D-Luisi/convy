@@ -46,17 +46,24 @@ ssh -i "$env:USERPROFILE\.ssh\convy_oci_deploy" "ubuntu@${ip}" "sudo bash /tmp/b
 ..\..\ops\oci\push-secrets.ps1 -HostName $ip -ConvyHostname "$(terraform output -raw sslip_hostname)"
 ```
 
-## GitHub Secrets
+## GitHub CD
 
-Set these repository secrets before merging the CD workflow:
+The CD workflow is provider-neutral and deploys the commit that passed CI.
 
-- `OCI_DEPLOY_HOST`: public IP from Terraform output
-- `OCI_PUBLIC_HOSTNAME`: hostname from Terraform output, for example `1.2.3.4.sslip.io`
-- `OCI_SSH_PRIVATE_KEY`: contents of `~/.ssh/convy_oci_deploy`
+Set these repository secrets:
+
+- `PRODUCTION_DEPLOY_HOST`: public IP from Terraform output.
+- `PRODUCTION_PUBLIC_HOSTNAME`: hostname from Terraform output, for example `1.2.3.4.sslip.io`.
+- `PRODUCTION_SSH_PRIVATE_KEY`: contents of `~/.ssh/convy_oci_deploy`.
+
+Set these repository variables:
+
+- `PRODUCTION_DEPLOY_USER`: `ubuntu` for OCI.
+- `PRODUCTION_DEPLOY_SCRIPT`: `ops/oci/deploy-release.sh` for OCI.
 
 ## First Deploy
 
-From GitHub Actions, the CD workflow uploads the checked-out commit to the VM and runs `ops/oci/deploy-release.sh`. For a manual first deploy:
+From GitHub Actions, the CD workflow uploads the checked-out commit to the VM and runs `ops/oci/deploy-release.sh` when `PRODUCTION_DEPLOY_SCRIPT` is set as above. For a manual first deploy:
 
 ```powershell
 git archive --format=tar.gz -o "$env:TEMP\convy-release.tar.gz" HEAD
@@ -73,8 +80,8 @@ Use a short write-freeze window:
 3. Export Cloud SQL PostgreSQL with `pg_dump`.
 4. Copy the dump to the OCI VM.
 5. Restore into `convy-db`.
-6. Compare row counts for users, households, lists, items, invites, activity logs, and device tokens.
-7. Validate login, household loading, item creation, SignalR updates, FCM push, and voice parsing.
+6. Compare row counts for `users`, `households`, `household_memberships`, `household_lists`, `list_items`, `task_items`, `invites`, `activity_logs`, `device_tokens`, and `notification_preferences`.
+7. Validate login, household loading, item creation, task creation, notification preferences, SignalR updates, FCM push, and voice parsing.
 8. Keep GCP resources for rollback until the mobile app has used OCI successfully.
 
 ## Backups

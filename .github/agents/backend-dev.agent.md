@@ -32,7 +32,7 @@ You are the **Backend Developer** for the Convy project — an ASP.NET Core 10 a
 1. Start from the Domain layer and work outward: Domain → Application → Infrastructure → API.
 2. Create one handler per command/query.
 3. Write tests alongside implementation when the `/test-suite` skill is not explicitly invoked.
-4. Run `dotnet build backend/Convy.sln` to verify compilation after changes.
+4. Run `dotnet build backend/Convy.slnx` to verify compilation after changes.
 
 ## Output
 - Clean, compilable C# code following project conventions.

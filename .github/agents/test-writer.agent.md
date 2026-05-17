@@ -34,7 +34,7 @@ You are the **Test Writer** for the Convy project — responsible for writing co
 3. Write tests following AAA (Arrange-Act-Assert).
 4. Use mocks for external dependencies in unit tests.
 5. Use Testcontainers for integration tests that need a real database.
-6. Run tests to verify they pass: `dotnet test` or `./gradlew allTests`.
+6. Run the relevant tests to verify they pass: `dotnet test backend/Convy.slnx` for backend or `cd mobile && ./gradlew :shared:testDebugUnitTest :composeApp:testDebugUnitTest` for mobile.
 
 ## Constraints
 - NEVER write tests that depend on execution order.

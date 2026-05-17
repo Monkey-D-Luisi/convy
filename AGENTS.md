@@ -27,7 +27,7 @@ All code, variable names, function names, comments, commit messages, branch name
 | C# classes/methods | PascalCase | `HouseholdService`, `CreateItem` |
 | C# private fields | _camelCase | `_repository` |
 | C# interfaces | I-prefix | `IHouseholdRepository` |
-| Kotlin classes | PascalCase | `ShoppingListStore` |
+| Kotlin classes | PascalCase | `HouseholdListsStore` |
 | Kotlin functions/props | camelCase | `loadItems()`, `isCompleted` |
 | Compose composables | PascalCase | `ItemCard()`, `ListScreen()` |
 | DB tables | snake_case plural | `list_items`, `households` |
@@ -51,21 +51,24 @@ All code, variable names, function names, comments, commit messages, branch name
 ### Backend
 ```bash
 cd backend
-dotnet restore
-dotnet build
-dotnet test
+dotnet restore Convy.slnx
+dotnet build Convy.slnx
+dotnet test Convy.slnx
 ```
 
 ### Mobile
 ```bash
 cd mobile
-./gradlew :composeApp:assembleDebug
-./gradlew :shared:allTests
+./gradlew :shared:testDebugUnitTest
+./gradlew :composeApp:testDebugUnitTest
+./gradlew :androidApp:assembleLocalDebug
 ```
 
 ### Infrastructure
 ```bash
-docker-compose up -d    # PostgreSQL + pgAdmin
+cd docker
+docker compose up -d db
+docker compose --profile tools up -d pgadmin
 ```
 
 ## Key References
@@ -83,6 +86,7 @@ This project uses layered AI governance. The agent MUST respect:
 2. **Subfolder `AGENTS.md`** files for layer-specific rules (`backend/AGENTS.md`, `mobile/AGENTS.md`)
 3. **`.github/instructions/*.instructions.md`** for file-pattern-specific rules
 4. **`.github/skills/*/SKILL.md`** for workflow procedures
-5. **`.github/hooks/`** for deterministic guardrails
+5. **`.claude/skills/*/SKILL.md`** and **`.agents/skills/*/SKILL.md`** as editor-specific synchronized copies of those procedures
+6. **`.github/hooks/`** and **`.claude/settings.json`** for deterministic guardrails
 
 Never bypass governance. If a governance rule conflicts with a user request, flag it rather than silently ignore it.

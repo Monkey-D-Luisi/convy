@@ -55,5 +55,5 @@ app.MapPost("/api/v1/{resource}", async (IMediator mediator, {Command} command) 
 
 ### Step 7: Verify
 ```bash
-dotnet build backend/Convy.sln && dotnet test backend/
+dotnet build backend/Convy.slnx && dotnet test backend/Convy.slnx
 ```

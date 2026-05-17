@@ -49,7 +49,7 @@ Verify:
 - [ ] Proper error handling (no stack traces to clients)
 
 ### Step 5: Code Quality
-- [ ] No dead code or TODOs without tickets
+- [ ] No dead code or unresolved task markers without tickets
 - [ ] Meaningful naming
 - [ ] No premature abstractions
 - [ ] Async all the way (no `.Result`, `.Wait()`)

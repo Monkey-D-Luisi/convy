@@ -46,7 +46,7 @@ All code, variables, functions, comments, commits, branches, and docs in **Engli
 | C# classes/methods | PascalCase | `HouseholdService` |
 | C# private fields | _camelCase | `_repository` |
 | C# interfaces | I-prefix | `IHouseholdRepository` |
-| Kotlin classes | PascalCase | `ShoppingListStore` |
+| Kotlin classes | PascalCase | `HouseholdListsStore` |
 | Kotlin functions | camelCase | `loadItems()` |
 | DB tables | snake_case plural | `list_items` |
 | DB columns | snake_case | `created_by` |
@@ -61,13 +61,13 @@ All code, variables, functions, comments, commits, branches, and docs in **Engli
 
 ```bash
 # Backend
-cd backend && dotnet restore && dotnet build && dotnet test
+cd backend && dotnet restore Convy.slnx && dotnet build Convy.slnx && dotnet test Convy.slnx
 
 # Mobile
-cd mobile && ./gradlew :composeApp:assembleDebug
+cd mobile && ./gradlew :shared:testDebugUnitTest :composeApp:testDebugUnitTest :androidApp:assembleLocalDebug
 
 # Infrastructure
-docker-compose up -d
+cd docker && docker compose up -d db
 ```
 
 ## Key References
@@ -82,6 +82,7 @@ Respect the layered governance:
 1. This file (global standards)
 2. Subfolder AGENTS.md files (`backend/AGENTS.md`, `mobile/AGENTS.md`)
 3. `.claude/skills/*/SKILL.md` for workflow procedures
-4. `.claude/settings.json` for hooks
+4. `.github/skills/*/SKILL.md` as the canonical skill source
+5. `.claude/settings.json` for hooks
 
-Skills are available in `.claude/skills/` and `.github/skills/` — both locations are valid.
+Skills are available in `.claude/skills/`, `.github/skills/`, and `.agents/skills/`. Keep these copies synchronized when changing workflow procedures.

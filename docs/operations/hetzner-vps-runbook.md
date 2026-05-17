@@ -78,6 +78,6 @@ Use the same short write-freeze process as OCI:
 3. Export Cloud SQL PostgreSQL with `pg_dump`.
 4. Copy the dump to the VPS.
 5. Restore into `convy-db`.
-6. Compare row counts for users, households, lists, items, invites, activity logs, and device tokens.
-7. Validate login, household loading, item creation, SignalR updates, FCM push, and voice parsing.
+6. Compare row counts for `users`, `households`, `household_memberships`, `household_lists`, `list_items`, `task_items`, `invites`, `activity_logs`, `device_tokens`, and `notification_preferences`.
+7. Validate login, household loading, item creation, task creation, notification preferences, SignalR updates, FCM push, and voice parsing.
 8. Keep GCP resources for rollback until the mobile app has used Hetzner successfully.

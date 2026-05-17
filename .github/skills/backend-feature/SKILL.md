@@ -34,10 +34,10 @@ description: "End-to-end workflow for implementing a backend feature in Convy. U
 4. Add **SignalR event** if real-time notification needed.
 
 ### Step 4: API Layer (`backend/src/Convy.API/`)
-1. Create **endpoint** (Minimal API or Controller method).
+1. Create or update a **Minimal API endpoint**.
 2. Wire up `IMediator.Send()` call.
 3. Map results to HTTP responses (200/201/400/404/500).
-4. Add `[Authorize]` attribute.
+4. Require authentication with `RequireAuthorization()` unless the endpoint is intentionally public.
 
 ### Step 5: Tests
 1. **Unit tests** for Domain entity behavior (`Convy.Domain.Tests`).
@@ -47,8 +47,8 @@ description: "End-to-end workflow for implementing a backend feature in Convy. U
 
 ### Step 6: Verify
 ```bash
-dotnet build backend/Convy.sln
-dotnet test backend/
+dotnet build backend/Convy.slnx
+dotnet test backend/Convy.slnx
 ```
 
 ## Checklist

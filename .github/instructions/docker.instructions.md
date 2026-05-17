@@ -2,7 +2,6 @@
 description: "Use when editing Docker configuration files — Dockerfiles, docker-compose, and container-related scripts."
 applyTo:
   - "docker/**"
-  - "docker-compose.yml"
   - "docker-compose.*.yml"
 ---
 # Docker Guidelines

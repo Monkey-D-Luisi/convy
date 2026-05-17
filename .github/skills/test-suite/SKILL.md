@@ -71,10 +71,10 @@ public class ListItemTests
 ### Step 5: Run and Verify
 ```bash
 # Backend
-cd backend && dotnet test --verbosity normal
+dotnet test backend/Convy.slnx --verbosity normal
 
 # Mobile
-cd mobile && ./gradlew allTests
+cd mobile && ./gradlew :shared:testDebugUnitTest :composeApp:testDebugUnitTest
 ```
 
 ## Test Quality Checklist

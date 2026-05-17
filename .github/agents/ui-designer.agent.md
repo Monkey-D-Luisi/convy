@@ -14,7 +14,7 @@ You are the **UI Designer** for the Convy project — responsible for generating
 
 ## Before Designing
 1. Read the screen specification in `docs/mvp-spec.md` (Sections 11-12 — Navigation and Screens).
-2. Check existing designs in the Stitch project for consistency.
+2. Check existing designs in the Stitch project `5694262812667273070` ("Convy — Household Coordination App") for consistency.
 3. Review the MVI state definition for the screen (if it exists) to understand what data is available.
 4. Read product principles (Section 2.2): speed, one-hand use, clarity.
 
@@ -33,6 +33,7 @@ Screen: [Screen Name]
 Type: Mobile (Android)
 Style: Material Design 3 / Material You
 Theme: Light mode (primary), also generate dark mode variant
+Model: GEMINI_3_1_PRO
 
 Layout:
 - [Describe the layout structure top to bottom]
@@ -54,6 +55,8 @@ Color palette: [reference ConvyTheme tokens if defined]
 - ALWAYS design for mobile-first (360dp width minimum).
 - ALWAYS include empty state and loading state designs.
 - ALWAYS maintain consistency with previously designed screens.
+- ALWAYS generate designs in the existing Stitch project with `modelId: "GEMINI_3_1_PRO"`.
+- ALWAYS generate a dark mode color-scheme variant before implementation handoff.
 
 ## Output
 - Stitch MCP prompt for design generation.

@@ -15,6 +15,8 @@
 
 - [ ] Code follows project conventions (see AGENTS.md)
 - [ ] Tests added/updated
-- [ ] `dotnet build` passes
+- [ ] Backend build passes: `dotnet build backend/Convy.slnx`
+- [ ] Backend tests pass: `dotnet test backend/Convy.slnx`
+- [ ] Mobile checks pass when mobile code changed: `cd mobile && ./gradlew :shared:testDebugUnitTest :composeApp:testDebugUnitTest :androidApp:assembleLocalDebug`
 - [ ] No new warnings
 - [ ] Architecture layers respected (Domain has no infra dependencies)

@@ -1,6 +1,6 @@
 # Convy — AI Governance Usage Guide
 
-This document explains how to use the agents, skills, instructions, prompts, and hooks configured in this workspace for both **GitHub Copilot** (VS Code) and **Claude Code**.
+This document explains how to use the agents, skills, instructions, prompts, and hooks configured in this workspace for **GitHub Copilot** (VS Code), **Claude Code**, and **Codex**.
 
 ## Table of Contents
 
@@ -17,16 +17,16 @@ This document explains how to use the agents, skills, instructions, prompts, and
 
 ## Overview
 
-The governance system is dual-compatible:
+The governance system is multi-editor compatible. `.github/skills/` is the canonical skill source; `.claude/skills/` and `.agents/skills/` are synchronized copies for editor-specific discovery.
 
-| Primitive | Copilot Location | Claude Code Location |
-|-----------|-----------------|---------------------|
-| Workspace instructions | `AGENTS.md` (root) | `CLAUDE.md` (root) |
-| Context-specific instructions | `.github/instructions/*.instructions.md` | (reads AGENTS.md) |
-| Agents | `.github/agents/*.agent.md` | (use as prompts) |
-| Skills | `.github/skills/*/SKILL.md` | `.claude/skills/*/SKILL.md` |
-| Prompts | `.github/prompts/*.prompt.md` | (use as prompts) |
-| Hooks | `.github/hooks/*.json` | `.claude/settings.json` |
+| Primitive | Copilot Location | Claude Code Location | Codex Location |
+|-----------|------------------|----------------------|----------------|
+| Workspace instructions | `AGENTS.md` | `CLAUDE.md` plus `AGENTS.md` | `AGENTS.md` |
+| Context-specific instructions | `.github/instructions/*.instructions.md` | `AGENTS.md` and subfolder `AGENTS.md` files | `AGENTS.md` and subfolder `AGENTS.md` files |
+| Agents | `.github/agents/*.agent.md` | Use as prompts when needed | Use as prompts when needed |
+| Skills | `.github/skills/*/SKILL.md` | `.claude/skills/*/SKILL.md` | `.agents/skills/*/SKILL.md` |
+| Prompts | `.github/prompts/*.prompt.md` | Use as prompts | Use as prompts |
+| Hooks | `.github/hooks/*.json` | `.claude/settings.json` | Project and app-level guardrails |
 
 ---
 
@@ -44,7 +44,7 @@ applyTo: "backend/src/Convy.Domain/**"
 ---
 # Domain Layer Rules
 - No external dependencies
-- Entities inherit from BaseEntity
+- Entities inherit from Entity
 ```
 
 When you edit a file matching `backend/src/Convy.Domain/**`, these rules are automatically injected into the AI context.
@@ -60,15 +60,15 @@ When you edit a file matching `backend/src/Convy.Domain/**`, these rules are aut
 | `dotnet-tests.instructions.md` | `backend/tests/**` |
 | `kotlin-compose.instructions.md` | `mobile/**/*.kt` |
 | `ef-migrations.instructions.md` | On-demand (description trigger) |
-| `docker.instructions.md` | `docker/**/docker-compose.yml` |
+| `docker.instructions.md` | `docker/**`, `docker-compose*.yml` |
 
 ### Example
 
-When editing `backend/src/Convy.Domain/Entities/ShoppingList.cs`, the AI automatically knows:
+When editing `backend/src/Convy.Domain/Entities/HouseholdList.cs`, the AI automatically knows:
 - Use `sealed record` for value objects
-- Entities inherit from `BaseEntity`
+- Entities inherit from `Entity`
 - No EF Core or Infrastructure references allowed
-- Use `Result<T>` for operations that can fail
+- Domain entities enforce invariants; application handlers use `Result<T>` for expected failures
 
 ---
 
@@ -81,11 +81,11 @@ Agents (`.agent.md`) define specialized AI personas with specific tool access.
 In VS Code Chat, mention an agent with `@`:
 
 ```
-@backend-dev Create a new ShoppingList entity with Name, HouseholdId, and CreatedAt properties
+@backend-dev Add backend support for archiving household lists
 ```
 
 ```
-@test-writer Write unit tests for the CreateShoppingListHandler
+@test-writer Write unit tests for ArchiveListCommandHandler
 ```
 
 ```
@@ -106,10 +106,10 @@ In VS Code Chat, mention an agent with `@`:
 ### Example: Using @backend-dev
 
 ```
-@backend-dev Add CQRS handlers for creating a shopping list item:
-- CreateShoppingListItemCommand in Application
+@backend-dev Add CQRS handlers for creating a household list item:
+- CreateItemCommand in Application
 - Validator in Application
-- Handler that uses IShoppingListRepository
+- Handler that uses IListItemRepository
 ```
 
 The agent knows Clean Architecture rules and will generate code in the correct layers.
@@ -126,14 +126,18 @@ Using the backend-dev agent rules from AGENTS.md, create...
 
 ## Skills
 
-Skills (`.github/skills/*/SKILL.md` and `.claude/skills/*/SKILL.md`) are step-by-step workflows for complex multi-step tasks.
+Skills are step-by-step workflows for complex multi-step tasks. Keep all three skill directories synchronized:
+
+- `.github/skills/*/SKILL.md` for Copilot and the canonical source
+- `.claude/skills/*/SKILL.md` for Claude Code
+- `.agents/skills/*/SKILL.md` for Codex
 
 ### How to Use (Copilot)
 
 Reference a skill in a prompt:
 
 ```
-Using the backend-feature skill, implement the Shopping List feature
+Using the backend-feature skill, implement task item management
 ```
 
 Or Copilot loads them when the task description matches the skill.
@@ -142,24 +146,24 @@ Or Copilot loads them when the task description matches the skill.
 
 | Skill | Purpose | Steps |
 |-------|---------|-------|
-| `backend-feature` | Full feature (Domain→App→Infra→API→Tests) | 5 |
-| `mobile-screen` | Full screen (MVI→Store→UI→Nav→DI→Preview) | 6 |
-| `api-endpoint` | Single endpoint (lighter than backend-feature) | 4 |
+| `backend-feature` | Full feature (Domain->Application->Infrastructure->API->Tests->Verify) | 6 |
+| `mobile-screen` | Full screen (MVI->Store->UI->Navigation->DI->Preview->Verify) | 7 |
+| `api-endpoint` | Single endpoint (lighter than backend-feature) | 7 |
 | `db-migration` | EF Core migration with rollback test | 3 |
-| `design-screen` | Design with Stitch MCP | 3 |
+| `design-screen` | Design with Stitch MCP | 6 |
+| `firebase-setup` | Firebase Auth setup and verification | 5 |
 | `code-review` | Full review checklist | 5 |
-| `test-suite` | Generate comprehensive test suite | 4 |
+| `test-suite` | Generate comprehensive test suite | 5 |
 
 ### Example: backend-feature Skill
 
 ```
-@backend-dev Using the backend-feature skill, implement ShoppingList management:
+@backend-dev Using the backend-feature skill, implement task item management:
 
-Domain entities: ShoppingList (Id, Name, HouseholdId, CreatedAt, Items)
-                 ShoppingListItem (Id, Name, Quantity, IsCompleted)
+Domain entities: TaskItem (Id, Title, Note, ListId, CreatedBy, IsCompleted)
 
-Commands: CreateShoppingList, AddItem, ToggleItemComplete
-Queries: GetShoppingListsByHousehold, GetShoppingListById
+Commands: CreateTask, UpdateTask, CompleteTask, UncompleteTask, DeleteTask
+Queries: GetListTasks
 ```
 
 The skill guides the agent through:
@@ -172,16 +176,16 @@ The skill guides the agent through:
 ### Example: mobile-screen Skill
 
 ```
-@mobile-dev Using the mobile-screen skill, create the Shopping List screen:
+@mobile-dev Using the mobile-screen skill, create the List Detail screen:
 
-State: list of ShoppingList, loading flag, error message
-Intents: LoadLists, CreateList(name), DeleteList(id)
-SideEffects: NavigateToDetail(id), ShowError(message)
+State: list of pending items, list type, loading flag, error message
+Intents: LoadItems, CompleteItem(id), DeleteItem(id), Refresh
+SideEffects: NavigateToItemForm(id), ShowError(message)
 ```
 
 ### Claude Code Equivalent
 
-Claude Code reads skills from `.claude/skills/*/SKILL.md` automatically. Reference by name:
+Claude Code reads skills from `.claude/skills/*/SKILL.md`. Codex reads project skills from `.agents/skills/*/SKILL.md`. Reference by name:
 
 ```
 Use the backend-feature skill to implement...
@@ -200,7 +204,7 @@ Open the Command Palette → **Copilot: Use Prompt** → select a prompt. Variab
 Or reference in chat:
 
 ```
-/new-feature Shopping Lists
+/new-feature Household list archiving
 ```
 
 ### Available Prompts
@@ -219,8 +223,8 @@ Trigger: `/new-feature`
 
 Input:
 ```
-feature: Shopping Lists
-description: Users can create, share, and manage shopping lists within a household
+feature: Household list archiving
+description: Users can archive lists that are no longer active without deleting their history
 ```
 
 The prompt orchestrates the backend-dev and mobile-dev agents with the backend-feature and mobile-screen skills to scaffold the full feature.
@@ -275,36 +279,36 @@ See [docs/MCP-SETUP.md](MCP-SETUP.md) for server-specific setup instructions.
 
 1. **Design** the screen:
    ```
-   @ui-designer Using the design-screen skill, design a Shopping List screen with:
-   - List of shopping items with checkboxes
+   @ui-designer Using the design-screen skill, design a List Detail screen with:
+   - Pending items with checkboxes
    - FAB to add new item
    - Swipe to delete
    ```
 
 2. **Implement backend**:
    ```
-   @backend-dev Using the backend-feature skill, implement ShoppingList CRUD
+   @backend-dev Using the backend-feature skill, implement list archiving
    ```
 
 3. **Implement mobile**:
    ```
-   @mobile-dev Using the mobile-screen skill, create ShoppingListScreen
+   @mobile-dev Using the mobile-screen skill, update HouseholdListsScreen archive behavior
    ```
 
 4. **Write tests**:
    ```
-   @test-writer Using the test-suite skill, add tests for ShoppingList feature
+   @test-writer Using the test-suite skill, add tests for list archiving
    ```
 
 5. **Review**:
    ```
-   @reviewer Review the ShoppingList feature implementation
+   @reviewer Review the list archiving implementation
    ```
 
 ### Quick: Adding a single API endpoint
 
 ```
-@backend-dev Using the api-endpoint skill, add GET /api/v1/households/{id}/shopping-lists
+@backend-dev Using the api-endpoint skill, add GET /api/v1/households/{id}/lists
 ```
 
 ### Quick: Fix a bug
@@ -318,5 +322,5 @@ steps_to_reproduce: Create item on device A, device B doesn't see it
 ### Quick: Run EF Core migration
 
 ```
-@db-architect Using the db-migration skill, add migration for ShoppingList and ShoppingListItem tables
+@db-architect Using the db-migration skill, add migration for notification preferences
 ```

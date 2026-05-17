@@ -11,7 +11,7 @@ Universal checklist for implementing any feature in Convy. Use this whether impl
 ## Design (if feature includes a new screen)
 
 - [ ] Read `.github/skills/design-screen/SKILL.md`
-- [ ] Generate screen design in Stitch (`mcp_stitch_generate_screen_from_text`)
+- [ ] Generate screen design in the existing Stitch project `5694262812667273070` with `modelId: "GEMINI_3_1_PRO"`
 - [ ] Generate dark mode variant (`mcp_stitch_generate_variants`)
 - [ ] Design covers all states: default, empty, loading, error
 - [ ] If Stitch unavailable → document design as markdown spec
@@ -76,7 +76,8 @@ Universal checklist for implementing any feature in Convy. Use this whether impl
 
 - [ ] Backend builds: `dotnet build backend/Convy.slnx`
 - [ ] Backend tests pass: `dotnet test backend/Convy.slnx`
-- [ ] Mobile builds: `cd mobile && ./gradlew :composeApp:assembleDebug`
+- [ ] Mobile unit tests pass: `cd mobile && ./gradlew :shared:testDebugUnitTest :composeApp:testDebugUnitTest`
+- [ ] Android app builds: `cd mobile && ./gradlew :androidApp:assembleLocalDebug`
 - [ ] Quick code review via `.github/skills/code-review/SKILL.md`
 - [ ] No layer dependency violations (Domain must not import Infrastructure/EF)
 

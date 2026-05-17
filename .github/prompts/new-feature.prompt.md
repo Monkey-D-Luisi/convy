@@ -20,9 +20,10 @@ Implement a complete feature for the Convy app spanning **all layers**: Domain �
 ## Phase 1 — UI Design (if feature has a screen)
 1. Read `.github/skills/design-screen/SKILL.md` for the Stitch workflow.
 2. Compose the Stitch prompt following the template in the skill.
-3. Generate the design via `mcp_stitch_generate_screen_from_text` (create project first with `mcp_stitch_create_project` if needed).
-4. Generate dark mode and state variants via `mcp_stitch_generate_variants`.
-5. If Stitch is unavailable, document the screen design as a markdown spec with layout, components, states, and interactions.
+3. Generate the design via `mcp_stitch_generate_screen_from_text` in the existing Stitch project `5694262812667273070` using `modelId: "GEMINI_3_1_PRO"`.
+4. Generate the mandatory dark mode variant via `mcp_stitch_generate_variants` with `aspects: ["COLOR_SCHEME"]`.
+5. Ask the user to review the generated light and dark designs before implementation.
+6. If Stitch is unavailable, document the screen design as a markdown spec with layout, components, states, and interactions.
 
 ## Phase 2 — Backend Implementation
 1. **Read** `.github/skills/backend-feature/SKILL.md` — follow it step by step.
@@ -52,8 +53,9 @@ Implement a complete feature for the Convy app spanning **all layers**: Domain �
 ## Phase 5 — Verification
 1. Build backend: `dotnet build backend/Convy.slnx`
 2. Run backend tests: `dotnet test backend/Convy.slnx`
-3. Build mobile: `cd mobile && ./gradlew :composeApp:assembleDebug`
-4. Run a quick code review following `.github/skills/code-review/SKILL.md` checklist.
+3. Run mobile tests: `cd mobile && ./gradlew :shared:testDebugUnitTest :composeApp:testDebugUnitTest`
+4. Build the Android app: `cd mobile && ./gradlew :androidApp:assembleLocalDebug`
+5. Run a quick code review following `.github/skills/code-review/SKILL.md` checklist.
 
 ## Output
 - Working backend endpoint(s) with full test coverage

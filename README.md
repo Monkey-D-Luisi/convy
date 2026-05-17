@@ -2,7 +2,7 @@
 
 > Coordinate your home in seconds, with minimal friction.
 
-**Convy** is a shared mobile app for households — fast lists, tasks, and errands with real-time sync.
+**Convy** is a shared mobile app for households: fast lists, tasks, and errands with real-time sync.
 
 ## Tech Stack
 
@@ -18,30 +18,24 @@
 
 ```
 convy/
-├── .github/              # Copilot governance + GitHub config
-│   ├── instructions/     # File-specific coding instructions
-│   ├── agents/           # Custom AI agents
-│   ├── skills/           # Agent workflow skills
-│   ├── prompts/          # Reusable prompt templates
-│   ├── hooks/            # Lifecycle hooks
-│   └── workflows/        # GitHub Actions CI/CD
-├── .claude/              # Claude Code governance (mirrors .github/)
-├── backend/              # ASP.NET Core solution (Clean Architecture)
-│   ├── src/
-│   │   ├── Convy.Domain/
-│   │   ├── Convy.Application/
-│   │   ├── Convy.Infrastructure/
-│   │   └── Convy.API/
-│   └── tests/
-├── mobile/               # KMP Compose Multiplatform
-│   ├── composeApp/       # Shared Compose UI
-│   ├── shared/           # Shared business logic
-│   └── androidApp/       # Android entry point
-├── docs/                 # Specs, ADRs, guides
-├── docker/               # Dockerfiles
-├── AGENTS.md             # Cross-editor workspace instructions
-├── CLAUDE.md             # Claude Code project instructions
-└── docker-compose.yml    # Local development environment
+|-- .github/              # Copilot governance, prompts, hooks, and GitHub Actions
+|-- .claude/              # Claude Code governance and MCP configuration
+|-- .agents/              # Codex agent workflow skills
+|-- backend/              # ASP.NET Core solution (Clean Architecture)
+|   |-- src/
+|   |   |-- Convy.Domain/
+|   |   |-- Convy.Application/
+|   |   |-- Convy.Infrastructure/
+|   |   `-- Convy.API/
+|   `-- tests/
+|-- mobile/               # Kotlin Multiplatform + Compose Multiplatform
+|   |-- androidApp/       # Android application entry point and flavors
+|   |-- composeApp/       # Shared Compose UI
+|   `-- shared/           # Shared domain, data, networking, and DI
+|-- docker/               # Local and production Docker Compose files
+|-- docs/                 # Product, architecture, testing, and governance docs
+|-- AGENTS.md             # Cross-editor workspace instructions
+`-- CLAUDE.md             # Claude Code project instructions
 ```
 
 ## Getting Started
@@ -57,24 +51,28 @@ convy/
 ### Local Development
 
 ```bash
-# Start infrastructure (Postgres + pgAdmin)
-docker-compose up -d
+# Start local PostgreSQL
+cd docker
+docker compose up -d db
+cd ..
 
 # Backend
 cd backend
-dotnet restore
+dotnet restore Convy.slnx
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<local PostgreSQL connection string>"
-dotnet build
-dotnet run --project src/Convy.API
+dotnet build Convy.slnx
+dotnet run --project src/Convy.API --launch-profile http
 
 # Mobile (Android)
-cd mobile
-./gradlew :composeApp:assembleDebug
+cd ../mobile
+./gradlew :shared:testDebugUnitTest
+./gradlew :composeApp:testDebugUnitTest
+./gradlew :androidApp:assembleLocalDebug
 ```
 
 ## Governance for AI-Assisted Development
 
-This repo is structured for **vibe coding** — AI agents drive development while governance ensures clean, professional, SOLID code.
+This repo is structured for governed AI-assisted development: agents can accelerate delivery while explicit rules keep the codebase clean, testable, and aligned with SOLID principles.
 
 ### How It Works
 
@@ -84,6 +82,8 @@ This repo is structured for **vibe coding** — AI agents drive development whil
 | `.github/instructions/` | Auto-loaded rules per file type / layer |
 | `.github/agents/` | Specialized AI personas (backend-dev, mobile-dev, reviewer, etc.) |
 | `.github/skills/` | Step-by-step workflows (create feature, add screen, run review, etc.) |
+| `.claude/skills/` | Claude Code copy of workflow skills |
+| `.agents/skills/` | Codex copy of workflow skills |
 | `.github/prompts/` | One-shot task templates (`/new-feature`, `/fix-bug`, etc.) |
 | `.github/hooks/` | Deterministic guardrails (layer dependency validation) |
 
@@ -91,20 +91,17 @@ This repo is structured for **vibe coding** — AI agents drive development whil
 
 **Create a backend feature:**
 ```
-/backend-feature
-> Add household invitation system with code generation and expiration
+Using the backend-feature skill, add household invitation support with code generation and expiration.
 ```
 
 **Design a screen via Stitch:**
 ```
-/design-screen
-> Shopping list detail screen — items with checkboxes, FAB to add, completed section collapsed
+Using the design-screen skill, design a list detail screen with pending items, a FAB, and a collapsed completed section.
 ```
 
 **Review code quality:**
 ```
-/code-review
-> Review the latest changes in Convy.Application for SOLID violations
+Using the code-review skill, review the latest changes in Convy.Application for SOLID and architecture issues.
 ```
 
 See [docs/USAGE.md](docs/USAGE.md) for the full guide with examples.

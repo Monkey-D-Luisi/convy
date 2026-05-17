@@ -18,4 +18,4 @@ Specify the file, class, or feature you want to add tests for.
 
 ## Output
 - New test files or additions to existing test files
-- All tests pass: `dotnet test` / `./gradlew allTests`
+- All relevant tests pass: `dotnet test backend/Convy.slnx` / `cd mobile && ./gradlew :shared:testDebugUnitTest :composeApp:testDebugUnitTest`

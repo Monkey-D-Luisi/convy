@@ -34,7 +34,7 @@ MCP (Model Context Protocol) servers extend AI agent capabilities. This project 
 **Purpose**: Query the database, inspect schema, and run SQL.
 
 **Setup**:
-1. Start the database: `docker compose -f docker/docker-compose.yml up db -d`
+1. Start the database: `cd docker && docker compose up -d db`
 2. The connection string is preconfigured for local dev.
 
 **Verify**: Ask the AI to run `SELECT version()` or list tables with `\dt`.
@@ -73,7 +73,7 @@ MCP (Model Context Protocol) servers extend AI agent capabilities. This project 
 | `mcp_stitch_get_screen` | Get details of a specific screen |
 | `mcp_stitch_get_project` | Get details of a specific project |
 
-**Usage in workflows**: The `/design-ui` prompt and `.github/skills/design-screen/SKILL.md` skill use Stitch to generate designs before mobile implementation.
+**Usage in workflows**: The `/design-ui` prompt and `.github/skills/design-screen/SKILL.md` skill use Stitch to generate designs before mobile implementation. Convy uses the existing Stitch project `5694262812667273070` ("Convy — Household Coordination App") and `modelId: "GEMINI_3_1_PRO"` for screen generation.
 
 ### 5. Maestro MCP Server
 
@@ -117,7 +117,7 @@ Note: Stitch MCP is provided by the VS Code extension and does not need an entry
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `npx not found` | Node.js not installed | Install Node.js 18+ and ensure `npx` is on PATH |
-| PostgreSQL connection refused | Docker not running | Run `docker compose -f docker/docker-compose.yml up db -d` |
+| PostgreSQL connection refused | Docker not running | Run `cd docker && docker compose up -d db` |
 | GitHub 401 Unauthorized | Token not set or expired | Check `GITHUB_TOKEN` env var has correct value and scopes (`repo`, `read:org`) |
 | `mcp_stitch_*` tools not found | Stitch extension not installed | Install the Stitch extension from VS Code marketplace |
 | Context7 timeout | Network issue | Retry — Context7 runs via `npx` and needs internet access |
