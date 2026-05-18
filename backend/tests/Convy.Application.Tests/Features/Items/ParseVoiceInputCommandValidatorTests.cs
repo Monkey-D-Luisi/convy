@@ -60,4 +60,33 @@ public class ParseVoiceAudioCommandValidatorTests
         var result = _validator.TestValidate(command);
         result.ShouldNotHaveValidationErrorFor(x => x.FileName);
     }
+
+    [Fact]
+    public void Validate_WithAudioAtOpenAiLimit_PassesValidation()
+    {
+        var command = new ParseVoiceAudioCommand(
+            Guid.NewGuid(),
+            Stream.Null,
+            "recording.m4a",
+            25 * 1024 * 1024);
+
+        var result = _validator.TestValidate(command);
+
+        result.ShouldNotHaveValidationErrorFor(x => x.AudioLengthBytes);
+    }
+
+    [Fact]
+    public void Validate_WithAudioOverOpenAiLimit_FailsValidation()
+    {
+        var command = new ParseVoiceAudioCommand(
+            Guid.NewGuid(),
+            Stream.Null,
+            "recording.m4a",
+            25 * 1024 * 1024 + 1);
+
+        var result = _validator.TestValidate(command);
+
+        result.ShouldHaveValidationErrorFor(x => x.AudioLengthBytes)
+            .WithErrorMessage("Audio file must not exceed 25 MB.");
+    }
 }

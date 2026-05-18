@@ -148,7 +148,7 @@ public static class ItemEndpoints
             IMediator mediator) =>
         {
             await using var stream = audio.OpenReadStream();
-            var command = new ParseVoiceAudioCommand(listId, stream, audio.FileName);
+            var command = new ParseVoiceAudioCommand(listId, stream, audio.FileName, audio.Length);
             var result = await mediator.Send(command);
             return result.IsSuccess
                 ? Results.Ok(result.Value)

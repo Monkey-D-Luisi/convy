@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenAI;
 using OpenAI.Audio;
-using OpenAI.Chat;
+using OpenAI.Responses;
 
 namespace Convy.Infrastructure;
 
@@ -63,11 +63,16 @@ public static class DependencyInjection
 
         var transcriptionModel = configuration["OpenAI:TranscriptionModel"] ?? "gpt-4o-mini-transcribe";
         var parsingModel = configuration["OpenAI:ParsingModel"] ?? "gpt-5.4-nano";
+        var openAiOptions = new OpenAiVoiceParsingOptions(transcriptionModel, parsingModel);
 
         var openAiClient = new OpenAIClient(apiKey);
 
         services.AddSingleton(openAiClient.GetAudioClient(transcriptionModel));
-        services.AddSingleton(openAiClient.GetChatClient(parsingModel));
+        services.AddSingleton(openAiClient.GetResponsesClient());
+        services.AddSingleton(openAiOptions);
+        services.AddScoped<IOpenAiVoiceTranscriptionClient, OpenAiVoiceTranscriptionClient>();
+        services.AddScoped<IOpenAiResponsesClient, OpenAiResponsesClient>();
+        services.AddScoped<IOpenAiVoiceItemParser, OpenAiVoiceItemParser>();
         services.AddScoped<IAiVoiceParsingService, OpenAiVoiceParsingService>();
     }
 }
