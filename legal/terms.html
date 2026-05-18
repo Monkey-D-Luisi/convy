@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Convy Terms</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #22302d;
+      --muted: #64716e;
+      --line: #dce5e1;
+      --surface: #f7faf8;
+      --accent: #0b7a5f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.62;
+      background: var(--surface);
+      color: var(--ink);
+    }
+    header {
+      border-bottom: 1px solid var(--line);
+      background: #ffffff;
+    }
+    .wrap {
+      width: min(860px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0;
+    }
+    main.wrap { padding-top: 36px; padding-bottom: 64px; }
+    h1, h2 { line-height: 1.2; margin: 0; }
+    h1 { font-size: clamp(2rem, 4vw, 3rem); }
+    h2 { font-size: 1.2rem; margin-top: 32px; color: var(--accent); }
+    p, li { font-size: 1rem; }
+    .date { margin-top: 8px; color: var(--muted); }
+    ul { padding-left: 22px; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Convy Terms</h1>
+      <p class="date">Last updated: May 18, 2026</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <p>
+      These Terms govern controlled beta use of Convy. By using Convy, you agree to use it only for lawful household
+      coordination and to keep your account access secure.
+    </p>
+
+    <h2>Beta Service</h2>
+    <p>
+      Convy is provided as a beta product. Features may change, be temporarily unavailable, or be removed while the
+      product is being tested. Production-grade offsite encrypted backups must be added before broad public launch.
+    </p>
+
+    <h2>Accounts and Households</h2>
+    <p>
+      You are responsible for activity from your authenticated account and for inviting only appropriate household
+      members. Household content should not include sensitive personal, financial, medical, or regulated information.
+    </p>
+
+    <h2>Voice Features</h2>
+    <p>
+      Voice input is optional and may be processed by OpenAI to transcribe and parse household items. You should review
+      parsed items before confirming creation in a list.
+    </p>
+
+    <h2>Acceptable Use</h2>
+    <ul>
+      <li>Do not attempt to bypass authentication, authorization, rate limits, or operational controls.</li>
+      <li>Do not upload malicious content or use the service to harm other users or infrastructure.</li>
+      <li>Do not rely on Convy as the sole record for critical, emergency, medical, or legal obligations.</li>
+    </ul>
+
+    <h2>Availability and Liability</h2>
+    <p>
+      Convy is provided without warranties during beta. To the fullest extent permitted by law, the project maintainer
+      is not liable for indirect, incidental, special, consequential, or punitive damages from use of the service.
+    </p>
+
+    <h2>Termination</h2>
+    <p>
+      Access may be suspended or removed if these Terms are violated, if the beta ends, or if continued operation would
+      create security, legal, or operational risk.
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      For questions about these Terms, contact the Convy project maintainer through the repository listed on the Convy
+      landing page.
+    </p>
+  </main>
+</body>
+</html>

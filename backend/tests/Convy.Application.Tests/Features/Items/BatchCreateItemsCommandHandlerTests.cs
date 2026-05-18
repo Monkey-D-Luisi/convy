@@ -56,6 +56,34 @@ public class BatchCreateItemsCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WithVoiceSource_CreatesVoiceItems()
+    {
+        // Arrange
+        var household = new Household("Home", _userId);
+        var list = new HouseholdList("Shopping", ListType.Shopping, household.Id, _userId);
+        _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
+        _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
+
+        var createdItems = new List<ListItem>();
+        _itemRepository
+            .AddAsync(Arg.Do<ListItem>(createdItems.Add), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var command = new BatchCreateItemsCommand(list.Id, new List<BatchItemDto>
+        {
+            new("Milk", null, null, null)
+        }, ItemCreationSource.Voice);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        createdItems.Should().ContainSingle();
+        createdItems.Single().Source.Should().Be(ItemCreationSource.Voice);
+    }
+
+    [Fact]
     public async Task Handle_WithValidItems_SendsNotificationForEachItem()
     {
         // Arrange

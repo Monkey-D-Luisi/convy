@@ -29,11 +29,15 @@ public static class DependencyInjection
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<IDeviceTokenRepository, DeviceTokenRepository>();
         services.AddScoped<INotificationPreferencesRepository, NotificationPreferencesRepository>();
+        services.AddScoped<IVoiceParseEventRepository, VoiceParseEventRepository>();
+        services.AddScoped<IBackupRunRepository, BackupRunRepository>();
         services.AddScoped<IHouseholdNotificationService, HouseholdNotificationService>();
         services.AddScoped<IFirebaseMessagingClient, FirebaseMessagingClient>();
         services.AddScoped<IPushNotificationTextProvider, PushNotificationTextProvider>();
         services.AddScoped<IPushNotificationService, PushNotificationService>();
         services.AddScoped<IActivityLogger, ActivityLogger>();
+        services.AddScoped<IAdminMetricsReader, AdminMetricsReader>();
+        services.AddScoped<IOpenAiVoiceCostEstimator, OpenAiVoiceCostEstimator>();
 
         services.AddSingleton<PushNotificationBatcher>(sp =>
             new PushNotificationBatcher(

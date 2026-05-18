@@ -75,6 +75,7 @@ data class JoinHouseholdRequest(
 @Serializable
 data class BatchCreateItemsRequest(
     @SerialName("items") val items: List<BatchCreateItemEntry>,
+    @SerialName("source") val source: String? = null,
 )
 
 @Serializable

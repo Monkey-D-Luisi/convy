@@ -44,3 +44,29 @@ jobs:
         run: dotnet test backend/Convy.slnx --no-build -c Release --verbosity normal
         env:
           ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=convy_test;Username=convy;Password=test_password"
+
+  dashboard:
+    name: Dashboard Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install
+        working-directory: dashboard
+        run: npm ci
+
+      - name: Lint
+        working-directory: dashboard
+        run: npm run lint
+
+      - name: Build
+        working-directory: dashboard
+        run: npm run build

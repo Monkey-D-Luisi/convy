@@ -60,6 +60,14 @@ public class OpenAiVoiceParsingServiceTests
         var result = await service.ParseAudioAsync(new MemoryStream([1, 2, 3]), "recording.m4a", Guid.NewGuid());
 
         result.Items.Should().ContainSingle(i => i.Title == "Leche");
+        result.Telemetry.Should().NotBeNull();
+        result.Telemetry!.Status.Should().Be(Convy.Domain.ValueObjects.VoiceParseStatus.Success);
+        result.Telemetry.ParsedItemsCount.Should().Be(1);
+        result.Telemetry.InputTokens.Should().Be(100);
+        result.Telemetry.OutputTokens.Should().Be(25);
+        result.Telemetry.CachedTokens.Should().Be(80);
+        result.Telemetry.ReasoningTokens.Should().Be(3);
+        result.Telemetry.AudioDurationSeconds.Should().Be(2);
         _parser.CallCount.Should().Be(1);
         _logger.ContainsValue(transcript).Should().BeFalse();
         _logger.Messages.Should().Contain(message => message.Contains("success"));

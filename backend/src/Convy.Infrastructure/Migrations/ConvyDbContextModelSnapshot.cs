@@ -70,6 +70,74 @@ namespace Convy.Infrastructure.Migrations
                     b.ToTable("activity_logs", (string)null);
                 });
 
+            modelBuilder.Entity("Convy.Domain.Entities.BackupRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BackupType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("backup_type");
+
+                    b.Property<long>("DurationMs")
+                        .HasColumnType("bigint")
+                        .HasColumnName("duration_ms");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("error_message");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("file_name");
+
+                    b.Property<DateTime>("FinishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finished_at");
+
+                    b.Property<string>("Sha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("sha256");
+
+                    b.Property<long?>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("VerificationStatus")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("verification_status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StartedAt")
+                        .IsDescending()
+                        .HasDatabaseName("ix_backup_runs_started_at");
+
+                    b.HasIndex("Status", "StartedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_backup_runs_status_started_at");
+
+                    b.ToTable("backup_runs", (string)null);
+                });
+
             modelBuilder.Entity("Convy.Domain.Entities.DeviceToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -337,6 +405,14 @@ namespace Convy.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("returned_to_pending_by");
 
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Manual")
+                        .HasColumnName("source");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -359,6 +435,9 @@ namespace Convy.Infrastructure.Migrations
 
                     b.HasIndex("ListId", "IsCompleted")
                         .HasDatabaseName("ix_list_items_list_id_is_completed");
+
+                    b.HasIndex("Source", "CreatedAt")
+                        .HasDatabaseName("ix_list_items_source_created_at");
 
                     b.ToTable("list_items", (string)null);
                 });
@@ -509,6 +588,80 @@ namespace Convy.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("Convy.Domain.Entities.VoiceParseEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<double?>("AudioDurationSeconds")
+                        .HasColumnType("double precision")
+                        .HasColumnName("audio_duration_seconds");
+
+                    b.Property<long?>("AudioSizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("audio_size_bytes");
+
+                    b.Property<int?>("CachedTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("cached_tokens");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<long?>("EstimatedCostMicros")
+                        .HasColumnType("bigint")
+                        .HasColumnName("estimated_cost_micros");
+
+                    b.Property<Guid>("HouseholdId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("household_id");
+
+                    b.Property<int?>("InputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("input_tokens");
+
+                    b.Property<long>("LatencyMs")
+                        .HasColumnType("bigint")
+                        .HasColumnName("latency_ms");
+
+                    b.Property<int?>("OutputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("output_tokens");
+
+                    b.Property<int>("ParsedItemsCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("parsed_items_count");
+
+                    b.Property<int?>("ReasoningTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("reasoning_tokens");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_voice_parse_events_created_at");
+
+                    b.HasIndex("HouseholdId", "CreatedAt")
+                        .HasDatabaseName("ix_voice_parse_events_household_id_created_at");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_voice_parse_events_status_created_at");
+
+                    b.ToTable("voice_parse_events", (string)null);
                 });
 
             modelBuilder.Entity("Convy.Domain.Entities.HouseholdMembership", b =>

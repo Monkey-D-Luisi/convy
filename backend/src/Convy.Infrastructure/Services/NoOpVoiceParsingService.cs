@@ -1,5 +1,6 @@
 using Convy.Application.Common.Interfaces;
 using Convy.Application.Features.Items.Commands;
+using Convy.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace Convy.Infrastructure.Services;
@@ -20,6 +21,17 @@ public class NoOpVoiceParsingService : IAiVoiceParsingService
         CancellationToken cancellationToken = default)
     {
         _logger.LogWarning("Voice parsing requested but OPENAI_API_KEY is not configured. Returning empty result.");
-        return Task.FromResult(new VoiceParsingResult(string.Empty, []));
+        return Task.FromResult(new VoiceParsingResult(
+            string.Empty,
+            [],
+            new VoiceParsingTelemetry(
+                VoiceParseStatus.ProviderError,
+                AudioDurationSeconds: null,
+                ParsedItemsCount: 0,
+                InputTokens: null,
+                OutputTokens: null,
+                CachedTokens: null,
+                ReasoningTokens: null,
+                LatencyMs: 0)));
     }
 }

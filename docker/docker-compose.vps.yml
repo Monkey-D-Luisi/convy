@@ -46,6 +46,25 @@ services:
     networks:
       - convy
 
+  dashboard:
+    build:
+      context: ../dashboard
+      dockerfile: Dockerfile
+    container_name: convy-dashboard
+    restart: unless-stopped
+    env_file: *convy-env-file
+    environment:
+      NODE_ENV: production
+      CONVY_API_BASE_URL: http://api:8080
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${FIREBASE_WEB_API_KEY}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${FIREBASE_AUTH_DOMAIN}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${FIREBASE_WEB_APP_ID}
+    depends_on:
+      - api
+    networks:
+      - convy
+
   caddy:
     image: caddy:2.10.0-alpine
     container_name: convy-caddy
@@ -56,10 +75,12 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile.vps:/etc/caddy/Caddyfile:ro
+      - /opt/convy/legal:/srv/legal:ro
       - /opt/convy/caddy/data:/data
       - /opt/convy/caddy/config:/config
     depends_on:
       - api
+      - dashboard
     networks:
       - convy
 

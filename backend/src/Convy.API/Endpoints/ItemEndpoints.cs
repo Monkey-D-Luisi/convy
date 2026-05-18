@@ -133,8 +133,12 @@ public static class ItemEndpoints
             IMediator mediator) =>
         {
             // Membership authorization belongs in the handler so every caller uses the same boundary.
+            var source = Enum.TryParse<ItemCreationSource>(request.Source ?? nameof(ItemCreationSource.Manual), ignoreCase: true, out var parsedSource)
+                ? parsedSource
+                : ItemCreationSource.Manual;
             var command = new BatchCreateItemsCommand(listId,
-                request.Items.Select(i => new Application.Features.Items.Commands.BatchItemDto(i.Title, i.Quantity, i.Unit, i.Note)).ToList());
+                request.Items.Select(i => new Application.Features.Items.Commands.BatchItemDto(i.Title, i.Quantity, i.Unit, i.Note)).ToList(),
+                source);
             var result = await mediator.Send(command);
 
             return result.IsSuccess
@@ -151,7 +155,7 @@ public static class ItemEndpoints
             var command = new ParseVoiceAudioCommand(listId, stream, audio.FileName, audio.Length);
             var result = await mediator.Send(command);
             return result.IsSuccess
-                ? Results.Ok(result.Value)
+                ? Results.Ok(new VoiceParseResponse(result.Value!.Transcription, result.Value.Items))
                 : MapError(result.Error!);
         })
         .DisableAntiforgery();
@@ -169,5 +173,6 @@ public static class ItemEndpoints
 
 public record CreateItemRequest(string Title, int? Quantity, string? Unit, string? Note, RecurrenceFrequency? RecurrenceFrequency, int? RecurrenceInterval);
 public record UpdateItemRequest(string Title, int? Quantity, string? Unit, string? Note, RecurrenceFrequency? RecurrenceFrequency, int? RecurrenceInterval);
-public record BatchCreateItemsRequest(List<BatchCreateItemRequest> Items);
+public record BatchCreateItemsRequest(List<BatchCreateItemRequest> Items, string? Source = null);
 public record BatchCreateItemRequest(string Title, int? Quantity, string? Unit, string? Note);
+public record VoiceParseResponse(string Transcription, List<ParsedItemDto> Items);

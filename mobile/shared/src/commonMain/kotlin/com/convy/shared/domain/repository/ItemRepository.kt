@@ -15,5 +15,5 @@ interface ItemRepository {
     suspend fun checkDuplicate(listId: String, title: String): Result<DuplicateCheck>
     suspend fun getSuggestions(householdId: String, query: String?): Result<List<String>>
     suspend fun parseVoiceAudio(listId: String, audioData: ByteArray): Result<VoiceParseResult>
-    suspend fun batchCreate(listId: String, items: List<ParsedItem>): Result<List<String>>
+    suspend fun batchCreate(listId: String, items: List<ParsedItem>, source: String = "manual"): Result<List<String>>
 }

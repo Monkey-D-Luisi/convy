@@ -21,10 +21,18 @@ public class ListItem : Entity
     public RecurrenceFrequency? RecurrenceFrequency { get; private set; }
     public int? RecurrenceInterval { get; private set; }
     public DateTime? NextDueDate { get; private set; }
+    public ItemCreationSource Source { get; private set; }
 
     private ListItem() { } // EF Core
 
-    public ListItem(string title, Guid listId, Guid createdBy, int? quantity = null, string? unit = null, string? note = null)
+    public ListItem(
+        string title,
+        Guid listId,
+        Guid createdBy,
+        int? quantity = null,
+        string? unit = null,
+        string? note = null,
+        ItemCreationSource source = ItemCreationSource.Manual)
     {
         if (string.IsNullOrWhiteSpace(title))
             throw new ArgumentException("Item title is required.", nameof(title));
@@ -41,6 +49,7 @@ public class ListItem : Entity
         Quantity = quantity;
         Unit = unit;
         Note = note;
+        Source = source;
         CreatedAt = DateTime.UtcNow;
         IsCompleted = false;
     }

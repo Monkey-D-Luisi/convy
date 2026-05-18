@@ -42,8 +42,13 @@ fi
 
 mkdir -p \
   "$APP_ROOT/backups" \
+  "$APP_ROOT/backups/postgres/daily" \
+  "$APP_ROOT/backups/postgres/weekly" \
+  "$APP_ROOT/backups/postgres/monthly" \
+  "$APP_ROOT/backups/postgres/metadata" \
   "$APP_ROOT/caddy/config" \
   "$APP_ROOT/caddy/data" \
+  "$APP_ROOT/legal" \
   "$APP_ROOT/postgres" \
   "$APP_ROOT/releases" \
   "$APP_ROOT/shared"
@@ -52,6 +57,7 @@ chown -R root:root "$APP_ROOT"
 chmod 755 "$APP_ROOT"
 chmod 700 "$APP_ROOT/shared"
 chmod 700 "$APP_ROOT/backups"
+chmod 755 "$APP_ROOT/legal"
 
 ufw allow OpenSSH
 ufw allow 80/tcp

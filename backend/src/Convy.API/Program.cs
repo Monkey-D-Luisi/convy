@@ -1,3 +1,4 @@
+using Convy.API.Authorization;
 using Convy.API.Endpoints;
 using Convy.API.Middleware;
 using Convy.API.Services;
@@ -9,6 +10,7 @@ using Convy.Infrastructure.Persistence;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -28,7 +30,8 @@ if (!string.IsNullOrEmpty(dbHost))
 }
 
 // Health checks
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ConvyDbContext>("db");
 
 // Reverse proxy headers (Caddy/Cloud Run) must be applied before HTTPS redirection.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -69,7 +72,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new AdminEmailRequirement());
+    });
+});
+builder.Services.AddScoped<IAuthorizationHandler, AdminEmailAuthorizationHandler>();
 
 // Firebase Admin SDK — uses Application Default Credentials
 // (GOOGLE_APPLICATION_CREDENTIALS env var locally, metadata server on Cloud Run)
@@ -117,6 +128,7 @@ app.UseMiddleware<UserResolutionMiddleware>();
 
 // Health check endpoints
 app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/ready");
 
 // Feature endpoints
 app.MapUserEndpoints();
@@ -127,6 +139,7 @@ app.MapItemEndpoints();
 app.MapTaskEndpoints();
 app.MapActivityEndpoints();
 app.MapDeviceEndpoints();
+app.MapAdminEndpoints();
 
 // SignalR hub
 app.MapHub<HouseholdHub>("/hubs/household");
