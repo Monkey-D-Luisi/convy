@@ -38,6 +38,7 @@
 | 13 | 0.1.10 | 2026-05-08 | Low-cost VPS production hosting path |
 | 14 | 0.1.11 | 2026-05-17 | Shopping item state metadata |
 | 15 | 0.1.12 | 2026-05-17 | Android VPS host hotfix |
+| 16 | 0.1.13 | 2026-05-18 | Operability metrics and admin dashboard |
 
 ## Release Procedure
 
