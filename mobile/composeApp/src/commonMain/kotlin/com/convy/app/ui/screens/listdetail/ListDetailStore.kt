@@ -439,7 +439,7 @@ class ListDetailStore(
             val parsedItems = selected.map {
                 com.convy.shared.domain.model.ParsedItem(it.title, it.quantity, it.unit, it.matchedExistingItem)
             }
-            itemRepository.batchCreate(listId, parsedItems).fold(
+            itemRepository.batchCreate(listId, parsedItems, source = "voice").fold(
                 onSuccess = {
                     _state.update { it.copy(showVoiceSheet = false, parsedVoiceItems = emptyList(), voiceTranscription = "") }
                     loadItems()

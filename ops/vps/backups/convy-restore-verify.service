@@ -1,0 +1,8 @@
+[Unit]
+Description=Verify Convy PostgreSQL backup by restoring into a temporary database
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/convy/current/ops/vps/backups/restore-verify-postgres.sh

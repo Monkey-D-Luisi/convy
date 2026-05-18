@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Convy Privacy Policy</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #22302d;
+      --muted: #64716e;
+      --line: #dce5e1;
+      --surface: #f7faf8;
+      --accent: #0b7a5f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.62;
+      background: var(--surface);
+      color: var(--ink);
+    }
+    header {
+      border-bottom: 1px solid var(--line);
+      background: #ffffff;
+    }
+    .wrap {
+      width: min(860px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0;
+    }
+    main.wrap { padding-top: 36px; padding-bottom: 64px; }
+    h1, h2 { line-height: 1.2; margin: 0; }
+    h1 { font-size: clamp(2rem, 4vw, 3rem); }
+    h2 { font-size: 1.2rem; margin-top: 32px; color: var(--accent); }
+    p, li { font-size: 1rem; }
+    .date { margin-top: 8px; color: var(--muted); }
+    ul { padding-left: 22px; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Convy Privacy Policy</h1>
+      <p class="date">Last updated: May 18, 2026</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <p>
+      Convy helps households manage shared shopping lists, tasks, reminders, and voice-assisted item capture.
+      This policy explains what data we process, why we process it, and how beta users can request access,
+      correction, or deletion.
+    </p>
+
+    <h2>Data We Collect</h2>
+    <ul>
+      <li>Account data such as your email address, Firebase user identifier, household membership, and display metadata.</li>
+      <li>Household content such as lists, list items, tasks, invite status, activity events, and notification preferences.</li>
+      <li>Device tokens needed to deliver Firebase Cloud Messaging push notifications.</li>
+      <li>Voice parsing metadata such as request status, audio size, approximate duration, token usage, latency, parsed item count, and estimated cost when configured.</li>
+      <li>Operational logs, health data, and local backup metadata needed to operate and secure the service.</li>
+    </ul>
+
+    <h2>Voice Processing</h2>
+    <p>
+      When you use voice input, audio is sent to OpenAI only to transcribe and parse the requested household items.
+      Convy does not intentionally store audio, transcripts, prompts, or detected product names in voice metrics.
+      The app response may include the transcript and parsed items so you can confirm them before creating list items.
+    </p>
+
+    <h2>Service Providers</h2>
+    <ul>
+      <li>Hetzner hosts the production VPS, PostgreSQL database, Caddy reverse proxy, legal pages, and admin dashboard.</li>
+      <li>Firebase Authentication verifies user identity and Firebase Cloud Messaging delivers notifications.</li>
+      <li>OpenAI processes voice input for transcription and structured parsing when voice features are used.</li>
+      <li>GitHub may process repository, CI, and deployment metadata for development and release operations.</li>
+    </ul>
+
+    <h2>Backups and Retention</h2>
+    <p>
+      PostgreSQL backups are created locally on the Hetzner VPS using PostgreSQL custom-format dumps with checksums,
+      metadata, catalog verification, and scheduled restore verification. Backups are retained for operational recovery.
+      Before Convy is expanded beyond controlled beta usage, offsite encrypted backup storage must be added.
+    </p>
+
+    <h2>Security</h2>
+    <p>
+      Admin access is protected by Caddy Basic Auth, Firebase login, and a backend email allowlist. Public mobile
+      contracts do not expose OpenAI token counts, estimated costs, or internal operational telemetry.
+    </p>
+
+    <h2>Your Choices</h2>
+    <p>
+      You can stop using voice input at any time and can request account or household data deletion by contacting the
+      Convy project maintainer. Some backup copies may remain until their retention period expires.
+    </p>
+
+    <h2>Legal Review</h2>
+    <p>
+      This policy is a product-operational disclosure for beta use and is not a substitute for professional legal review.
+      It should be reviewed before public launch or broader user onboarding.
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      For privacy requests, contact the Convy project maintainer through the repository listed on the Convy landing page.
+    </p>
+  </main>
+</body>
+</html>

@@ -1,4 +1,5 @@
 using Convy.Application.Common.Interfaces;
+using Convy.Application.Common.Models;
 using Convy.Application.Features.Items.Commands;
 using Convy.Domain.Entities;
 using Convy.Domain.Repositories;
@@ -12,6 +13,8 @@ public class ParseVoiceAudioCommandHandlerTests
 {
     private readonly IHouseholdListRepository _listRepository = Substitute.For<IHouseholdListRepository>();
     private readonly IHouseholdRepository _householdRepository = Substitute.For<IHouseholdRepository>();
+    private readonly IVoiceParseEventRepository _voiceParseEventRepository = Substitute.For<IVoiceParseEventRepository>();
+    private readonly IOpenAiVoiceCostEstimator _costEstimator = Substitute.For<IOpenAiVoiceCostEstimator>();
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
     private readonly IAiVoiceParsingService _voiceParsingService = Substitute.For<IAiVoiceParsingService>();
     private readonly ParseVoiceAudioCommandHandler _handler;
@@ -23,6 +26,8 @@ public class ParseVoiceAudioCommandHandlerTests
         _handler = new ParseVoiceAudioCommandHandler(
             _listRepository,
             _householdRepository,
+            _voiceParseEventRepository,
+            _costEstimator,
             _currentUser,
             _voiceParsingService);
     }
@@ -63,6 +68,46 @@ public class ParseVoiceAudioCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value!.Transcription.Should().Be("milk and bread");
         result.Value.Items.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Handle_WithValidAudio_RecordsVoiceParseEvent()
+    {
+        // Arrange
+        var listId = SetupValidListAndHousehold();
+        var audio = new MemoryStream([1, 2, 3]);
+        var telemetry = new VoiceParsingTelemetry(
+            VoiceParseStatus.Success,
+            AudioDurationSeconds: 2.5,
+            ParsedItemsCount: 1,
+            InputTokens: 100,
+            OutputTokens: 20,
+            CachedTokens: 70,
+            ReasoningTokens: 2,
+            LatencyMs: 812);
+        var command = new ParseVoiceAudioCommand(listId, audio, "test.m4a", audio.Length);
+
+        _voiceParsingService
+            .ParseAudioAsync(audio, "test.m4a", Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(new VoiceParsingResult("milk", [new ParsedItemDto("Milk", null, null, null)], telemetry));
+        _costEstimator.EstimateMicros(telemetry).Returns(42);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        await _voiceParseEventRepository.Received(1).AddAsync(
+            Arg.Is<VoiceParseEvent>(e =>
+                e.UserId == _userId &&
+                e.Status == VoiceParseStatus.Success &&
+                e.AudioSizeBytes == audio.Length &&
+                e.AudioDurationSeconds == 2.5 &&
+                e.ParsedItemsCount == 1 &&
+                e.InputTokens == 100 &&
+                e.EstimatedCostMicros == 42),
+            Arg.Any<CancellationToken>());
+        await _voiceParseEventRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

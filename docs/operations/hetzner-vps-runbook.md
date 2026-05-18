@@ -1,16 +1,29 @@
 # Hetzner VPS Hosting Runbook
 
-This runbook is the low-cost fallback while Oracle Always Free A1 capacity is unavailable. It keeps the same runtime shape as the OCI target: Docker Compose with PostgreSQL, the ASP.NET Core API, and Caddy.
+Hetzner is the active production target for the current beta deployment. The VPS runs PostgreSQL, the ASP.NET Core API, the Next.js admin dashboard, legal static pages, and Caddy in Docker Compose.
+
+OCI files are intentionally not updated for the admin dashboard, legal host, or new backup workflow in this change. Treat `docker-compose.oci.yml`, `Caddyfile.oci`, and `ops/oci` as reference material until a dedicated OCI follow-up updates them.
 
 ## Infrastructure Layout
 
-- `infra/gcp`: current Google Cloud Terraform stack for rollback and reference.
-- `infra/oci`: Oracle Always Free Terraform stack and retry automation.
-- `infra/hetzner`: Hetzner Cloud Terraform stack for the paid low-cost fallback.
-- `ops/oci`: Oracle-specific retry and bootstrap helpers.
-- `ops/vps`: provider-neutral VPS bootstrap, secret push, and deployment helpers.
+- `infra/hetzner`: Hetzner Cloud Terraform stack.
+- `ops/vps`: VPS bootstrap, secret push, release deployment, and backup helpers.
+- `docker/docker-compose.vps.yml`: runtime services for `db`, `api`, `dashboard`, and `caddy`.
+- `docker/Caddyfile.vps`: public routing for API, admin dashboard, and legal pages.
+- `legal`: static legal documents copied to `/opt/convy/legal` during deploy.
+- `dashboard`: Next.js admin dashboard served behind Caddy Basic Auth.
 
-## Token
+## Required Hosts
+
+Configure DNS before the first production deploy:
+
+- `CONVY_API_HOSTNAME`, for example `api.convy.app`
+- `CONVY_ADMIN_HOSTNAME`, for example `admin.convy.app`
+- `CONVY_LEGAL_HOSTNAME`, for example `legal.convy.app`
+
+Caddy obtains and renews TLS certificates for all three hosts.
+
+## Secrets
 
 Store the Hetzner API token outside the repo:
 
@@ -19,8 +32,32 @@ New-Item -ItemType Directory -Force "$env:USERPROFILE\.config\convy\secrets"
 Set-Content -Path "$env:USERPROFILE\.config\convy\secrets\hcloud-token.txt" -Value "<token>"
 ```
 
-Do not paste the token into chat and do not put it in `terraform.tfvars`.
-The Terraform helper also accepts the local fallback path `C:\Users\luiss\secrets\hetzner`, or any explicit path passed with `-TokenPath`.
+Set these environment variables before running `ops/vps/push-secrets.ps1`:
+
+```powershell
+$env:OPENAI_API_KEY = "<openai-api-key>"
+$env:ADMIN_BASIC_AUTH_USER = "admin"
+$env:ADMIN_BASIC_AUTH_HASH = "<caddy-hash>"
+$env:ADMIN_ALLOWED_EMAILS = "admin@example.com"
+$env:FIREBASE_WEB_API_KEY = "<firebase-web-api-key>"
+$env:FIREBASE_WEB_APP_ID = "<firebase-web-app-id>"
+```
+
+Generate the Caddy password hash with:
+
+```powershell
+docker run --rm caddy:2.10.0-alpine caddy hash-password --plaintext "<admin-password>"
+```
+
+OpenAI price settings are optional. If they are not set, voice cost estimates are returned as `null`:
+
+```powershell
+$env:OPENAI_COST_TRANSCRIPTION_AUDIO_MICROS_PER_SECOND = "<micros>"
+$env:OPENAI_COST_PARSING_INPUT_MICROS_PER_1K_TOKENS = "<micros>"
+$env:OPENAI_COST_PARSING_CACHED_INPUT_MICROS_PER_1K_TOKENS = "<micros>"
+$env:OPENAI_COST_PARSING_OUTPUT_MICROS_PER_1K_TOKENS = "<micros>"
+$env:OPENAI_COST_PARSING_REASONING_MICROS_PER_1K_TOKENS = "<micros>"
+```
 
 ## Provision
 
@@ -41,9 +78,13 @@ Only run `apply` after confirming the planned server type:
 
 ```powershell
 $ip = terraform output -raw public_ip
+$apiHost = "api.convy.app"
+$adminHost = "admin.convy.app"
+$legalHost = "legal.convy.app"
+
 scp -i "$env:USERPROFILE\.ssh\convy_vps_deploy" ..\..\ops\vps\bootstrap-server.sh "root@${ip}:/tmp/bootstrap-server.sh"
 ssh -i "$env:USERPROFILE\.ssh\convy_vps_deploy" "root@${ip}" "bash /tmp/bootstrap-server.sh"
-..\..\ops\vps\push-secrets.ps1 -HostName $ip -ConvyHostname "$(terraform output -raw public_hostname)"
+..\..\ops\vps\push-secrets.ps1 -HostName $ip -ConvyApiHostname $apiHost -ConvyAdminHostname $adminHost -ConvyLegalHostname $legalHost
 ```
 
 ## First Deploy
@@ -54,6 +95,28 @@ scp -i "$env:USERPROFILE\.ssh\convy_vps_deploy" "$env:TEMP\convy-release.tar.gz"
 ssh -i "$env:USERPROFILE\.ssh\convy_vps_deploy" "root@${ip}" "mkdir -p /opt/convy/releases/manual && tar -xzf /tmp/convy-release.tar.gz -C /opt/convy/releases/manual && /opt/convy/releases/manual/ops/vps/deploy-release.sh manual"
 ```
 
+The deploy script copies `legal/` to `/opt/convy/legal`, rebuilds `api` and `dashboard`, starts Compose, and checks `https://$CONVY_API_HOSTNAME/health/ready`.
+
+## Backups
+
+Install backup timers after the first healthy deploy:
+
+```bash
+sudo /opt/convy/current/ops/vps/backups/install-backup-timers.sh
+```
+
+The daily backup timer creates PostgreSQL custom-format dumps with `pg_dump`, checksum metadata, `pg_restore --list` verification, and a `backup_runs` database row. The weekly restore verification timer restores the latest dump into a temporary database, runs a basic query, and drops the temporary database.
+
+Manual commands:
+
+```bash
+sudo BACKUP_TYPE=Manual /opt/convy/current/ops/vps/backups/backup-postgres.sh
+sudo /opt/convy/current/ops/vps/backups/verify-backup.sh /opt/convy/backups/postgres/daily/<file>.dump
+sudo /opt/convy/current/ops/vps/backups/restore-postgres.sh /opt/convy/backups/postgres/daily/<file>.dump convy_restore_manual
+```
+
+Before non-internal users are onboarded, add encrypted offsite backup storage.
+
 ## GitHub CD
 
 The CD workflow is provider-neutral and deploys the commit that passed CI.
@@ -61,7 +124,7 @@ The CD workflow is provider-neutral and deploys the commit that passed CI.
 Set these repository secrets:
 
 - `PRODUCTION_DEPLOY_HOST`: public IPv4 address of the VPS.
-- `PRODUCTION_PUBLIC_HOSTNAME`: public HTTPS hostname, for example `178.105.70.69.nip.io`.
+- `PRODUCTION_PUBLIC_HOSTNAME`: API HTTPS hostname.
 - `PRODUCTION_SSH_PRIVATE_KEY`: private deploy key matching the public key provisioned in Hetzner.
 
 Set these repository variables:
@@ -69,15 +132,31 @@ Set these repository variables:
 - `PRODUCTION_DEPLOY_USER`: `root` for Hetzner.
 - `PRODUCTION_DEPLOY_SCRIPT`: `ops/vps/deploy-release.sh` for Hetzner.
 
+## Smoke Checks
+
+```powershell
+curl.exe -fsS "https://$apiHost/health"
+curl.exe -fsS "https://$apiHost/health/ready"
+curl.exe -fsS "https://$legalHost/privacy"
+curl.exe -I "https://$adminHost"
+```
+
+Expected admin behavior:
+
+- Caddy prompts for Basic Auth before the dashboard loads.
+- The dashboard then requires Firebase login.
+- The backend admin API returns `401` without a token and `403` for authenticated non-admin users.
+- Dashboard views must not display OpenAI token counts, prompts, transcripts, audio, or cost details beyond aggregate estimates.
+
 ## Data Migration
 
-Use the same short write-freeze process as OCI:
+Use a short write-freeze process:
 
 1. Confirm the Hetzner deployment is healthy with an empty database.
-2. Disable writes or scale down the GCP Cloud Run production service.
-3. Export Cloud SQL PostgreSQL with `pg_dump`.
+2. Disable writes or scale down the previous production service.
+3. Export the previous PostgreSQL database with `pg_dump`.
 4. Copy the dump to the VPS.
 5. Restore into `convy-db`.
 6. Compare row counts for `users`, `households`, `household_memberships`, `household_lists`, `list_items`, `task_items`, `invites`, `activity_logs`, `device_tokens`, and `notification_preferences`.
 7. Validate login, household loading, item creation, task creation, notification preferences, SignalR updates, FCM push, and voice parsing.
-8. Keep GCP resources for rollback until the mobile app has used Hetzner successfully.
+8. Keep the previous environment for rollback until the mobile app has used Hetzner successfully.

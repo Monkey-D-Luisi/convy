@@ -15,6 +15,8 @@ public class ConvyDbContext : DbContext
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
     public DbSet<NotificationPreferences> NotificationPreferences => Set<NotificationPreferences>();
+    public DbSet<VoiceParseEvent> VoiceParseEvents => Set<VoiceParseEvent>();
+    public DbSet<BackupRun> BackupRuns => Set<BackupRun>();
 
     public ConvyDbContext(DbContextOptions<ConvyDbContext> options) : base(options)
     {

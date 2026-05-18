@@ -7,6 +7,9 @@ param(
     [string] $FirebaseAdminJsonPath = "$env:USERPROFILE\secrets\convy-firebase-admin.json",
     [string] $LocalEnvPath = "C:\Users\luiss\source\repos\convy\.env",
     [string] $ConvyHostname = "",
+    [string] $ConvyApiHostname = "",
+    [string] $ConvyAdminHostname = "",
+    [string] $ConvyLegalHostname = "",
     [string] $PostgresPassword = ""
 )
 
@@ -22,6 +25,18 @@ if (-not (Test-Path $FirebaseAdminJsonPath)) {
 
 if ([string]::IsNullOrWhiteSpace($ConvyHostname)) {
     $ConvyHostname = "$HostName.nip.io"
+}
+
+if ([string]::IsNullOrWhiteSpace($ConvyApiHostname)) {
+    $ConvyApiHostname = $ConvyHostname
+}
+
+if ([string]::IsNullOrWhiteSpace($ConvyAdminHostname)) {
+    $ConvyAdminHostname = "admin.$ConvyHostname"
+}
+
+if ([string]::IsNullOrWhiteSpace($ConvyLegalHostname)) {
+    $ConvyLegalHostname = "legal.$ConvyHostname"
 }
 
 if ([string]::IsNullOrWhiteSpace($PostgresPassword)) {
@@ -59,6 +74,28 @@ if ([string]::IsNullOrWhiteSpace($openAiApiKey)) {
     throw "OPENAI_API_KEY was not found in the process environment or $LocalEnvPath"
 }
 
+$adminBasicAuthUser = if ($env:ADMIN_BASIC_AUTH_USER) { $env:ADMIN_BASIC_AUTH_USER } else { "admin" }
+$adminBasicAuthHash = $env:ADMIN_BASIC_AUTH_HASH
+if ([string]::IsNullOrWhiteSpace($adminBasicAuthHash)) {
+    throw "ADMIN_BASIC_AUTH_HASH was not found in the process environment. Generate it with: docker run --rm caddy:2.10.0-alpine caddy hash-password --plaintext '<password>'"
+}
+$adminBasicAuthHashForCompose = $adminBasicAuthHash.Replace('$', '$$')
+
+$adminAllowedEmails = $env:ADMIN_ALLOWED_EMAILS
+if ([string]::IsNullOrWhiteSpace($adminAllowedEmails)) {
+    throw "ADMIN_ALLOWED_EMAILS was not found in the process environment."
+}
+
+$firebaseWebApiKey = $env:FIREBASE_WEB_API_KEY
+$firebaseAuthDomain = if ($env:FIREBASE_AUTH_DOMAIN) { $env:FIREBASE_AUTH_DOMAIN } else { "convy-6520d.firebaseapp.com" }
+$firebaseWebAppId = $env:FIREBASE_WEB_APP_ID
+if ([string]::IsNullOrWhiteSpace($firebaseWebApiKey)) {
+    throw "FIREBASE_WEB_API_KEY was not found in the process environment."
+}
+if ([string]::IsNullOrWhiteSpace($firebaseWebAppId)) {
+    throw "FIREBASE_WEB_APP_ID was not found in the process environment."
+}
+
 $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("convy-vps-" + [Guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $tempDir | Out-Null
 
@@ -68,12 +105,25 @@ try {
         "POSTGRES_DB=convy"
         "POSTGRES_USER=convy"
         "POSTGRES_PASSWORD=$PostgresPassword"
-        "CONVY_HOSTNAME=$ConvyHostname"
+        "CONVY_API_HOSTNAME=$ConvyApiHostname"
+        "CONVY_ADMIN_HOSTNAME=$ConvyAdminHostname"
+        "CONVY_LEGAL_HOSTNAME=$ConvyLegalHostname"
         "FIREBASE_PROJECT_ID=convy-6520d"
+        "FIREBASE_WEB_API_KEY=$firebaseWebApiKey"
+        "FIREBASE_AUTH_DOMAIN=$firebaseAuthDomain"
+        "FIREBASE_WEB_APP_ID=$firebaseWebAppId"
         "OPENAI_API_KEY=$openAiApiKey"
         "DATABASE_MIGRATE_ON_STARTUP=true"
+        "ADMIN_BASIC_AUTH_USER=$adminBasicAuthUser"
+        "ADMIN_BASIC_AUTH_HASH=$adminBasicAuthHashForCompose"
+        "Admin__AllowedEmails=$adminAllowedEmails"
         "OpenAI__TranscriptionModel=gpt-4o-mini-transcribe"
         "OpenAI__ParsingModel=gpt-5.4-nano"
+        "OpenAI__Costs__TranscriptionAudioInputMicrosPerSecond=$env:OPENAI_COST_TRANSCRIPTION_AUDIO_MICROS_PER_SECOND"
+        "OpenAI__Costs__ParsingInputMicrosPer1KTokens=$env:OPENAI_COST_PARSING_INPUT_MICROS_PER_1K_TOKENS"
+        "OpenAI__Costs__ParsingCachedInputMicrosPer1KTokens=$env:OPENAI_COST_PARSING_CACHED_INPUT_MICROS_PER_1K_TOKENS"
+        "OpenAI__Costs__ParsingOutputMicrosPer1KTokens=$env:OPENAI_COST_PARSING_OUTPUT_MICROS_PER_1K_TOKENS"
+        "OpenAI__Costs__ParsingReasoningMicrosPer1KTokens=$env:OPENAI_COST_PARSING_REASONING_MICROS_PER_1K_TOKENS"
         "PushNotifications__BatchWindowSeconds=60"
     ) | Set-Content -Path $apiEnv -Encoding ascii
 

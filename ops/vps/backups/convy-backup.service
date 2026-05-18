@@ -1,0 +1,9 @@
+[Unit]
+Description=Convy PostgreSQL backup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+Environment=BACKUP_TYPE=Daily
+ExecStart=/opt/convy/current/ops/vps/backups/backup-postgres.sh

@@ -13,9 +13,9 @@ appId: com.monkeydluisi.convy
       text: "Vacuum hallway"
     timeout: 10000
 - swipe:
-    from:
-      text: "Vacuum hallway"
-    direction: LEFT
+    start: "90%,28%"
+    end: "10%,28%"
+    duration: 700
 - extendedWaitUntil:
     visible:
       text: "Task deleted"

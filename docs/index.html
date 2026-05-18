@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Convy</title>
+  <style>
+    :root {
+      --ink: #20302c;
+      --muted: #63716d;
+      --line: #dce6e1;
+      --surface: #f7faf8;
+      --accent: #0b7a5f;
+      --accent-strong: #055843;
+      --card: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--surface);
+    }
+    header {
+      min-height: 86vh;
+      display: grid;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      background: #ffffff;
+    }
+    .hero {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 430px);
+      gap: clamp(32px, 7vw, 88px);
+      align-items: center;
+      padding: 48px 0;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(3rem, 8vw, 6.5rem);
+      line-height: .95;
+      letter-spacing: 0;
+    }
+    .lead {
+      max-width: 620px;
+      margin: 24px 0 0;
+      font-size: clamp(1.12rem, 2.1vw, 1.45rem);
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 32px;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      text-decoration: none;
+      background: #ffffff;
+      font-weight: 650;
+    }
+    .button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #ffffff;
+    }
+    .phone {
+      width: min(100%, 380px);
+      justify-self: center;
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      box-shadow: 0 24px 70px rgba(17, 36, 31, .18);
+      background: var(--card);
+    }
+    section {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 44px 0 64px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px;
+    }
+    h2 {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+    }
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    @media (max-width: 780px) {
+      header { min-height: auto; }
+      .hero { grid-template-columns: 1fr; padding-top: 36px; }
+      .phone { width: min(78vw, 330px); }
+      section { grid-template-columns: 1fr; padding-top: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="hero">
+      <div>
+        <h1>Convy</h1>
+        <p class="lead">A shared household app for lists, tasks, reminders, invites, real-time updates, and voice-assisted item capture.</p>
+        <div class="actions" aria-label="Convy links">
+          <a class="button primary" href="https://play.google.com/store/apps/details?id=com.convy.app">Play Store</a>
+          <a class="button" href="https://github.com/luiss/convy">GitHub</a>
+          <a class="button" href="https://legal.convy.app/privacy">Privacy</a>
+        </div>
+      </div>
+      <img class="phone" src="assets/convy-launch.png" alt="Convy mobile app launch screen">
+    </div>
+  </header>
+  <section aria-label="Product areas">
+    <article>
+      <h2>Shared Lists</h2>
+      <p>Households can create and update lists together with fast item entry and real-time sync.</p>
+    </article>
+    <article>
+      <h2>Tasks</h2>
+      <p>Assignments, due dates, and activity history keep routine home work visible.</p>
+    </article>
+    <article>
+      <h2>Voice</h2>
+      <p>Voice input turns spoken groceries into confirmed list items without exposing operational telemetry to the app.</p>
+    </article>
+  </section>
+</body>
+</html>

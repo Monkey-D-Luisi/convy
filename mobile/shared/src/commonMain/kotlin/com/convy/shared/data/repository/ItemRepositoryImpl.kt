@@ -149,10 +149,11 @@ class ItemRepositoryImpl(
             }
         }
 
-    override suspend fun batchCreate(listId: String, items: List<ParsedItem>): Result<List<String>> =
+    override suspend fun batchCreate(listId: String, items: List<ParsedItem>, source: String): Result<List<String>> =
         try {
             val request = BatchCreateItemsRequest(
                 items = items.map { BatchCreateItemEntry(it.title, it.quantity, it.unit) },
+                source = source,
             )
             Result.success(api.batchCreateItems(listId, request).createdIds)
         } catch (e: HttpRequestTimeoutException) {

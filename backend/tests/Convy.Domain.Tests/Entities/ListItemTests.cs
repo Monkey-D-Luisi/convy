@@ -26,7 +26,16 @@ public class ListItemTests
         item.CompletedAt.Should().BeNull();
         item.ReturnedToPendingBy.Should().BeNull();
         item.ReturnedToPendingAt.Should().BeNull();
+        item.Source.Should().Be(ItemCreationSource.Manual);
         item.Id.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void Constructor_WithVoiceSource_CreatesVoiceItem()
+    {
+        var item = new ListItem("Milk", _listId, _creatorId, source: ItemCreationSource.Voice);
+
+        item.Source.Should().Be(ItemCreationSource.Voice);
     }
 
     [Fact]

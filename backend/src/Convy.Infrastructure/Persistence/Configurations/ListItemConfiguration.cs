@@ -68,6 +68,13 @@ public class ListItemConfiguration : IEntityTypeConfiguration<ListItem>
         builder.Property(i => i.NextDueDate)
             .HasColumnName("next_due_date");
 
+        builder.Property(i => i.Source)
+            .HasColumnName("source")
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .IsRequired()
+            .HasDefaultValue(Domain.ValueObjects.ItemCreationSource.Manual);
+
         builder.HasIndex(i => i.ListId)
             .HasDatabaseName("ix_list_items_list_id");
 
@@ -77,5 +84,8 @@ public class ListItemConfiguration : IEntityTypeConfiguration<ListItem>
         builder.HasIndex(i => i.NextDueDate)
             .HasDatabaseName("ix_list_items_next_due_date")
             .HasFilter("\"next_due_date\" IS NOT NULL");
+
+        builder.HasIndex(i => new { i.Source, i.CreatedAt })
+            .HasDatabaseName("ix_list_items_source_created_at");
     }
 }

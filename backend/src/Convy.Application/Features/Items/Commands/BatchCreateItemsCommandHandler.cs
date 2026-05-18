@@ -52,7 +52,7 @@ public class BatchCreateItemsCommandHandler : IRequestHandler<BatchCreateItemsCo
         var items = new List<ListItem>();
         foreach (var dto in request.Items)
         {
-            var item = new ListItem(dto.Title, request.ListId, _currentUser.UserId, dto.Quantity, dto.Unit, dto.Note);
+            var item = new ListItem(dto.Title, request.ListId, _currentUser.UserId, dto.Quantity, dto.Unit, dto.Note, request.Source);
             await _itemRepository.AddAsync(item, cancellationToken);
             items.Add(item);
         }

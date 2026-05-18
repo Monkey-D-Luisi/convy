@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Convy.Application.Common.Interfaces;
 using Convy.Domain.Repositories;
+using Convy.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace Convy.Infrastructure.Services;
@@ -33,6 +34,7 @@ internal sealed class OpenAiVoiceParsingService : IAiVoiceParsingService
         CancellationToken cancellationToken = default)
     {
         var audioBytes = audio.CanSeek ? audio.Length : (long?)null;
+        var totalStopwatch = Stopwatch.StartNew();
 
         _logger.LogInformation(
             "OpenAI voice parsing started file={FileName} audioBytes={AudioBytes}",
@@ -50,7 +52,11 @@ internal sealed class OpenAiVoiceParsingService : IAiVoiceParsingService
             if (string.IsNullOrWhiteSpace(transcription.Text))
             {
                 LogParsingCompleted("empty_transcription", 0, null, null, null, TimeSpan.Zero);
-                return new VoiceParsingResult(string.Empty, []);
+                totalStopwatch.Stop();
+                return new VoiceParsingResult(
+                    string.Empty,
+                    [],
+                    CreateTelemetry(VoiceParseStatus.EmptyTranscription, transcription, null, 0, totalStopwatch.Elapsed));
             }
 
             var existingItems = await _itemRepository.GetFrequentTitlesAsync(
@@ -72,7 +78,16 @@ internal sealed class OpenAiVoiceParsingService : IAiVoiceParsingService
                 parsing.Status,
                 parsingStopwatch.Elapsed);
 
-            return new VoiceParsingResult(transcription.Text, parsing.Items.ToList());
+            totalStopwatch.Stop();
+            return new VoiceParsingResult(
+                transcription.Text,
+                parsing.Items.ToList(),
+                CreateTelemetry(
+                    parsing.Items.Count == 0 ? VoiceParseStatus.ParseEmpty : VoiceParseStatus.Success,
+                    transcription,
+                    parsing.Usage,
+                    parsing.Items.Count,
+                    totalStopwatch.Elapsed));
         }
         catch (Exception ex)
         {
@@ -84,6 +99,24 @@ internal sealed class OpenAiVoiceParsingService : IAiVoiceParsingService
                 ex.GetType().Name);
             throw;
         }
+    }
+
+    private static VoiceParsingTelemetry CreateTelemetry(
+        VoiceParseStatus status,
+        VoiceTranscriptionResult transcription,
+        OpenAiVoiceTokenUsage? parsingUsage,
+        int parsedItemsCount,
+        TimeSpan totalElapsed)
+    {
+        return new VoiceParsingTelemetry(
+            status,
+            transcription.Duration?.TotalSeconds,
+            parsedItemsCount,
+            parsingUsage?.InputTokenCount,
+            parsingUsage?.OutputTokenCount,
+            parsingUsage?.CachedTokenCount,
+            parsingUsage?.ReasoningTokenCount,
+            (long)totalElapsed.TotalMilliseconds);
     }
 
     private void LogTranscriptionCompleted(
