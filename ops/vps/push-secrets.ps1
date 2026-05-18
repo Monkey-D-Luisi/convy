@@ -79,6 +79,7 @@ $adminBasicAuthHash = $env:ADMIN_BASIC_AUTH_HASH
 if ([string]::IsNullOrWhiteSpace($adminBasicAuthHash)) {
     throw "ADMIN_BASIC_AUTH_HASH was not found in the process environment. Generate it with: docker run --rm caddy:2.10.0-alpine caddy hash-password --plaintext '<password>'"
 }
+$adminBasicAuthHashForCompose = $adminBasicAuthHash.Replace('$', '$$')
 
 $adminAllowedEmails = $env:ADMIN_ALLOWED_EMAILS
 if ([string]::IsNullOrWhiteSpace($adminAllowedEmails)) {
@@ -114,7 +115,7 @@ try {
         "OPENAI_API_KEY=$openAiApiKey"
         "DATABASE_MIGRATE_ON_STARTUP=true"
         "ADMIN_BASIC_AUTH_USER=$adminBasicAuthUser"
-        "ADMIN_BASIC_AUTH_HASH=$adminBasicAuthHash"
+        "ADMIN_BASIC_AUTH_HASH=$adminBasicAuthHashForCompose"
         "Admin__AllowedEmails=$adminAllowedEmails"
         "OpenAI__TranscriptionModel=gpt-4o-mini-transcribe"
         "OpenAI__ParsingModel=gpt-5.4-nano"
