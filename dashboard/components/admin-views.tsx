@@ -33,7 +33,7 @@ function useAdminResource<T>(path: string) {
       setError("");
       try {
         const response = await fetch(`/api/admin/${path}`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { "x-firebase-id-token": token },
           cache: "no-store",
         });
 
