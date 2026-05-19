@@ -28,8 +28,14 @@ public record DailyUsageMetricDto(
     int HouseholdsActive,
     int ItemsCreated,
     int ItemsCompleted,
+    int ItemsUncompleted,
+    int ItemsDeleted,
+    int ItemCompletionsCreatedSameDay,
+    int ItemCompletionsFromBacklog,
     int TasksCreated,
-    int TasksCompleted);
+    int TasksCompleted,
+    int TasksUncompleted,
+    int TasksDeleted);
 
 public record AdminVoiceMetricsDto(
     DateOnly From,
@@ -79,4 +85,64 @@ public record AdminSystemHealthDto(
     long? PostgresDataSizeBytes,
     string? BackendVersion,
     string? AndroidVersion,
-    DateTime? LastDeployAt);
+    DateTime? LastDeployAt,
+    string? ReleaseSha,
+    string? OperatingSystem,
+    string? Architecture,
+    int ProcessorCount,
+    string? CpuModel,
+    long? MemoryTotalBytes,
+    long? MemoryAvailableBytes,
+    long? DiskTotalBytes,
+    long? UptimeSeconds,
+    double? LoadAverage1m);
+
+public record AdminOpenAiMetricsDto(
+    DateOnly From,
+    DateOnly To,
+    int Requests,
+    int Successes,
+    int Failures,
+    int InputTokens,
+    int OutputTokens,
+    int CachedTokens,
+    int ReasoningTokens,
+    int AudioTokens,
+    int TextTokens,
+    double AudioDurationSeconds,
+    long? EstimatedCostMicros,
+    double? AverageLatencyMs,
+    IReadOnlyList<DailyOpenAiMetricDto> Days,
+    IReadOnlyList<OpenAiOperationMetricDto> Operations);
+
+public record DailyOpenAiMetricDto(
+    DateOnly Date,
+    int Requests,
+    int Successes,
+    int Failures,
+    int InputTokens,
+    int OutputTokens,
+    int CachedTokens,
+    int ReasoningTokens,
+    int AudioTokens,
+    int TextTokens,
+    double AudioDurationSeconds,
+    long? EstimatedCostMicros,
+    double? AverageLatencyMs);
+
+public record OpenAiOperationMetricDto(
+    string Feature,
+    string Operation,
+    string? Model,
+    int Requests,
+    int Successes,
+    int Failures,
+    int InputTokens,
+    int OutputTokens,
+    int CachedTokens,
+    int ReasoningTokens,
+    int AudioTokens,
+    int TextTokens,
+    double AudioDurationSeconds,
+    long? EstimatedCostMicros,
+    double? AverageLatencyMs);

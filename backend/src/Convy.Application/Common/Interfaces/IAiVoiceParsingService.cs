@@ -17,6 +17,11 @@ public interface IOpenAiVoiceCostEstimator
     long? EstimateMicros(VoiceParsingTelemetry telemetry);
 }
 
+public interface IAiUsageRecorder
+{
+    Task RecordAsync(AiUsageRecordRequest request, CancellationToken cancellationToken = default);
+}
+
 public record VoiceParsingResult(
     string Transcription,
     List<ParsedItemDto> Items,
@@ -31,3 +36,19 @@ public record VoiceParsingTelemetry(
     int? CachedTokens,
     int? ReasoningTokens,
     long LatencyMs);
+
+public record AiUsageRecordRequest(
+    Guid? HouseholdId,
+    string Feature,
+    string Operation,
+    string? Model,
+    string Status,
+    long LatencyMs,
+    int? InputTokens = null,
+    int? OutputTokens = null,
+    int? CachedTokens = null,
+    int? ReasoningTokens = null,
+    int? AudioTokens = null,
+    int? TextTokens = null,
+    double? AudioDurationSeconds = null,
+    string? ErrorType = null);

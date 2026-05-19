@@ -31,8 +31,10 @@ public class AdminEndpointContractTests
         source.Should().Contain("/metrics/overview");
         source.Should().Contain("/metrics/usage");
         source.Should().Contain("/metrics/voice");
+        source.Should().Contain("/metrics/openai");
         source.Should().Contain("/backups/latest");
         source.Should().Contain("/backups/runs");
+        source.Should().Contain("/backups/runs/{id:guid}/download");
         source.Should().Contain("/system/health");
         source.Should().Contain("RequireAuthorization(\"AdminOnly\")");
     }

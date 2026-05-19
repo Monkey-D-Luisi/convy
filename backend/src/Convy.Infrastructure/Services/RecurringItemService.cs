@@ -1,4 +1,6 @@
 using Convy.Domain.Entities;
+using Convy.Domain.ValueObjects;
+using Convy.Application.Common.Interfaces;
 using Convy.Domain.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -39,6 +41,8 @@ public class RecurringItemService : BackgroundService
     {
         using var scope = _scopeFactory.CreateScope();
         var itemRepository = scope.ServiceProvider.GetRequiredService<IListItemRepository>();
+        var listRepository = scope.ServiceProvider.GetRequiredService<IHouseholdListRepository>();
+        var activityLogger = scope.ServiceProvider.GetRequiredService<IActivityLogger>();
 
         var dueItems = await itemRepository.GetDueRecurringItemsAsync(DateTime.UtcNow, cancellationToken);
 
@@ -57,6 +61,19 @@ public class RecurringItemService : BackgroundService
 
             await itemRepository.AddAsync(newItem, cancellationToken);
             item.AdvanceRecurrence();
+
+            var list = await listRepository.GetByIdAsync(newItem.ListId, cancellationToken);
+            if (list is not null)
+            {
+                await activityLogger.LogAsync(
+                    list.HouseholdId,
+                    ActivityEntityType.Item,
+                    newItem.Id,
+                    ActivityActionType.Created,
+                    newItem.CreatedBy,
+                    newItem.Title,
+                    cancellationToken);
+            }
 
             _logger.LogInformation("Created recurring item '{Title}' for list {ListId}", item.Title, item.ListId);
         }

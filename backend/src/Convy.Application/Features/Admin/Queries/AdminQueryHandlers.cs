@@ -75,6 +75,25 @@ public class GetLatestBackupRunQueryHandler : IRequestHandler<GetLatestBackupRun
     }
 }
 
+public class GetAdminOpenAiMetricsQueryHandler : IRequestHandler<GetAdminOpenAiMetricsQuery, Result<AdminOpenAiMetricsDto>>
+{
+    private readonly IAdminMetricsReader _metricsReader;
+
+    public GetAdminOpenAiMetricsQueryHandler(IAdminMetricsReader metricsReader)
+    {
+        _metricsReader = metricsReader;
+    }
+
+    public async Task<Result<AdminOpenAiMetricsDto>> Handle(GetAdminOpenAiMetricsQuery request, CancellationToken cancellationToken)
+    {
+        if (request.To < request.From)
+            return Result<AdminOpenAiMetricsDto>.Failure(Error.Validation("The end date must be on or after the start date."));
+
+        var usage = await _metricsReader.GetOpenAiAsync(request.From, request.To, cancellationToken);
+        return Result<AdminOpenAiMetricsDto>.Success(usage);
+    }
+}
+
 public class GetBackupRunsQueryHandler : IRequestHandler<GetBackupRunsQuery, Result<IReadOnlyList<BackupRunDto>>>
 {
     private readonly IAdminMetricsReader _metricsReader;

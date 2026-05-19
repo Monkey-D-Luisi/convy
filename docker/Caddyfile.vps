@@ -14,7 +14,7 @@
 {$CONVY_ADMIN_HOSTNAME} {
 	encode zstd gzip
 
-	basicauth {
+	basic_auth {
 		{$ADMIN_BASIC_AUTH_USER} {$ADMIN_BASIC_AUTH_HASH}
 	}
 

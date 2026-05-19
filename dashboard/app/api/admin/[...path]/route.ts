@@ -14,12 +14,20 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pat
     cache: "no-store",
   });
 
-  const body = await response.text();
-  return new Response(body, {
+  const headers = new Headers();
+  headers.set("cache-control", "no-store");
+  headers.set("content-type", response.headers.get("content-type") ?? "application/json");
+  const contentDisposition = response.headers.get("content-disposition");
+  if (contentDisposition) {
+    headers.set("content-disposition", contentDisposition);
+  }
+  const contentLength = response.headers.get("content-length");
+  if (contentLength) {
+    headers.set("content-length", contentLength);
+  }
+
+  return new Response(response.body, {
     status: response.status,
-    headers: {
-      "content-type": response.headers.get("content-type") ?? "application/json",
-      "cache-control": "no-store",
-    },
+    headers,
   });
 }

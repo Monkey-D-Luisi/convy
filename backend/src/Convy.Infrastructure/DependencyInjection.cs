@@ -37,7 +37,9 @@ public static class DependencyInjection
         services.AddScoped<IPushNotificationService, PushNotificationService>();
         services.AddScoped<IActivityLogger, ActivityLogger>();
         services.AddScoped<IAdminMetricsReader, AdminMetricsReader>();
+        services.AddScoped<IAdminBackupFileService, AdminBackupFileService>();
         services.AddScoped<IOpenAiVoiceCostEstimator, OpenAiVoiceCostEstimator>();
+        services.AddScoped<IAiUsageRecorder, AiUsageRecorder>();
 
         services.AddSingleton<PushNotificationBatcher>(sp =>
             new PushNotificationBatcher(

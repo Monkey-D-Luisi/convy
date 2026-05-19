@@ -1,3 +1,4 @@
+using Convy.Application.Common.Interfaces;
 using Convy.Application.Features.Items.Commands;
 using Convy.Domain.Repositories;
 using Convy.Infrastructure.Services;
@@ -13,6 +14,7 @@ public class OpenAiVoiceParsingServiceTests
     private readonly CapturingLogger<OpenAiVoiceParsingService> _logger = new();
     private readonly FakeTranscriptionClient _transcription = new();
     private readonly FakeItemParser _parser = new();
+    private readonly FakeAiUsageRecorder _usageRecorder = new();
 
     public OpenAiVoiceParsingServiceTests()
     {
@@ -69,6 +71,8 @@ public class OpenAiVoiceParsingServiceTests
         result.Telemetry.ReasoningTokens.Should().Be(3);
         result.Telemetry.AudioDurationSeconds.Should().Be(2);
         _parser.CallCount.Should().Be(1);
+        _usageRecorder.Events.Should().Contain(e => e.Operation == "transcription" && e.Model == "gpt-4o-mini-transcribe" && e.Status == "success");
+        _usageRecorder.Events.Should().Contain(e => e.Operation == "parsing" && e.Model == "gpt-5.4-nano" && e.Status == "success" && e.InputTokens == 100);
         _logger.ContainsValue(transcript).Should().BeFalse();
         _logger.Messages.Should().Contain(message => message.Contains("success"));
         _logger.StructuredValues.Should().Contain(pair => pair.Key == "Model" && Equals(pair.Value, "gpt-4o-mini-transcribe"));
@@ -87,12 +91,13 @@ public class OpenAiVoiceParsingServiceTests
         var act = async () => await service.ParseAudioAsync(new MemoryStream([1]), "recording.m4a", Guid.NewGuid());
 
         await act.Should().ThrowAsync<InvalidOperationException>();
+        _usageRecorder.Events.Should().Contain(e => e.Operation == "parsing" && e.Status == "failure" && e.ErrorType == nameof(InvalidOperationException));
         _logger.ContainsValue(transcript).Should().BeFalse();
         _logger.Messages.Should().Contain(message => message.Contains("provider_error"));
     }
 
     private OpenAiVoiceParsingService CreateService() =>
-        new(_transcription, _parser, _itemRepository, _logger);
+        new(_transcription, _parser, _itemRepository, _usageRecorder, new OpenAiVoiceParsingOptions("gpt-4o-mini-transcribe", "gpt-5.4-nano"), _logger);
 
     private sealed class FakeTranscriptionClient : IOpenAiVoiceTranscriptionClient
     {
@@ -103,6 +108,17 @@ public class OpenAiVoiceParsingServiceTests
             string fileName,
             CancellationToken cancellationToken) =>
             Task.FromResult(Result);
+    }
+
+    private sealed class FakeAiUsageRecorder : IAiUsageRecorder
+    {
+        public List<AiUsageRecordRequest> Events { get; } = [];
+
+        public Task RecordAsync(AiUsageRecordRequest request, CancellationToken cancellationToken = default)
+        {
+            Events.Add(request);
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class FakeItemParser : IOpenAiVoiceItemParser

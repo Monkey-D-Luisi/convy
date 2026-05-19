@@ -49,7 +49,7 @@ Generate the Caddy password hash with:
 docker run --rm caddy:2.10.0-alpine caddy hash-password --plaintext "<admin-password>"
 ```
 
-OpenAI price settings are optional. If they are not set, voice cost estimates are returned as `null`:
+OpenAI price settings are optional. If they are not set, aggregate OpenAI cost estimates are returned as `null` while request and token counts still appear:
 
 ```powershell
 $env:OPENAI_COST_TRANSCRIPTION_AUDIO_MICROS_PER_SECOND = "<micros>"
@@ -96,6 +96,7 @@ ssh -i "$env:USERPROFILE\.ssh\convy_vps_deploy" "root@${ip}" "mkdir -p /opt/conv
 ```
 
 The deploy script copies `legal/` to `/opt/convy/legal`, rebuilds `api` and `dashboard`, starts Compose, and checks `https://$CONVY_API_HOSTNAME/health/ready`.
+It also writes `/opt/convy/shared/release.env` with the release SHA, deploy timestamp, backend release label, and Android version parsed from `mobile/androidApp/build.gradle.kts`.
 
 ## Backups
 
@@ -106,6 +107,7 @@ sudo /opt/convy/current/ops/vps/backups/install-backup-timers.sh
 ```
 
 The daily backup timer creates PostgreSQL custom-format dumps with `pg_dump`, checksum metadata, `pg_restore --list` verification, and a `backup_runs` database row. The weekly restore verification timer restores the latest dump into a temporary database, runs a basic query, and drops the temporary database.
+Admin users can download successful registered dumps from the dashboard. The backend only serves files recorded in `backup_runs` and resolved under `/opt/convy/backups/postgres`.
 
 Manual commands:
 
@@ -146,7 +148,7 @@ Expected admin behavior:
 - Caddy prompts for Basic Auth before the dashboard loads.
 - The dashboard then requires Firebase login.
 - The backend admin API returns `401` without a token and `403` for authenticated non-admin users.
-- Dashboard views must not display OpenAI token counts, prompts, transcripts, audio, or cost details beyond aggregate estimates.
+- Dashboard views may display aggregate OpenAI request, token, latency, and estimated cost metrics, but must not display prompts, transcripts, audio, or parsed product names.
 
 ## Data Migration
 

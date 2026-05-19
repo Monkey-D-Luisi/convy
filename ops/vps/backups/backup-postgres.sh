@@ -8,6 +8,7 @@ DB_CONTAINER="${DB_CONTAINER:-convy-db}"
 BACKUP_TYPE="${BACKUP_TYPE:-Daily}"
 BACKUP_TIMEOUT_SECONDS="${BACKUP_TIMEOUT_SECONDS:-900}"
 MIN_FREE_KB="${MIN_FREE_KB:-1048576}"
+BACKUP_READ_GROUP="${BACKUP_READ_GROUP:-1654}"
 
 LOCK_FILE="$BACKUP_ROOT/metadata/backup.lock"
 STARTED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
@@ -37,7 +38,7 @@ generate_uuid() {
 RUN_ID="$(generate_uuid)"
 
 if [ "$(id -u)" -ne 0 ] && [ "$APP_ROOT" = "/opt/convy" ]; then
-  exec sudo --preserve-env=APP_ROOT,ENV_FILE,BACKUP_ROOT,DB_CONTAINER,BACKUP_TYPE,BACKUP_TIMEOUT_SECONDS,MIN_FREE_KB "$0" "$@"
+  exec sudo --preserve-env=APP_ROOT,ENV_FILE,BACKUP_ROOT,DB_CONTAINER,BACKUP_TYPE,BACKUP_TIMEOUT_SECONDS,MIN_FREE_KB,BACKUP_READ_GROUP "$0" "$@"
 fi
 
 if [ ! -f "$ENV_FILE" ]; then
@@ -63,6 +64,8 @@ case "$BACKUP_TYPE" in
 esac
 
 mkdir -p "$BACKUP_ROOT/daily" "$BACKUP_ROOT/weekly" "$BACKUP_ROOT/monthly" "$BACKUP_ROOT/manual" "$BACKUP_ROOT/metadata"
+chown -R "root:$BACKUP_READ_GROUP" "$BACKUP_ROOT"
+find "$BACKUP_ROOT" -type d -exec chmod 750 {} +
 
 free_kb="$(df -Pk "$BACKUP_ROOT" | awk 'NR == 2 {print $4}')"
 if [ "${free_kb:-0}" -lt "$MIN_FREE_KB" ]; then
@@ -152,7 +155,8 @@ if ! timeout "$BACKUP_TIMEOUT_SECONDS" docker exec "$DB_CONTAINER" pg_dump \
   exit 1
 fi
 
-chmod 600 "$backup_path"
+chown "root:$BACKUP_READ_GROUP" "$backup_path"
+chmod 640 "$backup_path"
 size_bytes="$(stat -c '%s' "$backup_path")"
 sha256="$(sha256sum "$backup_path" | awk '{print $1}')"
 

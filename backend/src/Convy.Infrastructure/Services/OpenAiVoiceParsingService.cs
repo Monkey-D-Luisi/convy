@@ -13,17 +13,23 @@ internal sealed class OpenAiVoiceParsingService : IAiVoiceParsingService
     private readonly IOpenAiVoiceTranscriptionClient _transcriptionClient;
     private readonly IOpenAiVoiceItemParser _itemParser;
     private readonly IListItemRepository _itemRepository;
+    private readonly IAiUsageRecorder _usageRecorder;
+    private readonly OpenAiVoiceParsingOptions _options;
     private readonly ILogger<OpenAiVoiceParsingService> _logger;
 
     public OpenAiVoiceParsingService(
         IOpenAiVoiceTranscriptionClient transcriptionClient,
         IOpenAiVoiceItemParser itemParser,
         IListItemRepository itemRepository,
+        IAiUsageRecorder usageRecorder,
+        OpenAiVoiceParsingOptions options,
         ILogger<OpenAiVoiceParsingService> logger)
     {
         _transcriptionClient = transcriptionClient;
         _itemParser = itemParser;
         _itemRepository = itemRepository;
+        _usageRecorder = usageRecorder;
+        _options = options;
         _logger = logger;
     }
 
@@ -44,10 +50,39 @@ internal sealed class OpenAiVoiceParsingService : IAiVoiceParsingService
         try
         {
             var transcriptionStopwatch = Stopwatch.StartNew();
-            var transcription = await _transcriptionClient.TranscribeAsync(audio, fileName, cancellationToken);
+            VoiceTranscriptionResult transcription;
+            try
+            {
+                transcription = await _transcriptionClient.TranscribeAsync(audio, fileName, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                transcriptionStopwatch.Stop();
+                await RecordUsageAsync(
+                    householdId,
+                    "transcription",
+                    _options.TranscriptionModel,
+                    "failure",
+                    transcriptionStopwatch.Elapsed,
+                    usage: null,
+                    audioDurationSeconds: null,
+                    ex.GetType().Name,
+                    cancellationToken);
+                throw;
+            }
             transcriptionStopwatch.Stop();
 
             LogTranscriptionCompleted(transcription, audioBytes, transcriptionStopwatch.Elapsed);
+            await RecordUsageAsync(
+                householdId,
+                "transcription",
+                transcription.Model ?? _options.TranscriptionModel,
+                "success",
+                transcriptionStopwatch.Elapsed,
+                transcription.Usage,
+                transcription.Duration?.TotalSeconds,
+                errorType: null,
+                cancellationToken);
 
             if (string.IsNullOrWhiteSpace(transcription.Text))
             {
@@ -66,7 +101,26 @@ internal sealed class OpenAiVoiceParsingService : IAiVoiceParsingService
                 cancellationToken);
 
             var parsingStopwatch = Stopwatch.StartNew();
-            var parsing = await _itemParser.ParseAsync(transcription.Text, existingItems, cancellationToken);
+            VoiceItemParsingResult parsing;
+            try
+            {
+                parsing = await _itemParser.ParseAsync(transcription.Text, existingItems, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                parsingStopwatch.Stop();
+                await RecordUsageAsync(
+                    householdId,
+                    "parsing",
+                    _options.ParsingModel,
+                    "failure",
+                    parsingStopwatch.Elapsed,
+                    usage: null,
+                    audioDurationSeconds: null,
+                    ex.GetType().Name,
+                    cancellationToken);
+                throw;
+            }
             parsingStopwatch.Stop();
 
             var result = parsing.Items.Count == 0 ? "parse_empty" : "success";
@@ -77,6 +131,16 @@ internal sealed class OpenAiVoiceParsingService : IAiVoiceParsingService
                 parsing.Model,
                 parsing.Status,
                 parsingStopwatch.Elapsed);
+            await RecordUsageAsync(
+                householdId,
+                "parsing",
+                parsing.Model ?? _options.ParsingModel,
+                "success",
+                parsingStopwatch.Elapsed,
+                parsing.Usage,
+                audioDurationSeconds: null,
+                errorType: null,
+                cancellationToken);
 
             totalStopwatch.Stop();
             return new VoiceParsingResult(
@@ -99,6 +163,36 @@ internal sealed class OpenAiVoiceParsingService : IAiVoiceParsingService
                 ex.GetType().Name);
             throw;
         }
+    }
+
+    private async Task RecordUsageAsync(
+        Guid householdId,
+        string operation,
+        string? model,
+        string status,
+        TimeSpan elapsed,
+        OpenAiVoiceTokenUsage? usage,
+        double? audioDurationSeconds,
+        string? errorType,
+        CancellationToken cancellationToken)
+    {
+        var request = new AiUsageRecordRequest(
+            householdId,
+            "voice",
+            operation,
+            model,
+            status,
+            (long)elapsed.TotalMilliseconds,
+            usage?.InputTokenCount,
+            usage?.OutputTokenCount,
+            usage?.CachedTokenCount,
+            usage?.ReasoningTokenCount,
+            usage?.AudioTokenCount,
+            usage?.TextTokenCount,
+            audioDurationSeconds,
+            errorType);
+
+        await _usageRecorder.RecordAsync(request, cancellationToken);
     }
 
     private static VoiceParsingTelemetry CreateTelemetry(

@@ -124,6 +124,7 @@ try {
         "OpenAI__Costs__ParsingCachedInputMicrosPer1KTokens=$env:OPENAI_COST_PARSING_CACHED_INPUT_MICROS_PER_1K_TOKENS"
         "OpenAI__Costs__ParsingOutputMicrosPer1KTokens=$env:OPENAI_COST_PARSING_OUTPUT_MICROS_PER_1K_TOKENS"
         "OpenAI__Costs__ParsingReasoningMicrosPer1KTokens=$env:OPENAI_COST_PARSING_REASONING_MICROS_PER_1K_TOKENS"
+        "Operations__BackupRoot=/opt/convy/backups/postgres"
         "PushNotifications__BatchWindowSeconds=60"
     ) | Set-Content -Path $apiEnv -Encoding ascii
 

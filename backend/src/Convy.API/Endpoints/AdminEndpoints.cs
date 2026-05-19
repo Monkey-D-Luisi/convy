@@ -1,4 +1,5 @@
 using Convy.Application.Common.Models;
+using Convy.Application.Common.Interfaces;
 using Convy.Application.Features.Admin.Queries;
 using MediatR;
 
@@ -32,6 +33,13 @@ public static class AdminEndpoints
             return result.IsSuccess ? Results.Ok(result.Value) : MapError(result.Error!);
         });
 
+        group.MapGet("/metrics/openai", async (DateOnly? from, DateOnly? to, IMediator mediator) =>
+        {
+            var (rangeFrom, rangeTo) = ResolveDateRange(from, to);
+            var result = await mediator.Send(new GetAdminOpenAiMetricsQuery(rangeFrom, rangeTo));
+            return result.IsSuccess ? Results.Ok(result.Value) : MapError(result.Error!);
+        });
+
         group.MapGet("/backups/latest", async (IMediator mediator) =>
         {
             var result = await mediator.Send(new GetLatestBackupRunQuery());
@@ -42,6 +50,21 @@ public static class AdminEndpoints
         {
             var result = await mediator.Send(new GetBackupRunsQuery(limit ?? 30));
             return result.IsSuccess ? Results.Ok(result.Value) : MapError(result.Error!);
+        });
+
+        group.MapGet("/backups/runs/{id:guid}/download", async (Guid id, IAdminBackupFileService backupFileService, CancellationToken cancellationToken) =>
+        {
+            var download = await backupFileService.OpenDownloadAsync(id, cancellationToken);
+            if (download is null)
+                return Results.NotFound();
+
+            return Results.File(
+                download.Content,
+                download.ContentType,
+                download.FileName,
+                lastModified: null,
+                entityTag: null,
+                enableRangeProcessing: true);
         });
 
         group.MapGet("/system/health", async (IMediator mediator) =>

@@ -20,6 +20,16 @@ export type SystemHealth = {
   backendVersion: string | null;
   androidVersion: string | null;
   lastDeployAt: string | null;
+  releaseSha: string | null;
+  operatingSystem: string | null;
+  architecture: string | null;
+  processorCount: number;
+  cpuModel: string | null;
+  memoryTotalBytes: number | null;
+  memoryAvailableBytes: number | null;
+  diskTotalBytes: number | null;
+  uptimeSeconds: number | null;
+  loadAverage1m: number | null;
 };
 
 export type Overview = {
@@ -46,8 +56,14 @@ export type UsageMetric = {
   householdsActive: number;
   itemsCreated: number;
   itemsCompleted: number;
+  itemsUncompleted: number;
+  itemsDeleted: number;
+  itemCompletionsCreatedSameDay: number;
+  itemCompletionsFromBacklog: number;
   tasksCreated: number;
   tasksCompleted: number;
+  tasksUncompleted: number;
+  tasksDeleted: number;
 };
 
 export type UsageMetrics = {
@@ -63,6 +79,10 @@ export type VoiceMetric = {
   failures: number;
   parsedItems: number;
   voiceItemsCreated: number;
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens: number;
+  reasoningTokens: number;
   estimatedCostMicros: number | null;
 };
 
@@ -74,6 +94,63 @@ export type VoiceMetrics = {
   failures: number;
   parsedItems: number;
   voiceItemsCreated: number;
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens: number;
+  reasoningTokens: number;
   estimatedCostMicros: number | null;
   days: VoiceMetric[];
+};
+
+export type OpenAiMetric = {
+  date: string;
+  requests: number;
+  successes: number;
+  failures: number;
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens: number;
+  reasoningTokens: number;
+  audioTokens: number;
+  textTokens: number;
+  audioDurationSeconds: number;
+  estimatedCostMicros: number | null;
+  averageLatencyMs: number | null;
+};
+
+export type OpenAiOperationMetric = {
+  feature: string;
+  operation: string;
+  model: string | null;
+  requests: number;
+  successes: number;
+  failures: number;
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens: number;
+  reasoningTokens: number;
+  audioTokens: number;
+  textTokens: number;
+  audioDurationSeconds: number;
+  estimatedCostMicros: number | null;
+  averageLatencyMs: number | null;
+};
+
+export type OpenAiMetrics = {
+  from: string;
+  to: string;
+  requests: number;
+  successes: number;
+  failures: number;
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens: number;
+  reasoningTokens: number;
+  audioTokens: number;
+  textTokens: number;
+  audioDurationSeconds: number;
+  estimatedCostMicros: number | null;
+  averageLatencyMs: number | null;
+  days: OpenAiMetric[];
+  operations: OpenAiOperationMetric[];
 };

@@ -17,6 +17,7 @@ public class ConvyDbContext : DbContext
     public DbSet<NotificationPreferences> NotificationPreferences => Set<NotificationPreferences>();
     public DbSet<VoiceParseEvent> VoiceParseEvents => Set<VoiceParseEvent>();
     public DbSet<BackupRun> BackupRuns => Set<BackupRun>();
+    public DbSet<AiUsageEvent> AiUsageEvents => Set<AiUsageEvent>();
 
     public ConvyDbContext(DbContextOptions<ConvyDbContext> options) : base(options)
     {
