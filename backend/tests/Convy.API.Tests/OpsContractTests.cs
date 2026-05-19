@@ -12,7 +12,7 @@ public class OpsContractTests
         source.Should().Contain("{$CONVY_API_HOSTNAME}");
         source.Should().Contain("{$CONVY_ADMIN_HOSTNAME}");
         source.Should().Contain("{$CONVY_LEGAL_HOSTNAME}");
-        source.Should().Contain("basicauth");
+        source.Should().Contain("basic_auth");
         source.Should().Contain("root * /srv/legal");
     }
 
@@ -24,6 +24,7 @@ public class OpsContractTests
         source.Should().Contain("dashboard:");
         source.Should().Contain("../dashboard");
         source.Should().Contain("/opt/convy/legal:/srv/legal:ro");
+        source.Should().Contain("/opt/convy/backups/postgres:/opt/convy/backups/postgres:ro");
         source.Should().Contain("CONVY_API_BASE_URL: http://api:8080");
     }
 
