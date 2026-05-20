@@ -38,11 +38,7 @@ internal sealed class OpenAiVoiceTranscriptionClient : IOpenAiVoiceTranscription
         string fileName,
         CancellationToken cancellationToken)
     {
-        var options = new AudioTranscriptionOptions
-        {
-            ResponseFormat = AudioTranscriptionFormat.Verbose,
-            Prompt = TranscriptionPrompt,
-        };
+        var options = CreateOptions();
 
         var result = await _audioClient.TranscribeAudioAsync(audio, fileName, options, cancellationToken);
         var transcription = result.Value;
@@ -54,6 +50,13 @@ internal sealed class OpenAiVoiceTranscriptionClient : IOpenAiVoiceTranscription
             _options.TranscriptionModel,
             MapUsage(transcription.Usage));
     }
+
+    internal static AudioTranscriptionOptions CreateOptions() =>
+        new()
+        {
+            ResponseFormat = AudioTranscriptionFormat.Simple,
+            Prompt = TranscriptionPrompt,
+        };
 
     private static OpenAiVoiceTokenUsage? MapUsage(AudioTranscriptionUsage? usage) =>
         usage switch
