@@ -33,8 +33,7 @@ const AdminAuthContext = createContext<AdminAuthContextValue | null>(null);
 const navItems = [
   { href: "/", label: "Overview" },
   { href: "/usage", label: "Usage" },
-  { href: "/voice", label: "Voice" },
-  { href: "/openai", label: "OpenAI" },
+  { href: "/openai", label: "AI" },
   { href: "/backups", label: "Backups" },
   { href: "/system", label: "System" },
 ];
