@@ -10,11 +10,11 @@ public record AdminOverviewDto(
     int ItemsCompleted7d,
     int TasksCreated7d,
     int TasksCompleted7d,
-    int VoiceParseRequests7d,
-    int VoiceParseSuccess7d,
-    int VoiceParseFailures7d,
+    int AiRequests7d,
+    int AiSuccesses7d,
+    int AiFailures7d,
     int VoiceItemsCreated7d,
-    long? EstimatedOpenAiCostMicros7d,
+    long? EstimatedAiCostMicros7d,
     BackupRunDto? LastBackup,
     AdminSystemHealthDto Health);
 

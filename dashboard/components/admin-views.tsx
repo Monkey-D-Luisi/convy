@@ -112,6 +112,14 @@ function formatDuration(value: number | null) {
   return days > 0 ? `${days}d ${hours}h` : `${hours}h`;
 }
 
+function formatPercent(value: number, total: number) {
+  if (total === 0) {
+    return "0%";
+  }
+
+  return `${Math.round((value / total) * 100)}%`;
+}
+
 function PageState({ loading, error }: { loading: boolean; error: string }) {
   if (loading) {
     return <div className="rounded-lg border border-line bg-white p-6 text-sm text-muted">Loading</div>;
@@ -179,13 +187,13 @@ export function OverviewView() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-ink">Voice</h2>
+          <h2 className="text-lg font-semibold text-ink">AI</h2>
           <dl className="mt-4 grid grid-cols-3 gap-4">
-            <Stat label="Requests" value={data.voiceParseRequests7d} />
-            <Stat label="Success" value={data.voiceParseSuccess7d} />
-            <Stat label="Failed" value={data.voiceParseFailures7d} />
+            <Stat label="Requests" value={data.aiRequests7d} />
+            <Stat label="Success" value={data.aiSuccesses7d} />
+            <Stat label="Failed" value={data.aiFailures7d} />
           </dl>
-          <p className="mt-4 text-sm text-muted">Estimated cost: {formatMicros(data.estimatedOpenAiCostMicros7d)}</p>
+          <p className="mt-4 text-sm text-muted">Estimated cost: {formatMicros(data.estimatedAiCostMicros7d)}</p>
         </section>
         <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-ink">Backup</h2>
@@ -251,75 +259,73 @@ export function UsageView() {
   );
 }
 
-export function VoiceView() {
-  const path = useMemo(() => `metrics/voice?${dateRange(14)}`, []);
-  const { data, error, loading } = useAdminResource<VoiceMetrics>(path);
+export function OpenAiView() {
+  const openAiPath = useMemo(() => `metrics/openai?${dateRange(14)}`, []);
+  const voicePath = useMemo(() => `metrics/voice?${dateRange(14)}`, []);
+  const openAi = useAdminResource<OpenAiMetrics>(openAiPath);
+  const voice = useAdminResource<VoiceMetrics>(voicePath);
+  const loading = openAi.loading || voice.loading;
+  const error = openAi.error || voice.error;
   const state = <PageState loading={loading} error={error} />;
-  if (loading || error || !data) {
+  if (loading || error || !openAi.data || !voice.data) {
     return state;
   }
 
+  const data = openAi.data;
+  const voiceData = voice.data;
+
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <MetricCard label="Requests" value={data.requests} />
-        <MetricCard label="Success" value={data.successes} tone="good" />
-        <MetricCard label="Failed" value={data.failures} tone={data.failures > 0 ? "warn" : "default"} />
-        <MetricCard label="Parsed items" value={data.parsedItems} />
-        <MetricCard label="Items created" value={data.voiceItemsCreated} />
-        <MetricCard label="Input tokens" value={numberFormatter.format(data.inputTokens)} />
-        <MetricCard label="Output tokens" value={numberFormatter.format(data.outputTokens)} />
-        <MetricCard label="Cached tokens" value={numberFormatter.format(data.cachedTokens)} />
-        <MetricCard label="Reasoning tokens" value={numberFormatter.format(data.reasoningTokens)} />
-        <MetricCard label="Estimated cost" value={formatMicros(data.estimatedCostMicros)} />
-      </div>
-      <ChartPanel title="Voice Activity">
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-ink">AI Usage</h2>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <MetricCard label="Requests" value={data.requests} />
+          <MetricCard label="Failed" value={data.failures} tone={data.failures > 0 ? "warn" : "default"} />
+          <MetricCard label="Input tokens" value={numberFormatter.format(data.inputTokens)} />
+          <MetricCard label="Output tokens" value={numberFormatter.format(data.outputTokens)} />
+          <MetricCard label="Estimated cost" value={formatMicros(data.estimatedCostMicros)} />
+          <MetricCard label="Cached tokens" value={numberFormatter.format(data.cachedTokens)} />
+          <MetricCard label="Reasoning tokens" value={numberFormatter.format(data.reasoningTokens)} />
+          <MetricCard label="Audio tokens" value={numberFormatter.format(data.audioTokens)} />
+          <MetricCard label="Audio seconds" value={data.audioDurationSeconds.toFixed(1)} />
+          <MetricCard label="Avg latency" value={data.averageLatencyMs === null ? "Unknown" : `${Math.round(data.averageLatencyMs)} ms`} />
+        </div>
+      </section>
+      <ChartPanel title="AI Calls">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data.days}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" tickFormatter={(value: string) => dateFormatter.format(new Date(value))} />
+            <YAxis tickFormatter={(value: number) => compactFormatter.format(value)} />
+            <Tooltip />
+            <Line type="monotone" dataKey="requests" stroke="#0b7a5f" strokeWidth={2} name="Requests" />
+            <Line type="monotone" dataKey="failures" stroke="#b91c1c" strokeWidth={2} name="Failures" />
+          </LineChart>
+        </ResponsiveContainer>
+      </ChartPanel>
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-ink">Voice Funnel</h2>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <MetricCard label="Voice requests" value={voiceData.requests} />
+          <MetricCard
+            label="Success rate"
+            value={formatPercent(voiceData.successes, voiceData.requests)}
+            tone={voiceData.requests > 0 && voiceData.failures === 0 ? "good" : voiceData.failures > 0 ? "warn" : "default"}
+          />
+          <MetricCard label="Voice failures" value={voiceData.failures} tone={voiceData.failures > 0 ? "warn" : "default"} />
+          <MetricCard label="Parsed items" value={voiceData.parsedItems} />
+          <MetricCard label="Items created" value={voiceData.voiceItemsCreated} />
+        </div>
+      </section>
+      <ChartPanel title="Voice Activity">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={voiceData.days}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" tickFormatter={(value: string) => dateFormatter.format(new Date(value))} />
             <YAxis tickFormatter={(value: number) => compactFormatter.format(value)} />
             <Tooltip />
             <Line type="monotone" dataKey="requests" stroke="#0b7a5f" strokeWidth={2} name="Requests" />
             <Line type="monotone" dataKey="voiceItemsCreated" stroke="#246b8f" strokeWidth={2} name="Items created" />
-            <Line type="monotone" dataKey="failures" stroke="#b57b11" strokeWidth={2} name="Failures" />
-          </LineChart>
-        </ResponsiveContainer>
-      </ChartPanel>
-    </div>
-  );
-}
-
-export function OpenAiView() {
-  const path = useMemo(() => `metrics/openai?${dateRange(14)}`, []);
-  const { data, error, loading } = useAdminResource<OpenAiMetrics>(path);
-  const state = <PageState loading={loading} error={error} />;
-  if (loading || error || !data) {
-    return state;
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <MetricCard label="Requests" value={data.requests} />
-        <MetricCard label="Failed" value={data.failures} tone={data.failures > 0 ? "warn" : "default"} />
-        <MetricCard label="Input tokens" value={numberFormatter.format(data.inputTokens)} />
-        <MetricCard label="Output tokens" value={numberFormatter.format(data.outputTokens)} />
-        <MetricCard label="Estimated cost" value={formatMicros(data.estimatedCostMicros)} />
-        <MetricCard label="Cached tokens" value={numberFormatter.format(data.cachedTokens)} />
-        <MetricCard label="Reasoning tokens" value={numberFormatter.format(data.reasoningTokens)} />
-        <MetricCard label="Audio tokens" value={numberFormatter.format(data.audioTokens)} />
-        <MetricCard label="Audio seconds" value={data.audioDurationSeconds.toFixed(1)} />
-        <MetricCard label="Avg latency" value={data.averageLatencyMs === null ? "Unknown" : `${Math.round(data.averageLatencyMs)} ms`} />
-      </div>
-      <ChartPanel title="OpenAI Calls">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data.days}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tickFormatter={(value: string) => dateFormatter.format(new Date(value))} />
-            <YAxis tickFormatter={(value: number) => compactFormatter.format(value)} />
-            <Tooltip />
-            <Line type="monotone" dataKey="requests" stroke="#0b7a5f" strokeWidth={2} name="Requests" />
             <Line type="monotone" dataKey="failures" stroke="#b91c1c" strokeWidth={2} name="Failures" />
           </LineChart>
         </ResponsiveContainer>

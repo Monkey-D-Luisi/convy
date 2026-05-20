@@ -42,11 +42,11 @@ export type Overview = {
   itemsCompleted7d: number;
   tasksCreated7d: number;
   tasksCompleted7d: number;
-  voiceParseRequests7d: number;
-  voiceParseSuccess7d: number;
-  voiceParseFailures7d: number;
+  aiRequests7d: number;
+  aiSuccesses7d: number;
+  aiFailures7d: number;
   voiceItemsCreated7d: number;
-  estimatedOpenAiCostMicros7d: number | null;
+  estimatedAiCostMicros7d: number | null;
   lastBackup: BackupRun | null;
   health: SystemHealth;
 };

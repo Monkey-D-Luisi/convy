@@ -43,8 +43,9 @@ public class AdminMetricsReader : IAdminMetricsReader
         var itemsCompleted7d = await _context.ActivityLogs.CountAsync(a => a.EntityType == ActivityEntityType.Item && a.ActionType == ActivityActionType.Completed && a.CreatedAt >= since7d, cancellationToken);
         var tasksCreated7d = await _context.ActivityLogs.CountAsync(a => a.EntityType == ActivityEntityType.Task && a.ActionType == ActivityActionType.Created && a.CreatedAt >= since7d, cancellationToken);
         var tasksCompleted7d = await _context.ActivityLogs.CountAsync(a => a.EntityType == ActivityEntityType.Task && a.ActionType == ActivityActionType.Completed && a.CreatedAt >= since7d, cancellationToken);
-        var voiceEvents7d = await _context.VoiceParseEvents
-            .Where(v => v.CreatedAt >= since7d)
+        var aiUsageEvents7d = await _context.AiUsageEvents
+            .AsNoTracking()
+            .Where(e => e.CreatedAt >= since7d)
             .ToListAsync(cancellationToken);
         var voiceItemsCreated7d = await _context.ListItems
             .CountAsync(i => i.Source == ItemCreationSource.Voice && i.CreatedAt >= since7d, cancellationToken);
@@ -61,11 +62,11 @@ public class AdminMetricsReader : IAdminMetricsReader
             itemsCompleted7d,
             tasksCreated7d,
             tasksCompleted7d,
-            voiceEvents7d.Count,
-            voiceEvents7d.Count(v => v.Status == VoiceParseStatus.Success),
-            voiceEvents7d.Count(v => v.Status != VoiceParseStatus.Success),
+            aiUsageEvents7d.Count,
+            aiUsageEvents7d.Count(e => e.Status == AiUsageStatus.Success),
+            aiUsageEvents7d.Count(e => e.Status == AiUsageStatus.Failure),
             voiceItemsCreated7d,
-            SumNullable(voiceEvents7d.Select(v => v.EstimatedCostMicros)),
+            SumNullable(aiUsageEvents7d.Select(e => e.EstimatedCostMicros)),
             lastBackup,
             health);
     }

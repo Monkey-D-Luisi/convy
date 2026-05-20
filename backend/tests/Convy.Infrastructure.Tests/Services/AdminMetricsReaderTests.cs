@@ -79,6 +79,38 @@ public class AdminMetricsReaderTests
         usage.Operations.Should().Contain(operation => operation.Operation == "parsing" && operation.Failures == 1);
     }
 
+    [Fact]
+    public async Task GetOverviewAsync_UsesAiUsageEventsForAiSummary()
+    {
+        await using var context = CreateContext();
+        var householdId = Guid.NewGuid();
+        context.AiUsageEvents.AddRange(
+            new AiUsageEvent(householdId, "voice", "transcription", "gpt-4o-mini-transcribe", AiUsageStatus.Success, 1200, 10, 0, null, null, 8, 2, 1.4, 25),
+            new AiUsageEvent(householdId, "voice", "parsing", "gpt-5.4-nano", AiUsageStatus.Failure, 900, 100, 20, 50, 3, null, null, null, 75));
+        context.VoiceParseEvents.Add(new VoiceParseEvent(
+            userId: Guid.NewGuid(),
+            householdId: householdId,
+            status: VoiceParseStatus.Success,
+            audioSizeBytes: 1,
+            audioDurationSeconds: 20,
+            parsedItemsCount: 10,
+            inputTokens: null,
+            outputTokens: null,
+            cachedTokens: null,
+            reasoningTokens: null,
+            estimatedCostMicros: 999,
+            latencyMs: 500));
+        await context.SaveChangesAsync();
+        var reader = CreateReader(context);
+
+        var overview = await reader.GetOverviewAsync(DateTime.UtcNow);
+
+        overview.AiRequests7d.Should().Be(2);
+        overview.AiSuccesses7d.Should().Be(1);
+        overview.AiFailures7d.Should().Be(1);
+        overview.EstimatedAiCostMicros7d.Should().Be(100);
+    }
+
     private static ConvyDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ConvyDbContext>()
