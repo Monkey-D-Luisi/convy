@@ -1,0 +1,19 @@
+{
+  "name": "Convy",
+  "short_name": "Convy",
+  "icons": [
+    {
+      "src": "assets/convy-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/convy-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#064f38",
+  "background_color": "#f7faf8",
+  "display": "standalone"
+}

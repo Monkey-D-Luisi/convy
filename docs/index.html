@@ -3,138 +3,412 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#064f38">
+  <meta name="description" content="Convy is a shared household app for lists, tasks, reminders, invites, real-time updates, and voice-assisted item capture.">
   <title>Convy</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
   <style>
     :root {
-      --ink: #20302c;
-      --muted: #63716d;
-      --line: #dce6e1;
+      color-scheme: light;
+      --ink: #172521;
+      --muted: #5d6d68;
+      --line: #d6e3dd;
       --surface: #f7faf8;
-      --accent: #0b7a5f;
-      --accent-strong: #055843;
-      --card: #ffffff;
+      --paper: #ffffff;
+      --green-900: #064f38;
+      --green-800: #08704e;
+      --green-600: #0ba96d;
+      --mint: #d9f7e7;
+      --blue: #e9f1ff;
+      --amber: #fff3cf;
+      --shadow: 0 22px 70px rgba(9, 49, 36, .16);
     }
+
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
       background: var(--surface);
     }
-    header {
-      min-height: 86vh;
-      display: grid;
-      align-items: center;
-      border-bottom: 1px solid var(--line);
-      background: #ffffff;
+
+    a { color: inherit; }
+
+    .shell {
+      background:
+        linear-gradient(120deg, rgba(11, 169, 109, .10), transparent 34%),
+        linear-gradient(180deg, #ffffff 0%, #f7faf8 72%);
     }
+
+    .nav {
+      width: min(1120px, calc(100% - 32px));
+      height: 76px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      font-size: 1.05rem;
+      font-weight: 750;
+    }
+
+    .brand img {
+      width: 36px;
+      height: 36px;
+      display: block;
+      filter: drop-shadow(0 8px 18px rgba(6, 79, 56, .22));
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-links a,
+    .button {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: .95rem;
+      font-weight: 700;
+    }
+
+    .nav-links a {
+      padding: 0 12px;
+      color: var(--muted);
+    }
+
+    .nav-links a:hover { color: var(--ink); }
+
     .hero {
       width: min(1120px, calc(100% - 32px));
+      min-height: 480px;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(280px, 430px);
-      gap: clamp(32px, 7vw, 88px);
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 450px);
+      gap: 72px;
       align-items: center;
-      padding: 48px 0;
+      padding: 36px 0 42px;
     }
+
     h1 {
+      max-width: 760px;
       margin: 0;
-      font-size: clamp(3rem, 8vw, 6.5rem);
+      font-size: 5.75rem;
       line-height: .95;
       letter-spacing: 0;
     }
+
     .lead {
-      max-width: 620px;
-      margin: 24px 0 0;
-      font-size: clamp(1.12rem, 2.1vw, 1.45rem);
-      line-height: 1.45;
+      max-width: 640px;
+      margin: 26px 0 0;
       color: var(--muted);
+      font-size: 1.32rem;
+      line-height: 1.48;
     }
+
     .actions {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-      margin-top: 32px;
+      margin-top: 34px;
     }
+
     .button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 44px;
       padding: 0 18px;
       border: 1px solid var(--line);
-      border-radius: 8px;
       color: var(--ink);
-      text-decoration: none;
-      background: #ffffff;
-      font-weight: 650;
+      background: rgba(255, 255, 255, .78);
     }
+
     .button.primary {
-      border-color: var(--accent);
-      background: var(--accent);
+      border-color: var(--green-800);
+      background: var(--green-800);
       color: #ffffff;
+      box-shadow: 0 12px 26px rgba(8, 112, 78, .24);
     }
-    .phone {
-      width: min(100%, 380px);
-      justify-self: center;
+
+    .visual {
+      position: relative;
+      min-height: 430px;
+    }
+
+    .icon-mark {
+      width: min(100%, 360px);
+      display: block;
+      margin-left: auto;
       border-radius: 28px;
-      border: 1px solid var(--line);
-      box-shadow: 0 24px 70px rgba(17, 36, 31, .18);
-      background: var(--card);
+      filter: drop-shadow(0 28px 44px rgba(6, 55, 40, .24));
     }
-    section {
+
+    .list-panel {
+      position: absolute;
+      left: 0;
+      bottom: 16px;
+      width: 260px;
+      padding: 18px;
+      border: 1px solid rgba(214, 227, 221, .92);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .92);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .list-panel h2 {
+      margin: 0 0 14px;
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    .task-row {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 0;
+      border-top: 1px solid #edf3f0;
+      color: var(--muted);
+      font-size: .94rem;
+    }
+
+    .check {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--mint);
+      position: relative;
+    }
+
+    .check::after {
+      content: "";
+      position: absolute;
+      left: 5px;
+      top: 4px;
+      width: 7px;
+      height: 4px;
+      border-left: 2px solid var(--green-800);
+      border-bottom: 2px solid var(--green-800);
+      transform: rotate(-45deg);
+    }
+
+    .voice-strip {
+      position: absolute;
+      right: 12px;
+      bottom: 0;
+      width: 190px;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 8px;
+      background: #092d22;
+      box-shadow: 0 18px 38px rgba(6, 55, 40, .24);
+    }
+
+    .bar {
+      width: 8px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #b9ffbe, #16c878);
+    }
+
+    .bar:nth-child(1), .bar:nth-child(7) { height: 18px; opacity: .74; }
+    .bar:nth-child(2), .bar:nth-child(6) { height: 38px; }
+    .bar:nth-child(3), .bar:nth-child(5) { height: 50px; }
+    .bar:nth-child(4) { height: 28px; background: #ffffff; }
+
+    .feature-band {
+      border-top: 1px solid var(--line);
+      background: var(--paper);
+    }
+
+    .features {
       width: min(1120px, calc(100% - 32px));
       margin: 0 auto;
-      padding: 44px 0 64px;
+      padding: 42px 0 68px;
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 24px;
+      gap: 18px;
     }
-    h2 {
-      margin: 0 0 8px;
-      font-size: 1.05rem;
+
+    .feature {
+      min-height: 172px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
     }
-    p {
+
+    .feature:nth-child(2) { background: linear-gradient(180deg, #ffffff, var(--blue)); }
+    .feature:nth-child(3) { background: linear-gradient(180deg, #ffffff, var(--amber)); }
+
+    .feature h2 {
+      margin: 0 0 10px;
+      font-size: 1.08rem;
+      line-height: 1.2;
+    }
+
+    .feature p,
+    footer p {
       margin: 0;
       color: var(--muted);
-      line-height: 1.55;
+      line-height: 1.58;
     }
-    @media (max-width: 780px) {
-      header { min-height: auto; }
-      .hero { grid-template-columns: 1fr; padding-top: 36px; }
-      .phone { width: min(78vw, 330px); }
-      section { grid-template-columns: 1fr; padding-top: 32px; }
+
+    footer {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 0 0 34px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: var(--muted);
+      font-size: .92rem;
+    }
+
+    footer a {
+      color: var(--green-800);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    @media (max-width: 860px) {
+      .nav { height: auto; padding: 18px 0; align-items: flex-start; }
+      .nav-links { flex-wrap: wrap; justify-content: flex-end; }
+      .hero {
+        grid-template-columns: 1fr;
+        min-height: auto;
+        gap: 34px;
+        padding-top: 26px;
+      }
+      h1 { font-size: 4rem; }
+      .lead { font-size: 1.14rem; }
+      .visual {
+        min-height: 360px;
+        width: min(100%, 480px);
+      }
+      .icon-mark { width: 300px; margin-left: 64px; }
+      .features { grid-template-columns: 1fr; }
+      footer { flex-direction: column; }
+    }
+
+    @media (max-width: 540px) {
+      .nav { flex-direction: column; }
+      .nav-links { justify-content: flex-start; }
+      .hero {
+        gap: 20px;
+        padding-top: 14px;
+        padding-bottom: 28px;
+      }
+      h1 { font-size: 2.95rem; }
+      .lead { font-size: 1.05rem; }
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+      .button { width: auto; }
+      .button.primary { grid-column: 1 / -1; }
+      .visual { min-height: 190px; }
+      .icon-mark { width: 156px; margin-left: auto; }
+      .list-panel {
+        width: 196px;
+        padding: 14px;
+        bottom: 0;
+      }
+      .task-row {
+        gap: 10px;
+        padding: 8px 0;
+        font-size: .88rem;
+      }
+      .voice-strip {
+        width: 116px;
+        height: 48px;
+        right: 0;
+      }
+      .bar { width: 7px; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="hero">
+  <div class="shell">
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="./" aria-label="Convy home">
+        <img src="assets/convy-icon-192.png" alt="">
+        <span>Convy</span>
+      </a>
+      <div class="nav-links">
+        <a href="https://github.com/Monkey-D-Luisi/convy">GitHub</a>
+        <a href="https://legal.178.105.70.69.nip.io/privacy">Privacy</a>
+      </div>
+    </nav>
+
+    <header class="hero">
       <div>
-        <h1>Convy</h1>
-        <p class="lead">A shared household app for lists, tasks, reminders, invites, real-time updates, and voice-assisted item capture.</p>
+        <h1>Home lists that move with the household.</h1>
+        <p class="lead">Convy keeps shared lists, tasks, reminders, invites, real-time updates, and voice capture in one calm place for everyday home coordination.</p>
         <div class="actions" aria-label="Convy links">
           <a class="button primary" href="https://play.google.com/store/apps/details?id=com.convy.app">Play Store</a>
-          <a class="button" href="https://github.com/luiss/convy">GitHub</a>
+          <a class="button" href="https://github.com/Monkey-D-Luisi/convy">View source</a>
           <a class="button" href="https://legal.178.105.70.69.nip.io/privacy">Privacy</a>
         </div>
       </div>
-      <img class="phone" src="assets/convy-launch.png" alt="Convy mobile app launch screen">
-    </div>
-  </header>
-  <section aria-label="Product areas">
-    <article>
-      <h2>Shared Lists</h2>
-      <p>Households can create and update lists together with fast item entry and real-time sync.</p>
-    </article>
-    <article>
-      <h2>Tasks</h2>
-      <p>Assignments, due dates, and activity history keep routine home work visible.</p>
-    </article>
-    <article>
-      <h2>Voice</h2>
-      <p>Voice input turns spoken groceries into confirmed list items without exposing operational telemetry to the app.</p>
-    </article>
-  </section>
+
+      <div class="visual" aria-label="Convy app preview">
+        <img class="icon-mark" src="assets/convy-icon-512.png" alt="Convy app icon">
+        <div class="list-panel" aria-hidden="true">
+          <h2>Today at home</h2>
+          <div class="task-row"><span class="check"></span><span>Groceries synced</span></div>
+          <div class="task-row"><span class="check"></span><span>Chores assigned</span></div>
+          <div class="task-row"><span class="check"></span><span>Voice items ready</span></div>
+        </div>
+        <div class="voice-strip" aria-hidden="true">
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </div>
+      </div>
+    </header>
+  </div>
+
+  <main class="feature-band">
+    <section class="features" aria-label="Product areas">
+      <article class="feature">
+        <h2>Shared Lists</h2>
+        <p>Households can create and update lists together with fast item entry, duplicate checks, and live sync.</p>
+      </article>
+      <article class="feature">
+        <h2>Tasks</h2>
+        <p>Assignments, due dates, reminders, and activity history keep routine home work visible.</p>
+      </article>
+      <article class="feature">
+        <h2>Voice</h2>
+        <p>Voice input turns spoken groceries into confirmed list items without exposing operational telemetry to the app.</p>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <p>Convy is currently prepared for controlled beta use.</p>
+    <p><a href="https://legal.178.105.70.69.nip.io/privacy">Privacy</a></p>
+  </footer>
 </body>
 </html>
