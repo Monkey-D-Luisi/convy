@@ -1,22 +1,22 @@
 package com.convy.app.ui.screens.settings
 
 import com.convy.app.platform.AppInfoProvider
+import com.convy.app.ui.mvi.MviStore
 import com.convy.shared.domain.repository.AuthRepository
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.UserRepository
 import com.convy.shared.domain.model.NotificationPreferences
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import com.convy.app.generated.resources.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 
 class SettingsStore(
     private val authRepository: AuthRepository,
     private val householdRepository: HouseholdRepository,
     private val userRepository: UserRepository,
     appInfoProvider: AppInfoProvider,
-) {
-    private val scope = CoroutineScope(Dispatchers.Main)
+) : MviStore() {
     private val _state = MutableStateFlow(SettingsState(appVersion = appInfoProvider.versionName))
     val state: StateFlow<SettingsState> = _state.asStateFlow()
 
@@ -102,6 +102,7 @@ class SettingsStore(
                 },
                 onFailure = {
                     _state.update { it.copy(isLeaving = false) }
+                    _sideEffects.emit(SettingsSideEffect.ShowError(getString(Res.string.settings_leave_failed)))
                 },
             )
         }
@@ -126,6 +127,7 @@ class SettingsStore(
                 },
                 onFailure = {
                     _state.update { it.copy(isRenaming = false) }
+                    _sideEffects.emit(SettingsSideEffect.ShowError(getString(Res.string.settings_rename_failed)))
                 },
             )
         }

@@ -1,13 +1,12 @@
 package com.convy.app.ui.screens.activity
 
 import com.convy.app.generated.resources.*
+import com.convy.app.ui.mvi.MviStore
 import com.convy.app.util.UiText
 import com.convy.shared.data.remote.HouseholdEvent
 import com.convy.shared.data.remote.HouseholdRealtimeService
 import com.convy.shared.domain.model.ActivityLogEntry
 import com.convy.shared.domain.repository.ActivityRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -18,8 +17,7 @@ class ActivityStore(
     private val householdId: String,
     private val activityRepository: ActivityRepository,
     private val realtimeService: HouseholdRealtimeService,
-) {
-    private val scope = CoroutineScope(Dispatchers.Main)
+) : MviStore() {
     private val _state = MutableStateFlow(ActivityState(householdId = householdId))
     val state: StateFlow<ActivityState> = _state.asStateFlow()
 

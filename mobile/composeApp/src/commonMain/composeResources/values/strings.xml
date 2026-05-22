@@ -26,7 +26,7 @@
     <string name="auth_create_account">Create account</string>
     <string name="auth_sign_in_google">Sign in with Google</string>
     <string name="auth_toggle_to_sign_in">Already have an account? Sign in</string>
-    <string name="auth_toggle_to_sign_up">Don\'t have an account? Create one</string>
+    <string name="auth_toggle_to_sign_up">Don&apos;t have an account? Create one</string>
     <string name="auth_terms">By continuing, you agree to our Terms of Service</string>
     <string name="auth_email_required">Email is required</string>
     <string name="auth_email_invalid">Invalid email format</string>
@@ -157,6 +157,7 @@
     <string name="members_invite_description">Generate an invite code to share with someone you want to add to this household.</string>
     <string name="members_invite_code_label">Invite code:</string>
     <string name="members_copy_code">Copy code</string>
+    <string name="members_code_copied">Invite code copied</string>
     <string name="members_generate_new">Generate new code</string>
     <string name="members_generate">Generate invite code</string>
     <string name="members_active_invites">Active invites</string>
@@ -193,6 +194,7 @@
     <string name="settings_leave_household">Leave household</string>
     <string name="settings_leave_title">Leave household</string>
     <string name="settings_leave_message">Are you sure you want to leave \"%1$s\"? You will need a new invite to rejoin.</string>
+    <string name="settings_leave_failed">Failed to leave household</string>
     <string name="settings_leave">Leave</string>
     <string name="settings_sign_out">Sign out</string>
     <string name="settings_notifications">Notifications</string>
@@ -204,6 +206,7 @@
     <string name="settings_notify_list_changes">List changes</string>
     <string name="settings_notify_member_changes">Member changes</string>
     <string name="settings_notifications_error">Could not save notification settings</string>
+    <string name="settings_rename_failed">Failed to rename household</string>
 
     <!-- Voice Input Sheet -->
     <string name="voice_title">Voice Input</string>

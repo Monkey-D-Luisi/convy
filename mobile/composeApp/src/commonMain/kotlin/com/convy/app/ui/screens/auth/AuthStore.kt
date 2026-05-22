@@ -1,13 +1,12 @@
 package com.convy.app.ui.screens.auth
 
 import com.convy.app.generated.resources.*
+import com.convy.app.ui.mvi.MviStore
 import com.convy.app.util.UiText
 import com.convy.shared.data.remote.DeviceTokenManager
 import com.convy.shared.domain.repository.AuthRepository
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.UserRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -16,8 +15,7 @@ class AuthStore(
     private val userRepository: UserRepository,
     private val householdRepository: HouseholdRepository,
     private val deviceTokenManager: DeviceTokenManager,
-) {
-    private val scope = CoroutineScope(Dispatchers.Main)
+) : MviStore() {
     private val _state = MutableStateFlow(AuthState())
     val state: StateFlow<AuthState> = _state.asStateFlow()
 

@@ -7,7 +7,7 @@ public class CurrentUserService : ICurrentUserService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IUserRepository _userRepository;
-    private Guid? _cachedUserId;
+    private Guid? _resolvedUserId;
 
     public CurrentUserService(IHttpContextAccessor httpContextAccessor, IUserRepository userRepository)
     {
@@ -19,16 +19,7 @@ public class CurrentUserService : ICurrentUserService
     {
         get
         {
-            if (_cachedUserId.HasValue)
-                return _cachedUserId.Value;
-
-            // Fallback: sync-over-async for cases where middleware didn't run.
-            // Safe in ASP.NET Core (no SynchronizationContext) but prefer ResolveAsync via middleware.
-            var firebaseUid = FirebaseUid;
-            var user = _userRepository.GetByFirebaseUidAsync(firebaseUid).GetAwaiter().GetResult();
-
-            _cachedUserId = user?.Id ?? Guid.Empty;
-            return _cachedUserId.Value;
+            return _resolvedUserId ?? Guid.Empty;
         }
     }
 
@@ -45,7 +36,7 @@ public class CurrentUserService : ICurrentUserService
 
     public async Task ResolveAsync(CancellationToken cancellationToken = default)
     {
-        if (_cachedUserId.HasValue)
+        if (_resolvedUserId.HasValue)
             return;
 
         var firebaseUid = FirebaseUid;
@@ -53,6 +44,6 @@ public class CurrentUserService : ICurrentUserService
             return;
 
         var user = await _userRepository.GetByFirebaseUidAsync(firebaseUid, cancellationToken);
-        _cachedUserId = user?.Id ?? Guid.Empty;
+        _resolvedUserId = user?.Id ?? Guid.Empty;
     }
 }

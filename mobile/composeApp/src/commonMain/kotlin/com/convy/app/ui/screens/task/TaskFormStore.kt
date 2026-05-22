@@ -1,10 +1,9 @@
 package com.convy.app.ui.screens.task
 
 import com.convy.app.generated.resources.*
+import com.convy.app.ui.mvi.MviStore
 import com.convy.app.util.UiText
 import com.convy.shared.domain.repository.TaskRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -19,8 +18,7 @@ class TaskFormStore(
     private val listId: String,
     private val taskId: String?,
     private val taskRepository: TaskRepository,
-) {
-    private val scope = CoroutineScope(Dispatchers.Main)
+) : MviStore() {
     private val _state = MutableStateFlow(
         TaskFormState(
             listId = listId,

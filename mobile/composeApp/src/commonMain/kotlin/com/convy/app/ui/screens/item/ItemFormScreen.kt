@@ -13,9 +13,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -34,17 +36,26 @@ fun ItemFormScreen(
     onNavigateBack: () -> Unit,
 ) {
     val state by store.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    DisposableEffect(store) {
+        onDispose { store.close() }
+    }
 
     LaunchedEffect(Unit) {
         store.sideEffects.collect { effect ->
             when (effect) {
                 is ItemFormSideEffect.NavigateBack -> onNavigateBack()
-                is ItemFormSideEffect.ShowError -> {}
+                is ItemFormSideEffect.ShowError -> snackbarHostState.showSnackbar(effect.message)
             }
         }
     }
 
-    ItemFormContent(state = state, onIntent = store::processIntent)
+    ItemFormContent(
+        state = state,
+        onIntent = store::processIntent,
+        snackbarHostState = snackbarHostState,
+    )
 
     if (state.showHistory) {
         ItemHistorySheet(
@@ -61,6 +72,7 @@ fun ItemFormScreen(
 fun ItemFormContent(
     state: ItemFormState,
     onIntent: (ItemFormIntent) -> Unit,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     Scaffold(
         topBar = {
@@ -91,6 +103,17 @@ fun ItemFormContent(
                 },
             )
         },
+        bottomBar = {
+            if (!state.isLoading) {
+                ItemFormPrimaryAction(
+                    isEditing = state.isEditing,
+                    isSaving = state.isSaving,
+                    enabled = state.title.isNotBlank() && !state.isSaving,
+                    onClick = { onIntent(ItemFormIntent.Save) },
+                )
+            }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         if (state.isLoading) {
             LoadingContent(modifier = Modifier.padding(padding))
@@ -280,30 +303,48 @@ fun ItemFormContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
             if (state.isEditing) {
+                Spacer(modifier = Modifier.height(24.dp))
                 TextButton(onClick = { onIntent(ItemFormIntent.ShowHistory) }) {
                     Text(stringResource(Res.string.item_view_history))
                 }
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            Button(
-                onClick = { onIntent(ItemFormIntent.Save) },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(28.dp),
-                enabled = state.title.isNotBlank() && !state.isSaving,
-            ) {
-                if (state.isSaving) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                } else {
-                    Text(if (state.isEditing) stringResource(Res.string.item_save_changes) else stringResource(Res.string.item_add))
-                }
+            Spacer(modifier = Modifier.height(104.dp))
+        }
+    }
+}
+
+@Composable
+private fun ItemFormPrimaryAction(
+    isEditing: Boolean,
+    isSaving: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        tonalElevation = 3.dp,
+        shadowElevation = 3.dp,
+    ) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .imePadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .height(56.dp),
+            shape = RoundedCornerShape(28.dp),
+            enabled = enabled,
+        ) {
+            if (isSaving) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+            } else {
+                Text(if (isEditing) stringResource(Res.string.item_save_changes) else stringResource(Res.string.item_add))
             }
         }
     }
