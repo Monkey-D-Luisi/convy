@@ -39,7 +39,8 @@
 | 14 | 0.1.11 | 2026-05-17 | Shopping item state metadata |
 | 15 | 0.1.12 | 2026-05-17 | Android VPS host hotfix |
 | 16 | 0.1.13 | 2026-05-18 | Operability metrics and admin dashboard |
-| 17 | 0.1.14 | 2026-05-22 | UI/UX quality and admin hardening |
+| 17 | 0.1.14 | 2026-05-19 | Admin operability follow-ups |
+| 18 | 0.1.15 | 2026-05-22 | Landing package link correction and internal test artifacts |
 
 ## Release Procedure
 
