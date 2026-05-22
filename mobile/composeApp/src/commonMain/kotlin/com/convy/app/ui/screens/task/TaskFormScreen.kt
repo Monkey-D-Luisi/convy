@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -21,11 +23,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -45,6 +49,10 @@ fun TaskFormScreen(
     onNavigateBack: () -> Unit,
 ) {
     val state by store.state.collectAsState()
+
+    DisposableEffect(store) {
+        onDispose { store.close() }
+    }
 
     LaunchedEffect(Unit) {
         store.sideEffects.collect { effect ->
@@ -91,6 +99,16 @@ fun TaskFormContent(
                     }
                 },
             )
+        },
+        bottomBar = {
+            if (!state.isLoading) {
+                TaskFormPrimaryAction(
+                    isEditing = state.isEditing,
+                    isSaving = state.isSaving,
+                    enabled = state.title.isNotBlank() && !state.isSaving,
+                    onClick = { onIntent(TaskFormIntent.Save) },
+                )
+            }
         },
     ) { padding ->
         if (state.isLoading) {
@@ -148,23 +166,41 @@ fun TaskFormContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(104.dp))
+        }
+    }
+}
 
-            Button(
-                onClick = { onIntent(TaskFormIntent.Save) },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(28.dp),
-                enabled = state.title.isNotBlank() && !state.isSaving,
-            ) {
-                if (state.isSaving) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                } else {
-                    Text(if (state.isEditing) stringResource(Res.string.task_save_changes) else stringResource(Res.string.task_add))
-                }
+@Composable
+private fun TaskFormPrimaryAction(
+    isEditing: Boolean,
+    isSaving: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        tonalElevation = 3.dp,
+        shadowElevation = 3.dp,
+    ) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .imePadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .height(56.dp),
+            shape = RoundedCornerShape(28.dp),
+            enabled = enabled,
+        ) {
+            if (isSaving) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+            } else {
+                Text(if (isEditing) stringResource(Res.string.task_save_changes) else stringResource(Res.string.task_add))
             }
         }
     }

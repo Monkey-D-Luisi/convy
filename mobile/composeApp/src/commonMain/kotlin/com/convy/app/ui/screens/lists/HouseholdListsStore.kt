@@ -1,6 +1,7 @@
 package com.convy.app.ui.screens.lists
 
 import com.convy.app.generated.resources.*
+import com.convy.app.ui.mvi.MviStore
 import com.convy.app.util.UiText
 import com.convy.shared.data.remote.HouseholdEvent
 import com.convy.shared.data.remote.HouseholdRealtimeService
@@ -9,8 +10,6 @@ import com.convy.shared.domain.model.HouseholdList
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.ItemRepository
 import com.convy.shared.domain.repository.ListRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -20,8 +19,7 @@ class HouseholdListsStore(
     private val listRepository: ListRepository,
     private val itemRepository: ItemRepository,
     private val realtimeService: HouseholdRealtimeService,
-) {
-    private val scope = CoroutineScope(Dispatchers.Main)
+) : MviStore() {
     private val _state = MutableStateFlow(HouseholdListsState(householdId = householdId))
     val state: StateFlow<HouseholdListsState> = _state.asStateFlow()
 

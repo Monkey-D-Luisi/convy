@@ -49,4 +49,5 @@ sealed interface SettingsSideEffect {
     data object NavigateToAuth : SettingsSideEffect
     data object NavigateBack : SettingsSideEffect
     data object NavigateToHouseholdSetup : SettingsSideEffect
+    data class ShowError(val message: String) : SettingsSideEffect
 }

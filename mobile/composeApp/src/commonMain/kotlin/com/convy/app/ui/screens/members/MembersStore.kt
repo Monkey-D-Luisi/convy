@@ -1,11 +1,10 @@
 package com.convy.app.ui.screens.members
 
 import com.convy.app.generated.resources.*
+import com.convy.app.ui.mvi.MviStore
 import com.convy.app.util.UiText
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.InviteRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -13,8 +12,7 @@ class MembersStore(
     private val householdId: String,
     private val householdRepository: HouseholdRepository,
     private val inviteRepository: InviteRepository,
-) {
-    private val scope = CoroutineScope(Dispatchers.Main)
+) : MviStore() {
     private val _state = MutableStateFlow(MembersState(householdId = householdId))
     val state: StateFlow<MembersState> = _state.asStateFlow()
 

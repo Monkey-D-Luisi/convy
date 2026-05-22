@@ -1,11 +1,10 @@
 package com.convy.app.ui.screens.item
 
 import com.convy.app.generated.resources.*
+import com.convy.app.ui.mvi.MviStore
 import com.convy.app.util.UiText
 import com.convy.shared.domain.repository.ActivityRepository
 import com.convy.shared.domain.repository.ItemRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -17,8 +16,7 @@ class ItemFormStore(
     private val itemId: String?,
     private val itemRepository: ItemRepository,
     private val activityRepository: ActivityRepository,
-) {
-    private val scope = CoroutineScope(Dispatchers.Main)
+) : MviStore() {
     private val _state = MutableStateFlow(
         ItemFormState(
             listId = listId,

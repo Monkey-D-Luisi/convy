@@ -62,6 +62,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -100,6 +101,10 @@ fun ListDetailScreen(
     var pendingRecord by remember { mutableStateOf(false) }
     var nextSnackbarId by remember { mutableStateOf(0) }
     val pendingSnackbarMessages = remember { mutableStateListOf<PendingSnackbarMessage>() }
+
+    DisposableEffect(store) {
+        onDispose { store.close() }
+    }
 
     LaunchedEffect(permissionState.isGranted) {
         if (permissionState.isGranted && pendingRecord) {

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,6 +42,11 @@ fun HouseholdListsScreen(
     onNavigateToSettings: () -> Unit,
 ) {
     val state by store.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    DisposableEffect(store) {
+        onDispose { store.close() }
+    }
 
     LaunchedEffect(Unit) {
         store.sideEffects.collect { effect ->
@@ -53,12 +59,16 @@ fun HouseholdListsScreen(
                     onNavigateToActivity(effect.householdId)
                 is HouseholdListsSideEffect.NavigateToSettings ->
                     onNavigateToSettings()
-                is HouseholdListsSideEffect.ShowError -> {}
+                is HouseholdListsSideEffect.ShowError -> snackbarHostState.showSnackbar(effect.message)
             }
         }
     }
 
-    HouseholdListsContent(state = state, onIntent = store::processIntent)
+    HouseholdListsContent(
+        state = state,
+        onIntent = store::processIntent,
+        snackbarHostState = snackbarHostState,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +76,7 @@ fun HouseholdListsScreen(
 fun HouseholdListsContent(
     state: HouseholdListsState,
     onIntent: (HouseholdListsIntent) -> Unit,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     Scaffold(
         topBar = {
@@ -103,6 +114,7 @@ fun HouseholdListsContent(
                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.lists_create_list))
             }
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Box(
             modifier = Modifier

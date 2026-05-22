@@ -9,9 +9,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -33,6 +35,12 @@ fun MembersScreen(
 ) {
     val state by store.state.collectAsState()
     val clipboardManager = LocalClipboardManager.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val codeCopiedMessage = stringResource(Res.string.members_code_copied)
+
+    DisposableEffect(store) {
+        onDispose { store.close() }
+    }
 
     LaunchedEffect(Unit) {
         store.sideEffects.collect { effect ->
@@ -40,13 +48,18 @@ fun MembersScreen(
                 is MembersSideEffect.NavigateBack -> onNavigateBack()
                 is MembersSideEffect.ShareInviteCode -> {
                     clipboardManager.setText(AnnotatedString(effect.code))
+                    snackbarHostState.showSnackbar(codeCopiedMessage)
                 }
-                is MembersSideEffect.ShowError -> {}
+                is MembersSideEffect.ShowError -> snackbarHostState.showSnackbar(effect.message)
             }
         }
     }
 
-    MembersContent(state = state, onIntent = store::processIntent)
+    MembersContent(
+        state = state,
+        onIntent = store::processIntent,
+        snackbarHostState = snackbarHostState,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,6 +67,7 @@ fun MembersScreen(
 fun MembersContent(
     state: MembersState,
     onIntent: (MembersIntent) -> Unit,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     Scaffold(
         topBar = {
@@ -69,6 +83,7 @@ fun MembersContent(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         when {
             state.isLoading -> LoadingContent(modifier = Modifier.padding(padding))

@@ -43,7 +43,7 @@ public static class AdminEndpoints
         group.MapGet("/backups/latest", async (IMediator mediator) =>
         {
             var result = await mediator.Send(new GetLatestBackupRunQuery());
-            return result.IsSuccess ? Results.Ok(result.Value) : MapError(result.Error!);
+            return result.IsSuccess ? Results.Json(result.Value) : MapError(result.Error!);
         });
 
         group.MapGet("/backups/runs", async (int? limit, IMediator mediator) =>

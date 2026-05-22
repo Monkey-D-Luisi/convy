@@ -1,5 +1,6 @@
 using Convy.Domain.Repositories;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Convy.API.Authorization;
 
@@ -26,6 +27,14 @@ public class AdminEmailAuthorizationHandler : AuthorizationHandler<AdminEmailReq
         var allowedEmails = GetAllowedEmails();
         if (allowedEmails.Count == 0)
             return;
+
+        var firebaseEmail = context.User.FindFirst("email")?.Value
+            ?? context.User.FindFirst(ClaimTypes.Email)?.Value;
+        if (!string.IsNullOrWhiteSpace(firebaseEmail) && allowedEmails.Contains(firebaseEmail))
+        {
+            context.Succeed(requirement);
+            return;
+        }
 
         var firebaseUid = context.User.FindFirst("user_id")?.Value
             ?? context.User.FindFirst("sub")?.Value;

@@ -10,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -34,6 +35,11 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit,
 ) {
     val state by store.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    DisposableEffect(store) {
+        onDispose { store.close() }
+    }
 
     LaunchedEffect(Unit) {
         store.sideEffects.collect { effect ->
@@ -41,11 +47,16 @@ fun SettingsScreen(
                 is SettingsSideEffect.NavigateToAuth -> onNavigateToAuth()
                 is SettingsSideEffect.NavigateBack -> onNavigateBack()
                 is SettingsSideEffect.NavigateToHouseholdSetup -> onNavigateToHouseholdSetup()
+                is SettingsSideEffect.ShowError -> snackbarHostState.showSnackbar(effect.message)
             }
         }
     }
 
-    SettingsContent(state = state, onIntent = store::processIntent)
+    SettingsContent(
+        state = state,
+        onIntent = store::processIntent,
+        snackbarHostState = snackbarHostState,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,6 +64,7 @@ fun SettingsScreen(
 fun SettingsContent(
     state: SettingsState,
     onIntent: (SettingsIntent) -> Unit,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     Scaffold(
         topBar = {
@@ -68,6 +80,7 @@ fun SettingsContent(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
             modifier = Modifier

@@ -29,7 +29,7 @@ class HouseholdRealtimeService(
     private val json: Json
 ) {
     val events: Flow<HouseholdEvent> = signalRClient.messages.mapNotNull { message ->
-        parseEvent(message)
+        parseHouseholdEvent(json, message)
     }
 
     suspend fun connect(householdId: String) {
@@ -39,95 +39,55 @@ class HouseholdRealtimeService(
     suspend fun disconnect() {
         signalRClient.disconnect()
     }
+}
 
-    private fun parseEvent(message: SignalRMessage): HouseholdEvent? {
-        return try {
-            when (message.target) {
-                "ItemCreated" -> {
-                    val item = json.decodeFromJsonElement<ListItemDto>(message.arguments[0])
-                    HouseholdEvent.ItemCreated(item)
+internal fun parseHouseholdEvent(json: Json, message: SignalRMessage): HouseholdEvent? {
+    val payload = message.arguments.getOrNull(0) ?: return null
+
+    return try {
+        when (message.target) {
+            "ItemCreated" -> HouseholdEvent.ItemCreated(json.decodeFromJsonElement<ListItemDto>(payload))
+            "ItemUpdated" -> HouseholdEvent.ItemUpdated(json.decodeFromJsonElement<ListItemDto>(payload))
+            "ItemCompleted" -> HouseholdEvent.ItemCompleted(json.decodeFromJsonElement<ListItemDto>(payload))
+            "ItemUncompleted" -> HouseholdEvent.ItemUncompleted(json.decodeFromJsonElement<ListItemDto>(payload))
+            "ItemDeleted" -> payload.jsonPrimitive.contentOrNull?.let(HouseholdEvent::ItemDeleted)
+            "TaskCreated" -> HouseholdEvent.TaskCreated(json.decodeFromJsonElement<TaskItemDto>(payload))
+            "TaskUpdated" -> HouseholdEvent.TaskUpdated(json.decodeFromJsonElement<TaskItemDto>(payload))
+            "TaskCompleted" -> HouseholdEvent.TaskCompleted(json.decodeFromJsonElement<TaskItemDto>(payload))
+            "TaskUncompleted" -> HouseholdEvent.TaskUncompleted(json.decodeFromJsonElement<TaskItemDto>(payload))
+            "TaskDeleted" -> payload.jsonPrimitive.contentOrNull?.let(HouseholdEvent::TaskDeleted)
+            "ListCreated" -> payload.jsonObject.eventString("listId")?.let { listId ->
+                payload.jsonObject.eventString("listName")?.let { listName ->
+                    HouseholdEvent.ListCreated(listId, listName)
                 }
-                "ItemUpdated" -> {
-                    val item = json.decodeFromJsonElement<ListItemDto>(message.arguments[0])
-                    HouseholdEvent.ItemUpdated(item)
-                }
-                "ItemCompleted" -> {
-                    val item = json.decodeFromJsonElement<ListItemDto>(message.arguments[0])
-                    HouseholdEvent.ItemCompleted(item)
-                }
-                "ItemUncompleted" -> {
-                    val item = json.decodeFromJsonElement<ListItemDto>(message.arguments[0])
-                    HouseholdEvent.ItemUncompleted(item)
-                }
-                "ItemDeleted" -> {
-                    val itemId = message.arguments[0].jsonPrimitive.content
-                    HouseholdEvent.ItemDeleted(itemId)
-                }
-                "TaskCreated" -> {
-                    val task = json.decodeFromJsonElement<TaskItemDto>(message.arguments[0])
-                    HouseholdEvent.TaskCreated(task)
-                }
-                "TaskUpdated" -> {
-                    val task = json.decodeFromJsonElement<TaskItemDto>(message.arguments[0])
-                    HouseholdEvent.TaskUpdated(task)
-                }
-                "TaskCompleted" -> {
-                    val task = json.decodeFromJsonElement<TaskItemDto>(message.arguments[0])
-                    HouseholdEvent.TaskCompleted(task)
-                }
-                "TaskUncompleted" -> {
-                    val task = json.decodeFromJsonElement<TaskItemDto>(message.arguments[0])
-                    HouseholdEvent.TaskUncompleted(task)
-                }
-                "TaskDeleted" -> {
-                    val taskId = message.arguments[0].jsonPrimitive.content
-                    HouseholdEvent.TaskDeleted(taskId)
-                }
-                "ListCreated" -> {
-                    val obj = message.arguments[0].jsonObject
-                    HouseholdEvent.ListCreated(
-                        listId = obj["listId"]!!.jsonPrimitive.content,
-                        listName = obj["listName"]!!.jsonPrimitive.content
-                    )
-                }
-                "ListRenamed" -> {
-                    val obj = message.arguments[0].jsonObject
-                    HouseholdEvent.ListRenamed(
-                        listId = obj["listId"]!!.jsonPrimitive.content,
-                        newName = obj["newName"]!!.jsonPrimitive.content
-                    )
-                }
-                "ListArchived" -> {
-                    val obj = message.arguments[0].jsonObject
-                    HouseholdEvent.ListArchived(
-                        listId = obj["listId"]!!.jsonPrimitive.content
-                    )
-                }
-                "MemberJoined" -> {
-                    val obj = message.arguments[0].jsonObject
-                    HouseholdEvent.MemberJoined(
-                        userId = obj["userId"]!!.jsonPrimitive.content,
-                        displayName = obj["displayName"]!!.jsonPrimitive.content
-                    )
-                }
-                "HouseholdRenamed" -> {
-                    val obj = message.arguments[0].jsonObject
-                    HouseholdEvent.HouseholdRenamed(
-                        householdId = obj["householdId"]!!.jsonPrimitive.content,
-                        newName = obj["newName"]!!.jsonPrimitive.content
-                    )
-                }
-                "MemberLeft" -> {
-                    val obj = message.arguments[0].jsonObject
-                    HouseholdEvent.MemberLeft(
-                        userId = obj["userId"]!!.jsonPrimitive.content,
-                        displayName = obj["displayName"]!!.jsonPrimitive.content
-                    )
-                }
-                else -> null
             }
-        } catch (_: Exception) {
-            null
+            "ListRenamed" -> payload.jsonObject.eventString("listId")?.let { listId ->
+                payload.jsonObject.eventString("newName")?.let { newName ->
+                    HouseholdEvent.ListRenamed(listId, newName)
+                }
+            }
+            "ListArchived" -> payload.jsonObject.eventString("listId")?.let(HouseholdEvent::ListArchived)
+            "MemberJoined" -> payload.jsonObject.eventString("userId")?.let { userId ->
+                payload.jsonObject.eventString("displayName")?.let { displayName ->
+                    HouseholdEvent.MemberJoined(userId, displayName)
+                }
+            }
+            "HouseholdRenamed" -> payload.jsonObject.eventString("householdId")?.let { householdId ->
+                payload.jsonObject.eventString("newName")?.let { newName ->
+                    HouseholdEvent.HouseholdRenamed(householdId, newName)
+                }
+            }
+            "MemberLeft" -> payload.jsonObject.eventString("userId")?.let { userId ->
+                payload.jsonObject.eventString("displayName")?.let { displayName ->
+                    HouseholdEvent.MemberLeft(userId, displayName)
+                }
+            }
+            else -> null
         }
+    } catch (_: Exception) {
+        null
     }
 }
+
+private fun JsonObject.eventString(name: String): String? =
+    this[name]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }

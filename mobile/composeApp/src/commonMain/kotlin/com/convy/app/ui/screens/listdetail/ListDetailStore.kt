@@ -1,6 +1,7 @@
 package com.convy.app.ui.screens.listdetail
 
 import com.convy.app.generated.resources.*
+import com.convy.app.ui.mvi.MviStore
 import com.convy.app.util.UiText
 import com.convy.shared.data.offline.OfflineActionQueue
 import com.convy.shared.data.remote.ConnectionState
@@ -12,8 +13,6 @@ import com.convy.shared.domain.repository.ItemRepository
 import com.convy.shared.domain.repository.TaskRepository
 import com.convy.shared.platform.AudioRecorder
 import com.convy.shared.platform.NetworkMonitor
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,8 +41,7 @@ class ListDetailStore(
     private val offlineQueue: OfflineActionQueue,
     private val signalRClient: SignalRClient,
     private val authRepository: AuthRepository,
-) {
-    private val scope = CoroutineScope(Dispatchers.Main)
+) : MviStore() {
     private val isTaskList = listType.equals("Tasks", ignoreCase = true)
     private var recordingStartTime: Long = 0L
     private var nextOperationId = 1L

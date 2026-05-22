@@ -39,6 +39,22 @@ public class AdminEndpointContractTests
         source.Should().Contain("RequireAuthorization(\"AdminOnly\")");
     }
 
+    [Fact]
+    public void AdminEndpoints_ShouldSerializeLatestBackupNullAsJson()
+    {
+        var source = File.ReadAllText(Path.Combine(FindRepoRoot(), "backend", "src", "Convy.API", "Endpoints", "AdminEndpoints.cs"));
+
+        source.Should().Contain("Results.Json(result.Value)");
+    }
+
+    [Fact]
+    public void CurrentUserService_ShouldNotUseSyncOverAsyncFallback()
+    {
+        var source = File.ReadAllText(Path.Combine(FindRepoRoot(), "backend", "src", "Convy.API", "Services", "CurrentUserService.cs"));
+
+        source.Should().NotContain(".GetAwaiter().GetResult()");
+    }
+
     private static string FindRepoRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
