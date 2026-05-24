@@ -112,12 +112,15 @@ public class ListItem : Entity
         NextDueDate = null;
     }
 
-    public void AdvanceRecurrence()
+    public void TransferRecurrenceTo(ListItem nextItem)
     {
+        ArgumentNullException.ThrowIfNull(nextItem);
+
         if (RecurrenceFrequency is null || RecurrenceInterval is null)
             throw new DomainException("Item does not have a recurrence rule.");
 
-        NextDueDate = CalculateNextDueDate(DateTime.UtcNow, RecurrenceFrequency.Value, RecurrenceInterval.Value);
+        nextItem.SetRecurrence(RecurrenceFrequency.Value, RecurrenceInterval.Value);
+        ClearRecurrence();
     }
 
     private static DateTime CalculateNextDueDate(DateTime from, RecurrenceFrequency frequency, int interval)

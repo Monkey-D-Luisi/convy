@@ -269,27 +269,32 @@ public class ListItemTests
     }
 
     [Fact]
-    public void AdvanceRecurrence_WhenNoRecurrence_ThrowsDomainException()
+    public void TransferRecurrenceTo_WhenNoRecurrence_ThrowsDomainException()
     {
         var item = new ListItem("Milk", _listId, _creatorId);
+        var nextItem = new ListItem("Milk", _listId, _creatorId);
 
-        var act = () => item.AdvanceRecurrence();
+        var act = () => item.TransferRecurrenceTo(nextItem);
 
         act.Should().Throw<DomainException>()
             .WithMessage("Item does not have a recurrence rule.");
     }
 
     [Fact]
-    public void AdvanceRecurrence_WhenSet_UpdatesNextDueDate()
+    public void TransferRecurrenceTo_WhenSet_MovesRecurrenceToNextItem()
     {
         var item = new ListItem("Milk", _listId, _creatorId);
+        var nextItem = new ListItem("Milk", _listId, _creatorId);
         item.SetRecurrence(RecurrenceFrequency.Daily, 3);
-        var previousDueDate = item.NextDueDate;
 
-        item.AdvanceRecurrence();
+        item.TransferRecurrenceTo(nextItem);
 
-        item.NextDueDate.Should().NotBeNull();
-        item.NextDueDate.Should().BeCloseTo(DateTime.UtcNow.AddDays(3), TimeSpan.FromSeconds(5));
+        item.RecurrenceFrequency.Should().BeNull();
+        item.RecurrenceInterval.Should().BeNull();
+        item.NextDueDate.Should().BeNull();
+        nextItem.RecurrenceFrequency.Should().Be(RecurrenceFrequency.Daily);
+        nextItem.RecurrenceInterval.Should().Be(3);
+        nextItem.NextDueDate.Should().BeCloseTo(DateTime.UtcNow.AddDays(3), TimeSpan.FromSeconds(5));
     }
 
     [Fact]
