@@ -3,6 +3,7 @@ package com.convy.app.ui.screens.householdsetup
 import com.convy.app.generated.resources.*
 import com.convy.app.ui.mvi.MviStore
 import com.convy.app.util.UiText
+import com.convy.shared.domain.repository.ActiveHouseholdRepository
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.InviteRepository
 import kotlinx.coroutines.flow.*
@@ -11,6 +12,7 @@ import kotlinx.coroutines.launch
 class HouseholdSetupStore(
     private val householdRepository: HouseholdRepository,
     private val inviteRepository: InviteRepository,
+    private val activeHouseholdRepository: ActiveHouseholdRepository,
 ) : MviStore() {
     private val _state = MutableStateFlow(HouseholdSetupState())
     val state: StateFlow<HouseholdSetupState> = _state.asStateFlow()
@@ -37,6 +39,7 @@ class HouseholdSetupStore(
             if (current.isCreateMode) {
                 householdRepository.create(current.householdName).fold(
                     onSuccess = { householdId ->
+                        activeHouseholdRepository.setActiveHouseholdId(householdId)
                         _state.update { it.copy(isLoading = false) }
                         _sideEffects.emit(HouseholdSetupSideEffect.NavigateToLists(householdId))
                     },
@@ -47,6 +50,7 @@ class HouseholdSetupStore(
             } else {
                 inviteRepository.join(current.inviteCode).fold(
                     onSuccess = { householdId ->
+                        activeHouseholdRepository.setActiveHouseholdId(householdId)
                         _state.update { it.copy(isLoading = false) }
                         _sideEffects.emit(HouseholdSetupSideEffect.NavigateToLists(householdId))
                     },

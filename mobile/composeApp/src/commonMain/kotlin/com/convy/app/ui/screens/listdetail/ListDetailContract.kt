@@ -74,6 +74,19 @@ val ListDetailState.isTaskList: Boolean
 val ListDetailState.showNormalListChrome: Boolean
     get() = !isShoppingMode
 
+enum class VoiceActionMode {
+    Idle,
+    Recording,
+    Processing,
+}
+
+val ListDetailState.voiceActionMode: VoiceActionMode
+    get() = when {
+        isProcessingVoice -> VoiceActionMode.Processing
+        isRecording -> VoiceActionMode.Recording
+        else -> VoiceActionMode.Idle
+    }
+
 data class ShoppingModeTransition(
     val state: ListDetailState,
     val shouldReloadItems: Boolean,

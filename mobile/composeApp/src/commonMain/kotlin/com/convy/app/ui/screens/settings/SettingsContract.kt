@@ -35,6 +35,7 @@ sealed interface SettingsIntent {
     data object ShowLeaveConfirmation : SettingsIntent
     data object DismissLeaveConfirmation : SettingsIntent
     data object ConfirmLeaveHousehold : SettingsIntent
+    data object ManageHouseholds : SettingsIntent
     data object ShowRenameDialog : SettingsIntent
     data object DismissRenameDialog : SettingsIntent
     data class UpdateRenameText(val text: String) : SettingsIntent
@@ -49,5 +50,7 @@ sealed interface SettingsSideEffect {
     data object NavigateToAuth : SettingsSideEffect
     data object NavigateBack : SettingsSideEffect
     data object NavigateToHouseholdSetup : SettingsSideEffect
+    data class NavigateToLists(val householdId: String) : SettingsSideEffect
+    data class NavigateToHouseholds(val activeHouseholdId: String) : SettingsSideEffect
     data class ShowError(val message: String) : SettingsSideEffect
 }

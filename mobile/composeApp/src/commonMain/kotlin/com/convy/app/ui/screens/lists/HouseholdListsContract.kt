@@ -1,12 +1,14 @@
 package com.convy.app.ui.screens.lists
 
 import com.convy.shared.domain.model.HouseholdList
+import com.convy.shared.domain.model.Household
 import com.convy.shared.domain.model.ListType
 import com.convy.app.util.UiText
 
 data class HouseholdListsState(
     val householdId: String = "",
     val householdName: String = "",
+    val households: List<Household> = emptyList(),
     val lists: List<HouseholdList> = emptyList(),
     val pendingCounts: Map<String, Int> = emptyMap(),
     val isLoading: Boolean = false,
@@ -20,6 +22,7 @@ data class HouseholdListsState(
     val showArchiveConfirmation: Boolean = false,
     val archiveListId: String = "",
     val archiveListName: String = "",
+    val showHouseholdSwitcher: Boolean = false,
 )
 
 sealed interface HouseholdListsIntent {
@@ -33,6 +36,10 @@ sealed interface HouseholdListsIntent {
     data object OpenMembers : HouseholdListsIntent
     data object OpenActivity : HouseholdListsIntent
     data object OpenSettings : HouseholdListsIntent
+    data object ShowHouseholdSwitcher : HouseholdListsIntent
+    data object DismissHouseholdSwitcher : HouseholdListsIntent
+    data class SwitchHousehold(val householdId: String) : HouseholdListsIntent
+    data object ManageHouseholds : HouseholdListsIntent
     data class ShowRenameDialog(val listId: String, val currentName: String) : HouseholdListsIntent
     data object DismissRenameDialog : HouseholdListsIntent
     data class UpdateRenameListName(val name: String) : HouseholdListsIntent
@@ -46,6 +53,8 @@ sealed interface HouseholdListsSideEffect {
     data class NavigateToList(val householdId: String, val listId: String, val listName: String, val listType: String) : HouseholdListsSideEffect
     data class NavigateToMembers(val householdId: String) : HouseholdListsSideEffect
     data class NavigateToActivity(val householdId: String) : HouseholdListsSideEffect
+    data class NavigateToHousehold(val householdId: String) : HouseholdListsSideEffect
+    data class NavigateToHouseholds(val activeHouseholdId: String) : HouseholdListsSideEffect
     data object NavigateToSettings : HouseholdListsSideEffect
     data class ShowError(val message: String) : HouseholdListsSideEffect
 }

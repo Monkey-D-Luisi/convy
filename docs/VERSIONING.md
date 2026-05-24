@@ -42,6 +42,7 @@
 | 17 | 0.1.14 | 2026-05-19 | Admin operability follow-ups |
 | 18 | 0.1.15 | 2026-05-22 | Landing package link correction and internal test artifacts |
 | 19 | 0.1.16 | 2026-05-22 | UI/UX quality and admin hardening |
+| 20 | 0.1.17 | 2026-05-23 | Multi-household management and lower voice action UX |
 
 ## Release Procedure
 

@@ -3,6 +3,7 @@ package com.convy.app.ui.screens.settings
 import com.convy.app.platform.AppInfoProvider
 import com.convy.app.ui.mvi.MviStore
 import com.convy.shared.domain.repository.AuthRepository
+import com.convy.shared.domain.repository.ActiveHouseholdRepository
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.UserRepository
 import com.convy.shared.domain.model.NotificationPreferences
@@ -12,10 +13,12 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 
 class SettingsStore(
+    private val householdId: String,
     private val authRepository: AuthRepository,
     private val householdRepository: HouseholdRepository,
     private val userRepository: UserRepository,
     appInfoProvider: AppInfoProvider,
+    private val activeHouseholdRepository: ActiveHouseholdRepository,
 ) : MviStore() {
     private val _state = MutableStateFlow(SettingsState(appVersion = appInfoProvider.versionName))
     val state: StateFlow<SettingsState> = _state.asStateFlow()
@@ -36,6 +39,9 @@ class SettingsStore(
             is SettingsIntent.ShowLeaveConfirmation -> _state.update { it.copy(showLeaveConfirmation = true) }
             is SettingsIntent.DismissLeaveConfirmation -> _state.update { it.copy(showLeaveConfirmation = false) }
             is SettingsIntent.ConfirmLeaveHousehold -> leaveHousehold()
+            is SettingsIntent.ManageHouseholds -> scope.launch {
+                _sideEffects.emit(SettingsSideEffect.NavigateToHouseholds(_state.value.householdId))
+            }
             is SettingsIntent.ShowRenameDialog -> _state.update {
                 it.copy(showRenameDialog = true, renameText = it.householdName)
             }
@@ -75,8 +81,10 @@ class SettingsStore(
                 _state.update { it.copy(notificationPreferences = preferences, notificationPreferencesError = false) }
             }
             householdRepository.getMyHouseholds().onSuccess { households ->
-                if (households.isNotEmpty()) {
-                    val household = households.first()
+                val household = households.firstOrNull { it.id == householdId }
+                    ?: activeHouseholdRepository.resolveActiveHousehold(households)
+                if (household != null) {
+                    activeHouseholdRepository.setActiveHouseholdId(household.id)
                     _state.update { it.copy(householdName = household.name, householdId = household.id) }
                 }
             }
@@ -86,6 +94,7 @@ class SettingsStore(
 
     private fun signOut() {
         scope.launch {
+            activeHouseholdRepository.clearActiveHouseholdId()
             authRepository.signOut()
             _sideEffects.emit(SettingsSideEffect.NavigateToAuth)
         }
@@ -98,7 +107,13 @@ class SettingsStore(
             householdRepository.leave(householdId).fold(
                 onSuccess = {
                     _state.update { it.copy(isLeaving = false) }
-                    _sideEffects.emit(SettingsSideEffect.NavigateToHouseholdSetup)
+                    val remainingHouseholds = householdRepository.getMyHouseholds().getOrNull().orEmpty()
+                    val nextHousehold = activeHouseholdRepository.resolveActiveHousehold(remainingHouseholds)
+                    if (nextHousehold == null) {
+                        _sideEffects.emit(SettingsSideEffect.NavigateToHouseholdSetup)
+                    } else {
+                        _sideEffects.emit(SettingsSideEffect.NavigateToLists(nextHousehold.id))
+                    }
                 },
                 onFailure = {
                     _state.update { it.copy(isLeaving = false) }

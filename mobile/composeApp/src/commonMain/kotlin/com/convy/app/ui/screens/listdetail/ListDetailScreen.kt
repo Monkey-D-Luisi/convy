@@ -41,6 +41,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -295,31 +296,6 @@ fun ListDetailContent(
                 },
                 actions = {
                     if (!state.isSearching) {
-                        if (state.showNormalListChrome && !state.isTaskList) {
-                            if (state.isRecording) {
-                                IconButton(onClick = { onIntent(ListDetailIntent.StopRecording) }) {
-                                    Icon(
-                                        Icons.Default.Stop,
-                                        contentDescription = stringResource(Res.string.detail_stop_recording),
-                                        tint = MaterialTheme.colorScheme.error,
-                                    )
-                                }
-                            } else {
-                                IconButton(
-                                    onClick = { onIntent(ListDetailIntent.StartRecording) },
-                                    enabled = !state.isProcessingVoice,
-                                ) {
-                                    if (state.isProcessingVoice) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(24.dp),
-                                            strokeWidth = 2.dp,
-                                        )
-                                    } else {
-                                        Icon(Icons.Default.Mic, contentDescription = stringResource(Res.string.detail_voice_input))
-                                    }
-                                }
-                            }
-                        }
                         if (!state.isTaskList) {
                             IconButton(onClick = { onIntent(ListDetailIntent.ToggleShoppingMode) }) {
                                 Icon(
@@ -344,13 +320,7 @@ fun ListDetailContent(
         },
         floatingActionButton = {
             if (state.showNormalListChrome) {
-                val addText = stringResource(if (state.isTaskList) Res.string.detail_add_task else Res.string.detail_add_item)
-                FloatingActionButton(
-                    onClick = { onIntent(ListDetailIntent.AddItem) },
-                    modifier = Modifier.testTag(addText),
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = addText)
-                }
+                ListDetailBottomActions(state = state, onIntent = onIntent)
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -417,6 +387,73 @@ fun ListDetailContent(
 }
 
 @Composable
+private fun ListDetailBottomActions(
+    state: ListDetailState,
+    onIntent: (ListDetailIntent) -> Unit,
+) {
+    val addText = stringResource(if (state.isTaskList) Res.string.detail_add_task else Res.string.detail_add_item)
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (!state.isTaskList) {
+            VoiceFloatingAction(state = state, onIntent = onIntent)
+        }
+        ExtendedFloatingActionButton(
+            onClick = { onIntent(ListDetailIntent.AddItem) },
+            icon = { Icon(Icons.Default.Add, contentDescription = addText) },
+            text = { Text(addText) },
+            modifier = Modifier.testTag(addText),
+        )
+    }
+}
+
+@Composable
+private fun VoiceFloatingAction(
+    state: ListDetailState,
+    onIntent: (ListDetailIntent) -> Unit,
+) {
+    val voiceLabel = stringResource(Res.string.detail_voice_input)
+    val stopLabel = stringResource(Res.string.detail_stop_recording)
+    val mode = state.voiceActionMode
+    val label = if (mode == VoiceActionMode.Recording) stopLabel else voiceLabel
+
+    FloatingActionButton(
+        onClick = {
+            when (mode) {
+                VoiceActionMode.Recording -> onIntent(ListDetailIntent.StopRecording)
+                VoiceActionMode.Idle -> onIntent(ListDetailIntent.StartRecording)
+                VoiceActionMode.Processing -> {}
+            }
+        },
+        modifier = Modifier.size(56.dp).testTag(label),
+        containerColor = if (mode == VoiceActionMode.Recording) {
+            MaterialTheme.colorScheme.errorContainer
+        } else {
+            MaterialTheme.colorScheme.secondaryContainer
+        },
+        contentColor = if (mode == VoiceActionMode.Recording) {
+            MaterialTheme.colorScheme.onErrorContainer
+        } else {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        },
+    ) {
+        if (mode == VoiceActionMode.Processing) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                strokeWidth = 2.dp,
+            )
+        } else {
+            Icon(
+                imageVector = if (mode == VoiceActionMode.Recording) Icons.Default.Stop else Icons.Default.Mic,
+                contentDescription = label,
+            )
+        }
+    }
+}
+
+@Composable
 private fun ShoppingModeList(
     pendingEntries: List<ListEntryUi>,
     completedEntries: List<ListEntryUi>,
@@ -437,7 +474,7 @@ private fun ShoppingModeList(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         LazyColumn(
-            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
+            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 128.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(pendingEntries, key = { it.id }) { entry ->
@@ -470,7 +507,7 @@ private fun NormalEntryList(
     onIntent: (ListDetailIntent) -> Unit,
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
+        contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 128.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (pendingEntries.isNotEmpty()) {

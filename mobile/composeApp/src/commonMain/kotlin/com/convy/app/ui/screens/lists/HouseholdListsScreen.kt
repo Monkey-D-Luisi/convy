@@ -1,12 +1,16 @@
 package com.convy.app.ui.screens.lists
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -29,6 +33,7 @@ import com.convy.app.ui.components.EmptyContent
 import com.convy.app.ui.components.ErrorContent
 import com.convy.app.ui.components.ListCard
 import com.convy.app.ui.components.LoadingContent
+import com.convy.shared.domain.model.Household
 import com.convy.shared.domain.model.ListType
 import com.convy.app.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -39,6 +44,8 @@ fun HouseholdListsScreen(
     onNavigateToList: (String, String, String, String) -> Unit,
     onNavigateToMembers: (String) -> Unit,
     onNavigateToActivity: (String) -> Unit,
+    onNavigateToHousehold: (String) -> Unit,
+    onNavigateToHouseholds: (String) -> Unit,
     onNavigateToSettings: () -> Unit,
 ) {
     val state by store.state.collectAsState()
@@ -57,6 +64,10 @@ fun HouseholdListsScreen(
                     onNavigateToMembers(effect.householdId)
                 is HouseholdListsSideEffect.NavigateToActivity ->
                     onNavigateToActivity(effect.householdId)
+                is HouseholdListsSideEffect.NavigateToHousehold ->
+                    onNavigateToHousehold(effect.householdId)
+                is HouseholdListsSideEffect.NavigateToHouseholds ->
+                    onNavigateToHouseholds(effect.activeHouseholdId)
                 is HouseholdListsSideEffect.NavigateToSettings ->
                     onNavigateToSettings()
                 is HouseholdListsSideEffect.ShowError -> snackbarHostState.showSnackbar(effect.message)
@@ -82,7 +93,16 @@ fun HouseholdListsContent(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(state.householdName.ifEmpty { stringResource(Res.string.lists_default_title) })
+                    TextButton(
+                        onClick = { onIntent(HouseholdListsIntent.ShowHouseholdSwitcher) },
+                        modifier = Modifier.testTag("Household selector"),
+                    ) {
+                        Text(
+                            text = state.householdName.ifEmpty { stringResource(Res.string.lists_default_title) },
+                            maxLines = 1,
+                        )
+                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
+                    }
                 },
                 actions = {
                     IconButton(
@@ -215,6 +235,63 @@ fun HouseholdListsContent(
                     TextButton(onClick = { onIntent(HouseholdListsIntent.DismissArchiveConfirmation) }) { Text(stringResource(Res.string.cancel)) }
                 },
             )
+        }
+
+        if (state.showHouseholdSwitcher) {
+            HouseholdSwitcherSheet(
+                households = state.households,
+                activeHouseholdId = state.householdId,
+                onSelectHousehold = { onIntent(HouseholdListsIntent.SwitchHousehold(it)) },
+                onManageHouseholds = { onIntent(HouseholdListsIntent.ManageHouseholds) },
+                onDismiss = { onIntent(HouseholdListsIntent.DismissHouseholdSwitcher) },
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HouseholdSwitcherSheet(
+    households: List<Household>,
+    activeHouseholdId: String,
+    onSelectHousehold: (String) -> Unit,
+    onManageHouseholds: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(Res.string.households_switch),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+            households.forEach { household ->
+                ListItem(
+                    headlineContent = { Text(household.name, maxLines = 1) },
+                    leadingContent = {
+                        Icon(
+                            imageVector = if (household.id == activeHouseholdId) Icons.Default.Check else Icons.Default.Home,
+                            contentDescription = null,
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("Switch ${household.name}")
+                        .clickable { onSelectHousehold(household.id) },
+                )
+            }
+            TextButton(
+                onClick = onManageHouseholds,
+                modifier = Modifier.fillMaxWidth().testTag("Manage households"),
+            ) {
+                Text(stringResource(Res.string.households_manage))
+            }
         }
     }
 }

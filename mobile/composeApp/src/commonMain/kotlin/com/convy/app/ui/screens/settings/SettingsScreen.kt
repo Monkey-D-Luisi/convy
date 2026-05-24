@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -32,6 +33,8 @@ fun SettingsScreen(
     store: SettingsStore,
     onNavigateToAuth: () -> Unit,
     onNavigateToHouseholdSetup: () -> Unit,
+    onNavigateToLists: (String) -> Unit,
+    onNavigateToHouseholds: (String) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     val state by store.state.collectAsState()
@@ -47,6 +50,8 @@ fun SettingsScreen(
                 is SettingsSideEffect.NavigateToAuth -> onNavigateToAuth()
                 is SettingsSideEffect.NavigateBack -> onNavigateBack()
                 is SettingsSideEffect.NavigateToHouseholdSetup -> onNavigateToHouseholdSetup()
+                is SettingsSideEffect.NavigateToLists -> onNavigateToLists(effect.householdId)
+                is SettingsSideEffect.NavigateToHouseholds -> onNavigateToHouseholds(effect.activeHouseholdId)
                 is SettingsSideEffect.ShowError -> snackbarHostState.showSnackbar(effect.message)
             }
         }
@@ -158,6 +163,15 @@ fun SettingsContent(
                             }
                         }
                     }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { onIntent(SettingsIntent.ManageHouseholds) },
+                    modifier = Modifier.fillMaxWidth().height(48.dp).testTag("Manage households"),
+                ) {
+                    Icon(Icons.Default.Home, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(Res.string.households_manage))
                 }
             }
 

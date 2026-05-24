@@ -101,6 +101,7 @@ val repositoryModule = module {
     single<TokenProvider> { get<FirebaseAuthRepository>() }
     single<UserRepository> { UserRepositoryImpl(get()) }
     single<HouseholdRepository> { HouseholdRepositoryImpl(get()) }
+    single<ActiveHouseholdRepository> { ActiveHouseholdRepositoryImpl(get()) }
     single<ListRepository> { ListRepositoryImpl(get()) }
     single<ItemRepository> { ItemRepositoryImpl(get(), get()) }
     single<TaskRepository> { TaskRepositoryImpl(get()) }

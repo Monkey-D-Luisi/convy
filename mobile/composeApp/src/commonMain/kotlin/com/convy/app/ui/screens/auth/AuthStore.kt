@@ -4,6 +4,7 @@ import com.convy.app.generated.resources.*
 import com.convy.app.ui.mvi.MviStore
 import com.convy.app.util.UiText
 import com.convy.shared.data.remote.DeviceTokenManager
+import com.convy.shared.domain.repository.ActiveHouseholdRepository
 import com.convy.shared.domain.repository.AuthRepository
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.UserRepository
@@ -15,6 +16,7 @@ class AuthStore(
     private val userRepository: UserRepository,
     private val householdRepository: HouseholdRepository,
     private val deviceTokenManager: DeviceTokenManager,
+    private val activeHouseholdRepository: ActiveHouseholdRepository,
 ) : MviStore() {
     private val _state = MutableStateFlow(AuthState())
     val state: StateFlow<AuthState> = _state.asStateFlow()
@@ -80,13 +82,8 @@ class AuthStore(
                         return@launch
                     }
                     launch { deviceTokenManager.registerCurrentToken() }
-                    val households = householdRepository.getMyHouseholds().getOrNull()
                     _state.update { it.copy(isLoading = false) }
-                    if (households.isNullOrEmpty()) {
-                        _sideEffects.emit(AuthSideEffect.NavigateToHouseholdSetup(user.id))
-                    } else {
-                        _sideEffects.emit(AuthSideEffect.NavigateToLists(households.first().id))
-                    }
+                    navigateAfterAuth(user.id)
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isLoading = false, error = UiText.fromError(error.message, Res.string.auth_failed)) }
@@ -111,18 +108,24 @@ class AuthStore(
                         return@launch
                     }
                     launch { deviceTokenManager.registerCurrentToken() }
-                    val households = householdRepository.getMyHouseholds().getOrNull()
                     _state.update { it.copy(isLoading = false) }
-                    if (households.isNullOrEmpty()) {
-                        _sideEffects.emit(AuthSideEffect.NavigateToHouseholdSetup(user.id))
-                    } else {
-                        _sideEffects.emit(AuthSideEffect.NavigateToLists(households.first().id))
-                    }
+                    navigateAfterAuth(user.id)
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isLoading = false, error = UiText.fromError(error.message, Res.string.auth_google_failed)) }
                 },
             )
+        }
+    }
+
+    private suspend fun navigateAfterAuth(userId: String) {
+        val households = householdRepository.getMyHouseholds().getOrNull().orEmpty()
+        val activeHousehold = activeHouseholdRepository.resolveActiveHousehold(households)
+
+        if (activeHousehold == null) {
+            _sideEffects.emit(AuthSideEffect.NavigateToHouseholdSetup(userId))
+        } else {
+            _sideEffects.emit(AuthSideEffect.NavigateToLists(activeHousehold.id))
         }
     }
 }

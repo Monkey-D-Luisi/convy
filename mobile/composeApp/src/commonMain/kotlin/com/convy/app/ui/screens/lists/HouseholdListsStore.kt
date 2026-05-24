@@ -7,6 +7,7 @@ import com.convy.shared.data.remote.HouseholdEvent
 import com.convy.shared.data.remote.HouseholdRealtimeService
 import com.convy.shared.domain.model.ListType
 import com.convy.shared.domain.model.HouseholdList
+import com.convy.shared.domain.repository.ActiveHouseholdRepository
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.ItemRepository
 import com.convy.shared.domain.repository.ListRepository
@@ -19,6 +20,7 @@ class HouseholdListsStore(
     private val listRepository: ListRepository,
     private val itemRepository: ItemRepository,
     private val realtimeService: HouseholdRealtimeService,
+    private val activeHouseholdRepository: ActiveHouseholdRepository,
 ) : MviStore() {
     private val _state = MutableStateFlow(HouseholdListsState(householdId = householdId))
     val state: StateFlow<HouseholdListsState> = _state.asStateFlow()
@@ -27,6 +29,9 @@ class HouseholdListsStore(
     val sideEffects: SharedFlow<HouseholdListsSideEffect> = _sideEffects.asSharedFlow()
 
     init {
+        scope.launch {
+            activeHouseholdRepository.setActiveHouseholdId(householdId)
+        }
         loadData()
         connectRealtime()
         observeRealtimeEvents()
@@ -58,6 +63,13 @@ class HouseholdListsStore(
             is HouseholdListsIntent.OpenSettings -> scope.launch {
                 _sideEffects.emit(HouseholdListsSideEffect.NavigateToSettings)
             }
+            is HouseholdListsIntent.ShowHouseholdSwitcher -> _state.update { it.copy(showHouseholdSwitcher = true) }
+            is HouseholdListsIntent.DismissHouseholdSwitcher -> _state.update { it.copy(showHouseholdSwitcher = false) }
+            is HouseholdListsIntent.SwitchHousehold -> switchHousehold(intent.householdId)
+            is HouseholdListsIntent.ManageHouseholds -> scope.launch {
+                _state.update { it.copy(showHouseholdSwitcher = false) }
+                _sideEffects.emit(HouseholdListsSideEffect.NavigateToHouseholds(householdId))
+            }
             is HouseholdListsIntent.ShowRenameDialog -> _state.update {
                 it.copy(showRenameDialog = true, renameListId = intent.listId, renameListName = intent.currentName)
             }
@@ -81,6 +93,14 @@ class HouseholdListsStore(
                 },
                 onFailure = {},
             )
+            householdRepository.getMyHouseholds().onSuccess { households ->
+                _state.update { state ->
+                    state.copy(
+                        households = households,
+                        householdName = households.firstOrNull { it.id == householdId }?.name ?: state.householdName,
+                    )
+                }
+            }
 
             listRepository.getByHousehold(householdId).fold(
                 onSuccess = { lists ->
@@ -120,6 +140,19 @@ class HouseholdListsStore(
                 }
             }
             _state.update { it.copy(pendingCounts = counts) }
+        }
+    }
+
+    private fun switchHousehold(nextHouseholdId: String) {
+        if (nextHouseholdId == householdId) {
+            _state.update { it.copy(showHouseholdSwitcher = false) }
+            return
+        }
+
+        scope.launch {
+            activeHouseholdRepository.setActiveHouseholdId(nextHouseholdId)
+            _state.update { it.copy(showHouseholdSwitcher = false) }
+            _sideEffects.emit(HouseholdListsSideEffect.NavigateToHousehold(nextHouseholdId))
         }
     }
 
@@ -167,7 +200,9 @@ class HouseholdListsStore(
                     is HouseholdEvent.ListCreated,
                     is HouseholdEvent.ListRenamed,
                     is HouseholdEvent.ListArchived,
-                    is HouseholdEvent.MemberJoined -> loadData()
+                    is HouseholdEvent.MemberJoined,
+                    is HouseholdEvent.HouseholdRenamed,
+                    is HouseholdEvent.MemberLeft -> loadData()
                     else -> {}
                 }
             }

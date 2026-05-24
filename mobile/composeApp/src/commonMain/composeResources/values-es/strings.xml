@@ -54,6 +54,24 @@
     <string name="setup_create_failed">Error al crear el hogar</string>
     <string name="setup_join_failed">Error al unirse al hogar</string>
 
+    <!-- Households -->
+    <string name="households_title">Gestionar hogares</string>
+    <string name="households_your_households">Tus hogares</string>
+    <string name="households_active">Hogar activo</string>
+    <string name="households_create">Crear hogar</string>
+    <string name="households_join">Unirse al hogar</string>
+    <string name="households_switch">Cambiar de hogar</string>
+    <string name="households_manage">Gestionar hogares</string>
+    <string name="households_empty">Aún no hay hogares</string>
+    <string name="households_leave">Abandonar</string>
+    <string name="households_leave_title">Abandonar hogar</string>
+    <string name="households_leave_message">¿Seguro que quieres abandonar "%1$s"? Necesitarás una nueva invitación para volver.</string>
+    <string name="households_load_failed">Error al cargar los hogares</string>
+    <string name="households_create_failed">Error al crear el hogar</string>
+    <string name="households_join_failed">Error al unirse al hogar</string>
+    <string name="households_rename_failed">Error al renombrar el hogar</string>
+    <string name="households_leave_failed">Error al abandonar el hogar</string>
+
     <!-- Household Lists -->
     <string name="lists_default_title">Mi Hogar</string>
     <string name="lists_activity">Actividad</string>

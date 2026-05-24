@@ -54,6 +54,24 @@
     <string name="setup_create_failed">Failed to create household</string>
     <string name="setup_join_failed">Failed to join household</string>
 
+    <!-- Households -->
+    <string name="households_title">Manage households</string>
+    <string name="households_your_households">Your households</string>
+    <string name="households_active">Active household</string>
+    <string name="households_create">Create household</string>
+    <string name="households_join">Join household</string>
+    <string name="households_switch">Switch household</string>
+    <string name="households_manage">Manage households</string>
+    <string name="households_empty">No households yet</string>
+    <string name="households_leave">Leave</string>
+    <string name="households_leave_title">Leave household</string>
+    <string name="households_leave_message">Are you sure you want to leave "%1$s"? You will need a new invite to rejoin.</string>
+    <string name="households_load_failed">Failed to load households</string>
+    <string name="households_create_failed">Failed to create household</string>
+    <string name="households_join_failed">Failed to join household</string>
+    <string name="households_rename_failed">Failed to rename household</string>
+    <string name="households_leave_failed">Failed to leave household</string>
+
     <!-- Household Lists -->
     <string name="lists_default_title">My Home</string>
     <string name="lists_activity">Activity</string>

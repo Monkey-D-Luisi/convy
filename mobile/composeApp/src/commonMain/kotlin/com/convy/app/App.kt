@@ -23,6 +23,8 @@ import com.convy.app.ui.screens.activity.ActivityScreen
 import com.convy.app.ui.screens.activity.ActivityStore
 import com.convy.app.ui.screens.auth.AuthScreen
 import com.convy.app.ui.screens.auth.AuthStore
+import com.convy.app.ui.screens.households.HouseholdsScreen
+import com.convy.app.ui.screens.households.HouseholdsStore
 import com.convy.app.ui.screens.householdsetup.HouseholdSetupScreen
 import com.convy.app.ui.screens.householdsetup.HouseholdSetupStore
 import com.convy.app.ui.screens.item.ItemFormScreen
@@ -38,6 +40,7 @@ import com.convy.app.ui.screens.settings.SettingsStore
 import com.convy.app.ui.screens.task.TaskFormScreen
 import com.convy.app.ui.screens.task.TaskFormStore
 import com.convy.app.ui.theme.ConvyTheme
+import com.convy.shared.domain.repository.ActiveHouseholdRepository
 import com.convy.shared.domain.repository.AuthRepository
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.UserRepository
@@ -55,6 +58,7 @@ fun App() {
         val authRepository = koinInject<AuthRepository>()
         val userRepository = koinInject<UserRepository>()
         val householdRepository = koinInject<HouseholdRepository>()
+        val activeHouseholdRepository = koinInject<ActiveHouseholdRepository>()
         val deviceTokenManager = koinInject<DeviceTokenManager>()
         val currentRoute by navigator.currentRoute.collectAsState()
         val canNavigateBack by navigator.canNavigateBack.collectAsState()
@@ -74,9 +78,10 @@ fun App() {
                 if (!notificationPermission.isGranted) {
                     notificationPermission.launchRequest()
                 }
-                val households = householdRepository.getMyHouseholds().getOrNull()
-                if (!households.isNullOrEmpty()) {
-                    navigator.replaceWith(NavRoute.HouseholdLists(households.first().id))
+                val households = householdRepository.getMyHouseholds().getOrNull().orEmpty()
+                val activeHousehold = activeHouseholdRepository.resolveActiveHousehold(households)
+                if (activeHousehold != null) {
+                    navigator.replaceWith(NavRoute.HouseholdLists(activeHousehold.id))
                 } else {
                     navigator.replaceWith(NavRoute.HouseholdSetup)
                 }
@@ -118,6 +123,20 @@ fun App() {
                 )
             }
 
+            is NavRoute.Households -> {
+                val store = koinInject<HouseholdsStore> { parametersOf(route.activeHouseholdId) }
+                HouseholdsScreen(
+                    store = store,
+                    onNavigateToLists = { householdId ->
+                        navigator.replaceWith(NavRoute.HouseholdLists(householdId))
+                    },
+                    onNavigateToHouseholdSetup = {
+                        navigator.replaceWith(NavRoute.HouseholdSetup)
+                    },
+                    onNavigateBack = { navigator.navigateBack() },
+                )
+            }
+
             is NavRoute.HouseholdLists -> {
                 val store = koinInject<HouseholdListsStore> { parametersOf(route.householdId) }
                 HouseholdListsScreen(
@@ -131,8 +150,14 @@ fun App() {
                     onNavigateToActivity = { householdId ->
                         navigator.navigateTo(NavRoute.Activity(householdId))
                     },
+                    onNavigateToHousehold = { householdId ->
+                        navigator.replaceWith(NavRoute.HouseholdLists(householdId))
+                    },
+                    onNavigateToHouseholds = { householdId ->
+                        navigator.navigateTo(NavRoute.Households(householdId))
+                    },
                     onNavigateToSettings = {
-                        navigator.navigateTo(NavRoute.Settings)
+                        navigator.navigateTo(NavRoute.Settings(route.householdId))
                     },
                 )
             }
@@ -216,11 +241,13 @@ fun App() {
             }
 
             is NavRoute.Settings -> {
-                val store = koinInject<SettingsStore>()
+                val store = koinInject<SettingsStore> { parametersOf(route.householdId) }
                 SettingsScreen(
                     store = store,
                     onNavigateToAuth = { navigator.replaceWith(NavRoute.Auth) },
                     onNavigateToHouseholdSetup = { navigator.replaceWith(NavRoute.HouseholdSetup) },
+                    onNavigateToLists = { householdId -> navigator.replaceWith(NavRoute.HouseholdLists(householdId)) },
+                    onNavigateToHouseholds = { householdId -> navigator.navigateTo(NavRoute.Households(householdId)) },
                     onNavigateBack = { navigator.navigateBack() },
                 )
             }

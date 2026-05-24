@@ -153,6 +153,24 @@ class ListDetailStateTest {
         assertEquals(Res.string.detail_voice_permission_required, message.res)
     }
 
+    @Test
+    fun `voice action mode is idle by default`() {
+        assertEquals(VoiceActionMode.Idle, ListDetailState().voiceActionMode)
+    }
+
+    @Test
+    fun `voice action mode is recording while recording`() {
+        assertEquals(VoiceActionMode.Recording, ListDetailState(isRecording = true).voiceActionMode)
+    }
+
+    @Test
+    fun `voice action mode is processing while processing voice`() {
+        assertEquals(
+            VoiceActionMode.Processing,
+            ListDetailState(isRecording = true, isProcessingVoice = true).voiceActionMode,
+        )
+    }
+
     private fun listEntry(
         id: String = "entry-1",
         isCompleted: Boolean,
