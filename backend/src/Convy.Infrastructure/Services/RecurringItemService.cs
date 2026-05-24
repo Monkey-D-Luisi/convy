@@ -57,10 +57,9 @@ public class RecurringItemService : BackgroundService
                 item.Quantity,
                 item.Unit,
                 item.Note);
-            newItem.SetRecurrence(item.RecurrenceFrequency!.Value, item.RecurrenceInterval!.Value);
+            item.TransferRecurrenceTo(newItem);
 
             await itemRepository.AddAsync(newItem, cancellationToken);
-            item.AdvanceRecurrence();
 
             var list = await listRepository.GetByIdAsync(newItem.ListId, cancellationToken);
             if (list is not null)
