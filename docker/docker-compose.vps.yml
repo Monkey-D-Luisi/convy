@@ -32,7 +32,7 @@ services:
     restart: unless-stopped
     env_file: *convy-env-file
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_ENVIRONMENT: Staging
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       Firebase__ProjectId: ${FIREBASE_PROJECT_ID}

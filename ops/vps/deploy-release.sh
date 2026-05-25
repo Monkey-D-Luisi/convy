@@ -8,7 +8,7 @@ ENV_FILE="$APP_ROOT/shared/api.env"
 RELEASE_ENV_FILE="${CONVY_RELEASE_ENV_FILE:-$APP_ROOT/shared/release.env}"
 FIREBASE_FILE="$APP_ROOT/shared/firebase-admin.json"
 COMPOSE_FILE="${COMPOSE_FILE:-$RELEASE_DIR/docker/docker-compose.vps.yml}"
-LEGAL_DIR="$APP_ROOT/legal" # Default production path: /opt/convy/legal
+LEGAL_DIR="$APP_ROOT/legal" # Default staging path: /opt/convy/legal
 BACKUP_ROOT="${BACKUP_ROOT:-$APP_ROOT/backups/postgres}"
 BACKUP_READ_GROUP="${BACKUP_READ_GROUP:-1654}"
 

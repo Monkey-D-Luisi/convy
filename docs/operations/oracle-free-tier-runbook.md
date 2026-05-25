@@ -1,6 +1,6 @@
 # Oracle Always Free Hosting Runbook
 
-This runbook moves Convy from GCP Cloud Run and Cloud SQL to Oracle Cloud Infrastructure Always Free without removing current app capabilities.
+This runbook describes a possible future move to Oracle Cloud Infrastructure Always Free without removing current app capabilities. It is not the active staging deployment path.
 
 ## Architecture
 
@@ -12,8 +12,8 @@ This runbook moves Convy from GCP Cloud Run and Cloud SQL to Oracle Cloud Infras
 
 ## Infrastructure Layout
 
-- `infra/gcp`: current GCP Terraform stack for rollback and reference during migration.
-- `infra/oci`: OCI Always Free Terraform stack for the target production host.
+- `infra/gcp`: legacy GCP Terraform stack for reference during migration.
+- `infra/oci`: OCI Always Free Terraform stack for a possible future production host.
 
 Run Terraform from the provider directory you intend to manage. Do not run OCI commands from `infra/gcp`, and do not run GCP commands from `infra/oci`.
 
@@ -48,22 +48,22 @@ ssh -i "$env:USERPROFILE\.ssh\convy_oci_deploy" "ubuntu@${ip}" "sudo bash /tmp/b
 
 ## GitHub CD
 
-The CD workflow is provider-neutral and deploys the commit that passed CI.
+The active CD workflow currently deploys staging to Hetzner with `STAGING_*` secrets and variables. If OCI becomes the production target later, create a dedicated production CD workflow or intentionally retarget the shared workflow.
 
-Set these repository secrets:
+For a future production OCI workflow, set these repository secrets:
 
 - `PRODUCTION_DEPLOY_HOST`: public IP from Terraform output.
 - `PRODUCTION_PUBLIC_HOSTNAME`: hostname from Terraform output, for example `1.2.3.4.sslip.io`.
 - `PRODUCTION_SSH_PRIVATE_KEY`: contents of `~/.ssh/convy_oci_deploy`.
 
-Set these repository variables:
+For a future production OCI workflow, set these repository variables:
 
 - `PRODUCTION_DEPLOY_USER`: `ubuntu` for OCI.
 - `PRODUCTION_DEPLOY_SCRIPT`: `ops/oci/deploy-release.sh` for OCI.
 
 ## First Deploy
 
-From GitHub Actions, the CD workflow uploads the checked-out commit to the VM and runs `ops/oci/deploy-release.sh` when `PRODUCTION_DEPLOY_SCRIPT` is set as above. For a manual first deploy:
+From GitHub Actions, a future production workflow can upload the checked-out commit to the VM and run `ops/oci/deploy-release.sh` when `PRODUCTION_DEPLOY_SCRIPT` is set as above. For a manual first deploy:
 
 ```powershell
 git archive --format=tar.gz -o "$env:TEMP\convy-release.tar.gz" HEAD
@@ -76,7 +76,7 @@ ssh -i "$env:USERPROFILE\.ssh\convy_oci_deploy" "ubuntu@${ip}" "sudo mkdir -p /o
 Use a short write-freeze window:
 
 1. Confirm the OCI deployment is healthy with an empty database.
-2. Disable writes or scale down the GCP Cloud Run production service.
+2. Disable writes or scale down the previous live service.
 3. Export Cloud SQL PostgreSQL with `pg_dump`.
 4. Copy the dump to the OCI VM.
 5. Restore into `convy-db`.

@@ -48,4 +48,12 @@ resource "hcloud_server" "api" {
     environment = var.environment
     role        = "api"
   }
+
+  lifecycle {
+    # Imported servers cannot reconcile create-time bootstrap fields without replacement.
+    ignore_changes = [
+      ssh_keys,
+      user_data,
+    ]
+  }
 }

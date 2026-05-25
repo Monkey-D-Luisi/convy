@@ -18,7 +18,7 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Compose connection string from individual env vars (Cloud Run with Secret Manager)
+// Compose connection string from managed host environment variables.
 var dbHost = Environment.GetEnvironmentVariable("DB_HOST");
 if (!string.IsNullOrEmpty(dbHost))
 {
@@ -33,7 +33,7 @@ if (!string.IsNullOrEmpty(dbHost))
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ConvyDbContext>("db");
 
-// Reverse proxy headers (Caddy/Cloud Run) must be applied before HTTPS redirection.
+// Reverse proxy headers must be applied before HTTPS redirection.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -82,8 +82,7 @@ builder.Services.AddAuthorization(options =>
 });
 builder.Services.AddScoped<IAuthorizationHandler, AdminEmailAuthorizationHandler>();
 
-// Firebase Admin SDK — uses Application Default Credentials
-// (GOOGLE_APPLICATION_CREDENTIALS env var locally, metadata server on Cloud Run)
+// Firebase Admin SDK uses Application Default Credentials.
 if (FirebaseApp.DefaultInstance is null)
 {
     FirebaseApp.Create(new AppOptions
