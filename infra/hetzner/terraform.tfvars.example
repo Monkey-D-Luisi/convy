@@ -1,6 +1,7 @@
 ssh_public_key_path = "C:/Users/luiss/.ssh/convy_vps_deploy.pub"
+environment         = "staging"
 
-# Low-cost fallback defaults.
+# Active staging defaults.
 server_type = "cx23"
 image       = "ubuntu-24.04"
 location    = "fsn1"

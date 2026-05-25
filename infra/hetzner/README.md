@@ -1,6 +1,6 @@
 # Convy Hetzner Cloud Infrastructure
 
-This Terraform stack provisions the low-cost VPS fallback for Convy while OCI Always Free capacity is unavailable.
+This Terraform stack provisions the active staging VPS for Convy.
 
 ## Token
 
@@ -23,7 +23,7 @@ Copy-Item terraform.tfvars.example terraform.tfvars
 ..\..\ops\hetzner\invoke-terraform.ps1 plan
 ```
 
-Do not run `apply` until the planned server type and monthly cost are accepted.
+Do not run `apply` until the planned server type and monthly cost are accepted. Existing staging resources must be renamed without replacing the server or changing its public address.
 
 ## Defaults
 

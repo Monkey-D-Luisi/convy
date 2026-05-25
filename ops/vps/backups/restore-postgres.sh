@@ -23,8 +23,14 @@ set +a
 
 TARGET_DB="${2:-convy_restore_verify}"
 
-if [ "$TARGET_DB" = "$POSTGRES_DB" ] && [ "${ALLOW_PRODUCTION_RESTORE:-false}" != "true" ]; then
-  echo "Refusing to restore over production database without ALLOW_PRODUCTION_RESTORE=true." >&2
+allow_live_staging_restore="${ALLOW_STAGING_RESTORE:-false}"
+# Legacy alias retained for one release after the environment rename.
+if [ "$allow_live_staging_restore" != "true" ] && [ "${ALLOW_PRODUCTION_RESTORE:-false}" = "true" ]; then
+  allow_live_staging_restore="true"
+fi
+
+if [ "$TARGET_DB" = "$POSTGRES_DB" ] && [ "$allow_live_staging_restore" != "true" ]; then
+  echo "Refusing to restore over live staging database without ALLOW_STAGING_RESTORE=true." >&2
   exit 1
 fi
 

@@ -1,6 +1,6 @@
 # Hetzner VPS Hosting Runbook
 
-Hetzner is the active production target for the current beta deployment. The VPS runs PostgreSQL, the ASP.NET Core API, the Next.js admin dashboard, legal static pages, and Caddy in Docker Compose.
+Hetzner is the active staging target for the current beta deployment. The VPS runs PostgreSQL, the ASP.NET Core API, the Next.js admin dashboard, legal static pages, and Caddy in Docker Compose.
 
 OCI files are intentionally not updated for the admin dashboard, legal host, or new backup workflow in this change. Treat `docker-compose.oci.yml`, `Caddyfile.oci`, and `ops/oci` as reference material until a dedicated OCI follow-up updates them.
 
@@ -15,7 +15,7 @@ OCI files are intentionally not updated for the admin dashboard, legal host, or 
 
 ## Required Hosts
 
-Configure DNS before the first production deploy:
+Configure DNS before the first staging deploy:
 
 - `CONVY_API_HOSTNAME`, for example `api.convy.app`
 - `CONVY_ADMIN_HOSTNAME`, for example `admin.convy.app`
@@ -125,14 +125,14 @@ The CD workflow is provider-neutral and deploys the commit that passed CI.
 
 Set these repository secrets:
 
-- `PRODUCTION_DEPLOY_HOST`: public IPv4 address of the VPS.
-- `PRODUCTION_PUBLIC_HOSTNAME`: API HTTPS hostname.
-- `PRODUCTION_SSH_PRIVATE_KEY`: private deploy key matching the public key provisioned in Hetzner.
+- `STAGING_DEPLOY_HOST`: public IPv4 address or hostname of the VPS.
+- `STAGING_PUBLIC_HOSTNAME`: API HTTPS hostname.
+- `STAGING_SSH_PRIVATE_KEY`: private deploy key matching the public key provisioned in Hetzner.
 
 Set these repository variables:
 
-- `PRODUCTION_DEPLOY_USER`: `root` for Hetzner.
-- `PRODUCTION_DEPLOY_SCRIPT`: `ops/vps/deploy-release.sh` for Hetzner.
+- `STAGING_DEPLOY_USER`: `root` for Hetzner.
+- `STAGING_DEPLOY_SCRIPT`: `ops/vps/deploy-release.sh` for Hetzner.
 
 ## Smoke Checks
 
@@ -155,7 +155,7 @@ Expected admin behavior:
 Use a short write-freeze process:
 
 1. Confirm the Hetzner deployment is healthy with an empty database.
-2. Disable writes or scale down the previous production service.
+2. Disable writes or scale down the previous live service.
 3. Export the previous PostgreSQL database with `pg_dump`.
 4. Copy the dump to the VPS.
 5. Restore into `convy-db`.
