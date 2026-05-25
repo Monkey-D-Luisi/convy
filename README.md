@@ -32,7 +32,7 @@ convy/
 |   |-- androidApp/       # Android application entry point and flavors
 |   |-- composeApp/       # Shared Compose UI
 |   `-- shared/           # Shared domain, data, networking, and DI
-|-- docker/               # Local and production Docker Compose files
+|-- docker/               # Local, staging, and provider-specific Docker Compose files
 |-- docs/                 # Product, architecture, testing, and governance docs
 |-- AGENTS.md             # Cross-editor workspace instructions
 `-- CLAUDE.md             # Claude Code project instructions
