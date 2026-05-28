@@ -39,6 +39,13 @@ describe("admin view UX contract", () => {
     assert.match(source, /overflow-x-auto/);
     assert.match(source, /max-w-\[14rem\]\s+truncate/);
     assert.match(source, /releaseSha\.slice\(0,\s*12\)/);
+    assert.match(source, /export function McpView/);
+    assert.match(source, /isMcpOverviewPayload/);
+    assert.match(source, /Unexpected MCP admin payload/);
+    assert.match(source, /Publication Readiness/);
+    assert.match(source, /Recent Invocations/);
+    assert.doesNotMatch(source, /tokenHash/);
+    assert.doesNotMatch(source, /refreshToken:\s*string/);
   });
 
   it("keeps dashboard resources refreshable and non-cacheable", async () => {
@@ -48,5 +55,29 @@ describe("admin view UX contract", () => {
     assert.match(source, /cache:\s*"no-store"/);
     assert.match(source, /refresh:\s*\(\) => setReloadIndex/);
     assert.match(source, /\[path,\s*reloadIndex,\s*token\]/);
+  });
+});
+
+describe("MCP admin dashboard contract", () => {
+  it("exposes the MCP route and navigation entry", async () => {
+    const shell = await readDashboardFile("components", "admin-shell.tsx");
+    const page = await readDashboardFile("app", "mcp", "page.tsx");
+
+    assert.match(shell, /href:\s*"\/mcp"/);
+    assert.match(shell, /label:\s*"MCP"/);
+    assert.match(page, /McpView/);
+  });
+
+  it("types the MCP admin payload and overview/system summaries", async () => {
+    const types = await readDashboardFile("lib", "types.ts");
+
+    assert.match(types, /export type McpOverview/);
+    assert.match(types, /export type McpRuntime/);
+    assert.match(types, /export type McpPublicationReadinessCheck/);
+    assert.match(types, /mcp:\s*McpSummary/);
+    assert.match(types, /mcpHealthy:\s*boolean/);
+    assert.match(types, /authMetadataHealthy:\s*boolean/);
+    assert.doesNotMatch(types, /tokenHash/);
+    assert.doesNotMatch(types, /authorizationCode:\s*string/);
   });
 });

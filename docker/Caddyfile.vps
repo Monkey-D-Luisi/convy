@@ -1,4 +1,4 @@
-{$CONVY_API_HOSTNAME} {
+{$CONVY_API_HOSTNAME}, {$CONVY_LEGACY_API_HOSTNAME} {
 	encode zstd gzip
 
 	header {
@@ -11,7 +11,7 @@
 	reverse_proxy api:8080
 }
 
-{$CONVY_ADMIN_HOSTNAME} {
+{$CONVY_ADMIN_HOSTNAME}, {$CONVY_LEGACY_ADMIN_HOSTNAME} {
 	encode zstd gzip
 
 	basic_auth {
@@ -28,7 +28,72 @@
 	reverse_proxy dashboard:3000
 }
 
-{$CONVY_LEGAL_HOSTNAME} {
+{$CONVY_AUTH_HOSTNAME}, {$CONVY_LEGACY_AUTH_HOSTNAME} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		X-Frame-Options "DENY"
+	}
+
+	handle /.well-known/* {
+		reverse_proxy api:8080
+	}
+
+	handle /oauth/token {
+		reverse_proxy api:8080
+	}
+
+	handle /oauth/revoke {
+		reverse_proxy api:8080
+	}
+
+	handle /api/v1/mcp/oauth/authorize/approve {
+		reverse_proxy api:8080
+	}
+
+	reverse_proxy auth:3000
+}
+
+{$CONVY_MCP_HOSTNAME}, {$CONVY_LEGACY_MCP_HOSTNAME} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		X-Frame-Options "DENY"
+	}
+
+	reverse_proxy mcp:3001
+}
+
+{$CONVY_PUBLIC_HOSTNAME}, {$CONVY_WWW_HOSTNAME} {
+	root * /srv/public
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		X-Frame-Options "DENY"
+		Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'none'; frame-ancestors 'none'"
+	}
+
+	handle /privacy {
+		redir https://{$CONVY_LEGAL_HOSTNAME}/privacy 308
+	}
+
+	handle /terms {
+		redir https://{$CONVY_LEGAL_HOSTNAME}/terms 308
+	}
+
+	file_server
+}
+
+{$CONVY_LEGAL_HOSTNAME}, {$CONVY_LEGACY_LEGAL_HOSTNAME} {
 	root * /srv/legal
 	encode zstd gzip
 

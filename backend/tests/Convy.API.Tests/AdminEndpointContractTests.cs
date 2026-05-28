@@ -1,4 +1,5 @@
 using FluentAssertions;
+using System.Text.Json;
 
 namespace Convy.API.Tests;
 
@@ -36,6 +37,7 @@ public class AdminEndpointContractTests
         source.Should().Contain("/backups/runs");
         source.Should().Contain("/backups/runs/{id:guid}/download");
         source.Should().Contain("/system/health");
+        source.Should().Contain("/mcp/overview");
         source.Should().Contain("RequireAuthorization(\"AdminOnly\")");
     }
 
@@ -45,6 +47,20 @@ public class AdminEndpointContractTests
         var source = File.ReadAllText(Path.Combine(FindRepoRoot(), "backend", "src", "Convy.API", "Endpoints", "AdminEndpoints.cs"));
 
         source.Should().Contain("Results.Json(result.Value)");
+    }
+
+    [Fact]
+    public void AdminMcpOverviewDto_ShouldSerializeStableJsonContract()
+    {
+        var dtoSource = File.ReadAllText(Path.Combine(FindRepoRoot(), "backend", "src", "Convy.Application", "Features", "Admin", "DTOs", "AdminDtos.cs"));
+
+        dtoSource.Should().Contain("JsonPropertyName(\"oauth\")");
+        dtoSource.Should().NotContain("JsonPropertyName(\"oAuth\")");
+        dtoSource.Should().Contain("AdminMcpRuntimeDto Runtime");
+        dtoSource.Should().Contain("AdminMcpOAuthMetricsDto OAuth");
+        dtoSource.Should().Contain("AdminMcpUsageMetricsDto Usage");
+        dtoSource.Should().Contain("IReadOnlyList<McpToolCatalogItemDto> ToolCatalog");
+        dtoSource.Should().Contain("IReadOnlyList<McpPublicationReadinessCheckDto> ReadinessChecks");
     }
 
     [Fact]

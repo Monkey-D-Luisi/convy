@@ -13,7 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import { useAdminToken } from "@/components/admin-shell";
-import type { BackupRun, OpenAiMetrics, Overview, SystemHealth, UsageMetrics, VoiceMetrics } from "@/lib/types";
+import type { BackupRun, McpOverview, OpenAiMetrics, Overview, SystemHealth, UsageMetrics, VoiceMetrics } from "@/lib/types";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 const compactFormatter = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
@@ -130,6 +130,18 @@ function formatPercent(value: number, total: number) {
   }
 
   return `${Math.round((value / total) * 100)}%`;
+}
+
+function formatRatio(value: number) {
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatLatency(value: number | null) {
+  return value === null ? "Unknown" : `${Math.round(value)} ms`;
+}
+
+function formatNullableDateTime(value: string | null) {
+  return value ? new Date(value).toLocaleString() : "None";
 }
 
 function PageState({ loading, error }: { loading: boolean; error: string }) {
@@ -268,7 +280,7 @@ export function OverviewView() {
         <MetricCard label="Voice items 7d" value={numberFormatter.format(data.voiceItemsCreated7d)} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-4">
         <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-ink">AI</h2>
           <dl className="mt-4 grid grid-cols-3 gap-4">
@@ -277,6 +289,19 @@ export function OverviewView() {
             <Stat label="Failed" value={data.aiFailures7d} />
           </dl>
           <p className="mt-4 text-sm text-muted">Estimated cost: {formatMicros(data.estimatedAiCostMicros7d)}</p>
+        </section>
+        <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-ink">MCP</h2>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <StatusPill ok={data.mcp.mcpHealthy} label="MCP" />
+            <StatusPill ok={data.mcp.authHealthy} label="Auth" />
+          </div>
+          <dl className="mt-4 grid grid-cols-3 gap-4">
+            <Stat label="Calls" value={data.mcp.toolCalls24h} />
+            <Stat label="Success" value={data.mcp.toolSuccesses24h} />
+            <Stat label="Failed" value={data.mcp.toolFailures24h} />
+          </dl>
+          <p className="mt-4 text-sm text-muted">Success rate: {formatRatio(data.mcp.successRate24h)}</p>
         </section>
         <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-ink">Backup</h2>
@@ -503,6 +528,238 @@ export function OpenAiView() {
   );
 }
 
+export function McpView() {
+  const range = useMemo(() => dateRange(14), []);
+  const path = useMemo(() => `mcp/overview?${range.query}`, [range.query]);
+  const { data, error, lastUpdatedAt, loading, refresh } = useAdminResource<unknown>(path);
+  const payloadError = data && !isMcpOverviewPayload(data) ? "Unexpected MCP admin payload." : "";
+  const state = <PageState loading={loading} error={error || payloadError} />;
+  if (loading || error || payloadError || !data) {
+    return (
+      <div className="space-y-6">
+        <ViewHeader
+          title="MCP"
+          description="ChatGPT MCP runtime, OAuth adoption, tool usage, and publication readiness."
+          rangeLabel={range.label}
+          lastUpdatedAt={lastUpdatedAt}
+          loading={loading}
+          onRefresh={refresh}
+        />
+        {state}
+      </div>
+    );
+  }
+  const overview = data as McpOverview;
+
+  return (
+    <div className="space-y-6">
+      <ViewHeader
+        title="MCP"
+        description="ChatGPT MCP runtime, OAuth adoption, tool usage, and publication readiness."
+        rangeLabel={range.label}
+        lastUpdatedAt={lastUpdatedAt}
+        loading={loading}
+        onRefresh={refresh}
+      />
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <MetricCard label="Tool calls" value={numberFormatter.format(overview.usage.invocations)} />
+        <MetricCard label="Success rate" value={formatRatio(overview.usage.successRate)} tone={overview.usage.failures === 0 ? "good" : "warn"} />
+        <MetricCard label="Failures" value={numberFormatter.format(overview.usage.failures)} tone={overview.usage.failures > 0 ? "warn" : "default"} />
+        <MetricCard label="Avg latency" value={formatLatency(overview.usage.averageLatencyMs)} />
+        <MetricCard label="P95 latency" value={overview.usage.p95LatencyMs === null ? "Unknown" : `${overview.usage.p95LatencyMs} ms`} />
+        <MetricCard label="Active consents" value={numberFormatter.format(overview.oauth.activeConsents)} />
+        <MetricCard label="Active refresh tokens" value={numberFormatter.format(overview.oauth.activeRefreshTokens)} />
+        <MetricCard label="Expiring 7d" value={numberFormatter.format(overview.oauth.refreshTokensExpiring7d)} tone={overview.oauth.refreshTokensExpiring7d > 0 ? "warn" : "default"} />
+        <MetricCard label="MCP health" value={overview.runtime.mcpHealthHealthy ? "Healthy" : "Unhealthy"} tone={overview.runtime.mcpHealthHealthy ? "good" : "warn"} />
+        <MetricCard label="Auth health" value={overview.runtime.authHealthHealthy ? "Healthy" : "Unhealthy"} tone={overview.runtime.authHealthHealthy ? "good" : "warn"} />
+      </div>
+
+      <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-ink">Runtime</h2>
+        <dl className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <Stat label="MCP URL" value={overview.runtime.mcpUrl} />
+          <Stat label="Auth URL" value={overview.runtime.authUrl} />
+          <Stat label="Issuer" value={overview.runtime.issuer} />
+          <Stat label="Audience" value={overview.runtime.audience} />
+        </dl>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <StatusPill ok={overview.runtime.mcpMetadataHealthy} label="MCP metadata" />
+          <StatusPill ok={overview.runtime.authMetadataHealthy} label="Auth metadata" />
+          {overview.runtime.scopes.map((scope) => (
+            <span className="rounded-full bg-surface px-3 py-1 text-sm font-semibold text-muted" key={scope}>
+              {scope}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      <ChartPanel title="Daily MCP Calls">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={overview.days}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" tickFormatter={(value: string) => dateFormatter.format(new Date(value))} />
+            <YAxis tickFormatter={(value: number) => compactFormatter.format(value)} />
+            <Tooltip />
+            <Bar dataKey="successes" fill="#0b7a5f" name="Successes" />
+            <Bar dataKey="failures" fill="#b91c1c" name="Failures" />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartPanel>
+
+      {overview.tools.length === 0 ? (
+        <EmptyState title="No MCP tool usage yet" description="Tool metrics appear after ChatGPT invokes Convy MCP tools against this environment." />
+      ) : (
+        <section className="overflow-x-auto rounded-lg border border-line bg-white shadow-sm">
+          <table className="w-full min-w-[920px] border-collapse text-left text-sm">
+            <thead className="bg-surface text-muted">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Tool</th>
+                <th className="px-4 py-3 font-semibold">Calls</th>
+                <th className="px-4 py-3 font-semibold">Success</th>
+                <th className="px-4 py-3 font-semibold">Failed</th>
+                <th className="px-4 py-3 font-semibold">Avg latency</th>
+                <th className="px-4 py-3 font-semibold">P95 latency</th>
+                <th className="px-4 py-3 font-semibold">Last invocation</th>
+              </tr>
+            </thead>
+            <tbody>
+              {overview.tools.map((tool) => (
+                <tr className="border-t border-line" key={tool.toolName}>
+                  <td className="px-4 py-3 font-mono text-xs">{tool.toolName}</td>
+                  <td className="px-4 py-3">{numberFormatter.format(tool.invocations)}</td>
+                  <td className="px-4 py-3">{numberFormatter.format(tool.successes)}</td>
+                  <td className="px-4 py-3">{numberFormatter.format(tool.failures)}</td>
+                  <td className="px-4 py-3">{formatLatency(tool.averageLatencyMs)}</td>
+                  <td className="px-4 py-3">{tool.p95LatencyMs === null ? "Unknown" : `${tool.p95LatencyMs} ms`}</td>
+                  <td className="px-4 py-3">{formatNullableDateTime(tool.lastInvocationAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-ink">OAuth</h2>
+        <dl className="mt-4 grid gap-4 md:grid-cols-4">
+          <Stat label="Revoked consents" value={overview.oauth.revokedConsents} />
+          <Stat label="Revoked refresh tokens" value={overview.oauth.revokedRefreshTokens} />
+          <Stat label="Last consent" value={formatNullableDateTime(overview.oauth.lastConsentAt)} />
+          <Stat label="Last token use" value={formatNullableDateTime(overview.oauth.lastTokenUsedAt)} />
+        </dl>
+      </section>
+
+      <section className="overflow-x-auto rounded-lg border border-line bg-white shadow-sm">
+        <div className="p-5">
+          <h2 className="text-lg font-semibold text-ink">Recent Invocations</h2>
+        </div>
+        {overview.recentInvocations.length === 0 ? (
+          <div className="px-5 pb-5">
+            <EmptyState title="No recent invocations" description="Recent MCP calls will appear here without prompts or full tool arguments." />
+          </div>
+        ) : (
+          <table className="w-full min-w-[960px] border-collapse text-left text-sm">
+            <thead className="bg-surface text-muted">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Time</th>
+                <th className="px-4 py-3 font-semibold">Tool</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold">Latency</th>
+                <th className="px-4 py-3 font-semibold">Error</th>
+                <th className="px-4 py-3 font-semibold">User</th>
+                <th className="px-4 py-3 font-semibold">Household</th>
+              </tr>
+            </thead>
+            <tbody>
+              {overview.recentInvocations.map((invocation) => (
+                <tr className="border-t border-line" key={`${invocation.createdAt}-${invocation.toolName}-${invocation.latencyMs}`}>
+                  <td className="px-4 py-3">{new Date(invocation.createdAt).toLocaleString()}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{invocation.toolName}</td>
+                  <td className="px-4 py-3">
+                    <StatusPill ok={invocation.status === "Success"} label={invocation.status} />
+                  </td>
+                  <td className="px-4 py-3">{invocation.latencyMs} ms</td>
+                  <td className="px-4 py-3">{invocation.errorType ?? "None"}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{invocation.userId}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{invocation.householdId ?? "None"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section className="overflow-x-auto rounded-lg border border-line bg-white shadow-sm">
+        <div className="p-5">
+          <h2 className="text-lg font-semibold text-ink">Tool Catalog</h2>
+        </div>
+        <table className="w-full min-w-[920px] border-collapse text-left text-sm">
+          <thead className="bg-surface text-muted">
+            <tr>
+              <th className="px-4 py-3 font-semibold">Tool</th>
+              <th className="px-4 py-3 font-semibold">Title</th>
+              <th className="px-4 py-3 font-semibold">Scopes</th>
+              <th className="px-4 py-3 font-semibold">Annotations</th>
+            </tr>
+          </thead>
+          <tbody>
+            {overview.toolCatalog.map((tool) => (
+              <tr className="border-t border-line" key={tool.name}>
+                <td className="px-4 py-3 font-mono text-xs">{tool.name}</td>
+                <td className="px-4 py-3">{tool.title}</td>
+                <td className="px-4 py-3">{tool.requiredScopes.join(", ")}</td>
+                <td className="px-4 py-3">
+                  readOnly={String(tool.readOnlyHint)}, destructive={String(tool.destructiveHint)}, idempotent={String(tool.idempotentHint)}, openWorld={String(tool.openWorldHint)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-ink">Publication Readiness</h2>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {overview.readinessChecks.map((check) => (
+            <div className="rounded-md border border-line p-4" key={check.key}>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold text-ink">{check.label}</h3>
+                <StatusPill ok={check.status === "Pass"} label={check.status} />
+              </div>
+              <p className="mt-2 text-sm text-muted">{check.details}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function isMcpOverviewPayload(value: unknown): value is McpOverview {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return isRecord(value.runtime)
+    && isRecord(value.oauth)
+    && isRecord(value.usage)
+    && Array.isArray(value.days)
+    && Array.isArray(value.tools)
+    && Array.isArray(value.recentInvocations)
+    && Array.isArray(value.toolCatalog)
+    && Array.isArray(value.readinessChecks)
+    && typeof value.oauth.activeConsents === "number"
+    && typeof value.oauth.activeRefreshTokens === "number"
+    && typeof value.usage.invocations === "number"
+    && typeof value.runtime.mcpUrl === "string"
+    && Array.isArray(value.runtime.scopes);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 export function BackupsView() {
   const token = useAdminToken();
   const { data, error, lastUpdatedAt, loading, refresh } = useAdminResource<BackupRun[]>("backups/runs?limit=30");
@@ -642,6 +899,10 @@ export function SystemView() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="API" value={data.apiHealthy ? "Healthy" : "Unhealthy"} tone={data.apiHealthy ? "good" : "warn"} />
         <MetricCard label="Database" value={data.databaseHealthy ? "Healthy" : "Unhealthy"} tone={data.databaseHealthy ? "good" : "warn"} />
+        <MetricCard label="MCP" value={data.mcpHealthy ? "Healthy" : "Unhealthy"} tone={data.mcpHealthy ? "good" : "warn"} />
+        <MetricCard label="Auth" value={data.authHealthy ? "Healthy" : "Unhealthy"} tone={data.authHealthy ? "good" : "warn"} />
+        <MetricCard label="MCP metadata" value={data.mcpMetadataHealthy ? "Reachable" : "Unreachable"} tone={data.mcpMetadataHealthy ? "good" : "warn"} />
+        <MetricCard label="Auth metadata" value={data.authMetadataHealthy ? "Reachable" : "Unreachable"} tone={data.authMetadataHealthy ? "good" : "warn"} />
         <MetricCard label="Disk free" value={formatBytes(data.diskFreeBytes)} />
         <MetricCard label="Disk total" value={formatBytes(data.diskTotalBytes)} />
         <MetricCard label="Memory available" value={formatBytes(data.memoryAvailableBytes)} />
@@ -704,6 +965,8 @@ function HealthSummary({ health }: { health: SystemHealth }) {
     <div className="mt-4 flex flex-wrap gap-2">
       <StatusPill ok={health.apiHealthy} label="API" />
       <StatusPill ok={health.databaseHealthy} label="Database" />
+      <StatusPill ok={health.mcpHealthy} label="MCP" />
+      <StatusPill ok={health.authHealthy} label="Auth" />
     </div>
   );
 }

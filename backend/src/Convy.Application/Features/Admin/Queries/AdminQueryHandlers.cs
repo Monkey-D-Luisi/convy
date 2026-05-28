@@ -113,6 +113,25 @@ public class GetBackupRunsQueryHandler : IRequestHandler<GetBackupRunsQuery, Res
     }
 }
 
+public class GetAdminMcpOverviewQueryHandler : IRequestHandler<GetAdminMcpOverviewQuery, Result<AdminMcpOverviewDto>>
+{
+    private readonly IAdminMetricsReader _metricsReader;
+
+    public GetAdminMcpOverviewQueryHandler(IAdminMetricsReader metricsReader)
+    {
+        _metricsReader = metricsReader;
+    }
+
+    public async Task<Result<AdminMcpOverviewDto>> Handle(GetAdminMcpOverviewQuery request, CancellationToken cancellationToken)
+    {
+        if (request.To < request.From)
+            return Result<AdminMcpOverviewDto>.Failure(Error.Validation("The end date must be on or after the start date."));
+
+        var overview = await _metricsReader.GetMcpOverviewAsync(request.From, request.To, request.Now, cancellationToken);
+        return Result<AdminMcpOverviewDto>.Success(overview);
+    }
+}
+
 public class GetAdminSystemHealthQueryHandler : IRequestHandler<GetAdminSystemHealthQuery, Result<AdminSystemHealthDto>>
 {
     private readonly IAdminMetricsReader _metricsReader;

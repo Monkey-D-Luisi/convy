@@ -39,6 +39,12 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase-admin.json
       OpenAI__ApiKey: ${OPENAI_API_KEY}
       Database__MigrateOnStartup: ${DATABASE_MIGRATE_ON_STARTUP:-true}
+      McpAuth__Issuer: https://${CONVY_AUTH_HOSTNAME}
+      McpAuth__Audience: https://${CONVY_MCP_HOSTNAME}
+      McpAuth__AuthorizationEndpoint: https://${CONVY_AUTH_HOSTNAME}/oauth/authorize
+      McpAuth__PrivateKeyPemBase64: ${McpAuth__PrivateKeyPemBase64}
+      McpAuth__PublicKeyPemBase64: ${McpAuth__PublicKeyPemBase64}
+      McpAudit__ApiKey: ${McpAudit__ApiKey}
     volumes:
       - /opt/convy/shared/firebase-admin.json:/run/secrets/firebase-admin.json:ro
       - /opt/convy/backups/postgres:/opt/convy/backups/postgres:ro
@@ -67,6 +73,47 @@ services:
     networks:
       - convy
 
+  auth:
+    build:
+      context: ../auth
+      dockerfile: Dockerfile
+    container_name: convy-auth
+    restart: unless-stopped
+    env_file: *convy-env-file
+    environment:
+      NODE_ENV: production
+      CONVY_API_BASE_URL: http://api:8080
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${FIREBASE_WEB_API_KEY}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${FIREBASE_AUTH_DOMAIN}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${FIREBASE_WEB_APP_ID}
+    depends_on:
+      - api
+    networks:
+      - convy
+
+  mcp:
+    build:
+      context: ../mcp
+      dockerfile: Dockerfile
+    container_name: convy-mcp
+    restart: unless-stopped
+    env_file: *convy-env-file
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      CONVY_API_BASE_URL: http://api:8080
+      MCP_PUBLIC_URL: https://${CONVY_MCP_HOSTNAME}
+      AUTH_PUBLIC_URL: https://${CONVY_AUTH_HOSTNAME}
+      MCP_JWT_ISSUER: https://${CONVY_AUTH_HOSTNAME}
+      MCP_JWT_AUDIENCE: https://${CONVY_MCP_HOSTNAME}
+      MCP_JWT_PUBLIC_KEY_BASE64: ${McpAuth__PublicKeyPemBase64}
+      CONVY_MCP_AUDIT_API_KEY: ${McpAudit__ApiKey}
+    depends_on:
+      - api
+    networks:
+      - convy
+
   caddy:
     image: caddy:2.10.0-alpine
     container_name: convy-caddy
@@ -77,12 +124,15 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile.vps:/etc/caddy/Caddyfile:ro
+      - /opt/convy/public:/srv/public:ro
       - /opt/convy/legal:/srv/legal:ro
       - /opt/convy/caddy/data:/data
       - /opt/convy/caddy/config:/config
     depends_on:
       - api
       - dashboard
+      - auth
+      - mcp
     networks:
       - convy
 

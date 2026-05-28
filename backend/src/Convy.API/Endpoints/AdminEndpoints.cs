@@ -40,6 +40,13 @@ public static class AdminEndpoints
             return result.IsSuccess ? Results.Ok(result.Value) : MapError(result.Error!);
         });
 
+        group.MapGet("/mcp/overview", async (DateOnly? from, DateOnly? to, IMediator mediator) =>
+        {
+            var (rangeFrom, rangeTo) = ResolveDateRange(from, to);
+            var result = await mediator.Send(new GetAdminMcpOverviewQuery(rangeFrom, rangeTo, DateTime.UtcNow));
+            return result.IsSuccess ? Results.Ok(result.Value) : MapError(result.Error!);
+        });
+
         group.MapGet("/backups/latest", async (IMediator mediator) =>
         {
             var result = await mediator.Send(new GetLatestBackupRunQuery());

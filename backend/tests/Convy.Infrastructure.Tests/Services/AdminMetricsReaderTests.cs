@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Net;
 using Convy.Domain.Common;
 using Convy.Domain.Entities;
 using Convy.Domain.ValueObjects;
@@ -111,6 +112,66 @@ public class AdminMetricsReaderTests
         overview.EstimatedAiCostMicros7d.Should().Be(100);
     }
 
+    [Fact]
+    public async Task GetMcpOverviewAsync_AggregatesOAuthUsageAndReadinessWithoutSensitiveValues()
+    {
+        await using var context = CreateContext();
+        var userId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var householdId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        var now = DateTime.UtcNow;
+        var consent = new McpOAuthConsent(userId, "https://chatgpt.com/aip/g-123/.well-known/oauth-client", "https://mcp.convyapp.com", "convy.households.read convy.lists.read");
+        var revokedConsent = new McpOAuthConsent(Guid.NewGuid(), "https://chatgpt.com/aip/g-456/.well-known/oauth-client", "https://mcp.convyapp.com", "convy.households.read");
+        revokedConsent.Revoke(now);
+        var activeRefreshToken = new McpOAuthRefreshToken(
+            "active-token-hash-should-never-leak",
+            userId,
+            consent.ClientId,
+            consent.Resource,
+            consent.Scopes,
+            now.AddDays(3));
+        activeRefreshToken.MarkUsed(now.AddMinutes(-5));
+        var revokedRefreshToken = new McpOAuthRefreshToken(
+            "revoked-token-hash-should-never-leak",
+            userId,
+            consent.ClientId,
+            consent.Resource,
+            consent.Scopes,
+            now.AddDays(30));
+        revokedRefreshToken.Revoke(now);
+
+        context.McpOAuthConsents.AddRange(consent, revokedConsent);
+        context.McpOAuthRefreshTokens.AddRange(activeRefreshToken, revokedRefreshToken);
+        context.McpToolInvocations.AddRange(
+            new McpToolInvocation(userId, householdId, "convy_get_lists", McpToolInvocationStatus.Success, 120, null),
+            new McpToolInvocation(userId, householdId, "convy_get_lists", McpToolInvocationStatus.ProviderError, 300, "ProviderError"),
+            new McpToolInvocation(userId, null, "convy_get_context", McpToolInvocationStatus.Success, 50, null));
+        await context.SaveChangesAsync();
+        var reader = CreateReader(context, new StaticHttpClientFactory(new HttpClient(new StaticResponseHandler(HttpStatusCode.OK, "{}"))));
+
+        var overview = await reader.GetMcpOverviewAsync(DateOnly.FromDateTime(now.AddDays(-1)), DateOnly.FromDateTime(now), now);
+        var serialized = System.Text.Json.JsonSerializer.Serialize(overview);
+
+        overview.OAuth.ActiveConsents.Should().Be(1);
+        overview.OAuth.RevokedConsents.Should().Be(1);
+        overview.OAuth.ActiveRefreshTokens.Should().Be(1);
+        overview.OAuth.RefreshTokensExpiring7d.Should().Be(1);
+        overview.Usage.Invocations.Should().Be(3);
+        overview.Usage.Successes.Should().Be(2);
+        overview.Usage.Failures.Should().Be(1);
+        overview.Usage.P95LatencyMs.Should().Be(300);
+        overview.Tools.Should().Contain(tool => tool.ToolName == "convy_get_lists" && tool.Invocations == 2);
+        overview.RecentInvocations.Should().OnlyContain(invocation => invocation.UserId.Length == 8);
+        overview.Runtime.Scopes.Should().Contain("convy.households.read");
+        overview.Runtime.Scopes.Should().Contain("convy.items.write");
+        overview.Runtime.Scopes.Should().Contain("convy.tasks.write");
+        overview.ToolCatalog.Should().Contain(tool => tool.Name == "convy_create_shopping_item" && !tool.ReadOnlyHint && tool.IdempotentHint);
+        overview.ToolCatalog.Should().Contain(tool => tool.Name == "convy_complete_task" && !tool.ReadOnlyHint && tool.IdempotentHint);
+        overview.ReadinessChecks.Should().Contain(check => check.Key == "write_scope_safeguards" && check.Status == "Pass");
+        serialized.Should().NotContain("active-token-hash-should-never-leak");
+        serialized.Should().NotContain("revoked-token-hash-should-never-leak");
+        serialized.Should().NotContain(userId.ToString());
+    }
+
     private static ConvyDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ConvyDbContext>()
@@ -119,16 +180,23 @@ public class AdminMetricsReaderTests
         return new ConvyDbContext(options);
     }
 
-    private static AdminMetricsReader CreateReader(ConvyDbContext context)
+    private static AdminMetricsReader CreateReader(ConvyDbContext context, IHttpClientFactory? httpClientFactory = null)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Operations:DataPath"] = AppContext.BaseDirectory,
+                ["McpAuth:Issuer"] = "https://auth.convyapp.com",
+                ["McpAuth:Audience"] = "https://mcp.convyapp.com",
+                ["McpAuth:AuthorizationEndpoint"] = "https://auth.convyapp.com/oauth/authorize",
+                ["Convy:PublicHostname"] = "convyapp.com",
+                ["Convy:LegalHostname"] = "legal.convyapp.com",
             })
             .Build();
 
-        return new AdminMetricsReader(context, configuration);
+        return httpClientFactory is null
+            ? new AdminMetricsReader(context, configuration)
+            : new AdminMetricsReader(context, configuration, httpClientFactory);
     }
 
     private static ActivityLog CreateLog(Guid householdId, Guid entityId, ActivityActionType action, Guid userId, DateTime createdAt)
@@ -143,4 +211,34 @@ public class AdminMetricsReaderTests
 
     private static void SetDate<T>(T entity, string propertyName, DateTime value) where T : class =>
         typeof(T).GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)!.SetValue(entity, value);
+
+    private sealed class StaticHttpClientFactory : IHttpClientFactory
+    {
+        private readonly HttpClient _client;
+
+        public StaticHttpClientFactory(HttpClient client)
+        {
+            _client = client;
+        }
+
+        public HttpClient CreateClient(string name) => _client;
+    }
+
+    private sealed class StaticResponseHandler : HttpMessageHandler
+    {
+        private readonly HttpStatusCode _statusCode;
+        private readonly string _content;
+
+        public StaticResponseHandler(HttpStatusCode statusCode, string content)
+        {
+            _statusCode = statusCode;
+            _content = content;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(_statusCode)
+            {
+                Content = new StringContent(_content),
+            });
+    }
 }

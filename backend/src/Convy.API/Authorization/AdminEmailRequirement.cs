@@ -24,6 +24,9 @@ public class AdminEmailAuthorizationHandler : AuthorizationHandler<AdminEmailReq
         if (context.User.Identity?.IsAuthenticated != true)
             return;
 
+        if (string.Equals(context.User.FindFirst("auth_source")?.Value, "mcp", StringComparison.Ordinal))
+            return;
+
         var allowedEmails = GetAllowedEmails();
         if (allowedEmails.Count == 0)
             return;

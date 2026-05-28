@@ -1,6 +1,7 @@
 using Convy.Application.Common.Models;
 using Convy.Application.Features.Households.Commands;
 using Convy.Application.Features.Households.Queries;
+using Convy.API.Authorization;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 
@@ -24,7 +25,8 @@ public static class HouseholdEndpoints
             return result.IsSuccess
                 ? Results.Created($"/api/v1/households/{result.Value}", new { id = result.Value })
                 : MapError(result.Error!);
-        });
+        })
+        .RequireAuthorization("FirebaseOnly");
 
         group.MapGet("/", async (IMediator mediator) =>
         {
@@ -33,7 +35,8 @@ public static class HouseholdEndpoints
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : MapError(result.Error!);
-        });
+        })
+        .RequireAuthorization(McpScopes.HouseholdsRead);
 
         group.MapGet("/{id:guid}", async (Guid id, IMediator mediator) =>
         {
@@ -42,7 +45,8 @@ public static class HouseholdEndpoints
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : MapError(result.Error!);
-        });
+        })
+        .RequireAuthorization(McpScopes.HouseholdsRead);
 
         group.MapPut("/{id:guid}/name", async (Guid id, RenameHouseholdRequest request, IMediator mediator) =>
         {
@@ -52,7 +56,8 @@ public static class HouseholdEndpoints
             return result.IsSuccess
                 ? Results.NoContent()
                 : MapError(result.Error!);
-        });
+        })
+        .RequireAuthorization("FirebaseOnly");
 
         group.MapPost("/{id:guid}/leave", async (Guid id, IMediator mediator) =>
         {
@@ -62,7 +67,8 @@ public static class HouseholdEndpoints
             return result.IsSuccess
                 ? Results.NoContent()
                 : MapError(result.Error!);
-        });
+        })
+        .RequireAuthorization("FirebaseOnly");
     }
 
     private static IResult MapError(Error error) => error.Code switch

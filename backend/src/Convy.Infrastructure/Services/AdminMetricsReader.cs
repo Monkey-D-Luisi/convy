@@ -1,8 +1,10 @@
 using System.Data;
+using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Convy.Application.Common.Interfaces;
 using Convy.Application.Features.Admin.DTOs;
+using Convy.Domain.Entities;
 using Convy.Domain.ValueObjects;
 using Convy.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -12,13 +14,57 @@ namespace Convy.Infrastructure.Services;
 
 public class AdminMetricsReader : IAdminMetricsReader
 {
+    private static readonly string[] McpReadOnlyScopes =
+    [
+        "convy.households.read",
+        "convy.lists.read",
+        "convy.items.read",
+        "convy.tasks.read",
+        "convy.activity.read",
+    ];
+
+    private static readonly string[] McpWriteScopes =
+    [
+        "convy.items.write",
+        "convy.tasks.write",
+    ];
+
+    private static readonly string[] McpSupportedScopes =
+    [
+        .. McpReadOnlyScopes,
+        .. McpWriteScopes,
+    ];
+
+    private static readonly McpToolCatalogItemDto[] McpToolCatalog =
+    [
+        new("convy_get_context", "Get Convy Context", [McpReadOnlyScopes[0]], true, false, true, false),
+        new("convy_get_household_overview", "Get Household Overview", [McpReadOnlyScopes[0], McpReadOnlyScopes[1], McpReadOnlyScopes[4]], true, false, true, false),
+        new("convy_get_lists", "Get Lists", [McpReadOnlyScopes[0], McpReadOnlyScopes[1]], true, false, true, false),
+        new("convy_get_shopping_items", "Get Shopping Items", [McpReadOnlyScopes[2]], true, false, true, false),
+        new("convy_get_tasks", "Get Tasks", [McpReadOnlyScopes[3]], true, false, true, false),
+        new("convy_get_recent_activity", "Get Recent Activity", [McpReadOnlyScopes[0], McpReadOnlyScopes[4]], true, false, true, false),
+        new("convy_create_shopping_item", "Create Shopping Item", [McpWriteScopes[0]], false, false, true, false),
+        new("convy_complete_shopping_item", "Complete Shopping Item", [McpWriteScopes[0]], false, false, true, false),
+        new("convy_uncomplete_shopping_item", "Uncomplete Shopping Item", [McpWriteScopes[0]], false, false, true, false),
+        new("convy_create_task", "Create Task", [McpWriteScopes[1]], false, false, true, false),
+        new("convy_complete_task", "Complete Task", [McpWriteScopes[1]], false, false, true, false),
+        new("convy_uncomplete_task", "Uncomplete Task", [McpWriteScopes[1]], false, false, true, false),
+    ];
+
     private readonly ConvyDbContext _context;
     private readonly IConfiguration _configuration;
+    private readonly IHttpClientFactory? _httpClientFactory;
 
     public AdminMetricsReader(ConvyDbContext context, IConfiguration configuration)
+        : this(context, configuration, null)
+    {
+    }
+
+    public AdminMetricsReader(ConvyDbContext context, IConfiguration configuration, IHttpClientFactory? httpClientFactory)
     {
         _context = context;
         _configuration = configuration;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<AdminOverviewDto> GetOverviewAsync(DateTime now, CancellationToken cancellationToken = default)
@@ -49,6 +95,7 @@ public class AdminMetricsReader : IAdminMetricsReader
             .ToListAsync(cancellationToken);
         var voiceItemsCreated7d = await _context.ListItems
             .CountAsync(i => i.Source == ItemCreationSource.Voice && i.CreatedAt >= since7d, cancellationToken);
+        var mcp = await GetMcpSummaryAsync(now, cancellationToken);
         var lastBackup = await GetLatestBackupAsync(cancellationToken);
         var health = await GetSystemHealthAsync(cancellationToken);
 
@@ -67,6 +114,7 @@ public class AdminMetricsReader : IAdminMetricsReader
             aiUsageEvents7d.Count(e => e.Status == AiUsageStatus.Failure),
             voiceItemsCreated7d,
             SumNullable(aiUsageEvents7d.Select(e => e.EstimatedCostMicros)),
+            mcp,
             lastBackup,
             health);
     }
@@ -242,6 +290,93 @@ public class AdminMetricsReader : IAdminMetricsReader
             operations);
     }
 
+    public async Task<AdminMcpOverviewDto> GetMcpOverviewAsync(DateOnly from, DateOnly to, DateTime now, CancellationToken cancellationToken = default)
+    {
+        var start = from.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var end = to.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var days = CreateDayRange(from, to);
+        var expiringSoon = now.AddDays(7);
+
+        var invocations = await _context.McpToolInvocations
+            .AsNoTracking()
+            .Where(invocation => invocation.CreatedAt >= start && invocation.CreatedAt < end)
+            .ToListAsync(cancellationToken);
+        var consents = await _context.McpOAuthConsents
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+        var refreshTokens = await _context.McpOAuthRefreshTokens
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+        var runtime = await GetMcpRuntimeAsync(cancellationToken);
+        var usage = CreateMcpUsage(invocations);
+
+        var daily = days.Select(day =>
+        {
+            var dayInvocations = invocations.Where(invocation => DateOnly.FromDateTime(invocation.CreatedAt) == day).ToList();
+            return new DailyMcpToolMetricDto(
+                day,
+                dayInvocations.Count,
+                dayInvocations.Count(IsMcpSuccess),
+                dayInvocations.Count(invocation => !IsMcpSuccess(invocation)),
+                AverageNullable(dayInvocations.Select(invocation => (double?)invocation.LatencyMs)));
+        }).ToList();
+
+        var tools = invocations
+            .GroupBy(invocation => invocation.ToolName)
+            .OrderBy(group => group.Key)
+            .Select(group =>
+            {
+                var values = group.ToList();
+                return new McpToolMetricDto(
+                    group.Key,
+                    values.Count,
+                    values.Count(IsMcpSuccess),
+                    values.Count(invocation => !IsMcpSuccess(invocation)),
+                    AverageNullable(values.Select(invocation => (double?)invocation.LatencyMs)),
+                    Percentile(values.Select(invocation => invocation.LatencyMs), 0.95),
+                    values.Max(invocation => (DateTime?)invocation.CreatedAt));
+            })
+            .ToList();
+
+        var recent = invocations
+            .OrderByDescending(invocation => invocation.CreatedAt)
+            .Take(30)
+            .Select(invocation => new McpRecentInvocationDto(
+                invocation.CreatedAt,
+                invocation.ToolName,
+                invocation.Status.ToString(),
+                invocation.LatencyMs,
+                invocation.ErrorType,
+                ShortGuid(invocation.UserId),
+                invocation.HouseholdId is null ? null : ShortGuid(invocation.HouseholdId.Value)))
+            .ToList();
+
+        var oauth = new AdminMcpOAuthMetricsDto(
+            consents.Count(consent => consent.RevokedAt is null),
+            consents.Count(consent => consent.RevokedAt is not null),
+            refreshTokens.Count(token => token.RevokedAt is null && !token.IsExpired(now)),
+            refreshTokens.Count(token => token.RevokedAt is not null),
+            refreshTokens.Count(token => token.RevokedAt is null && token.ExpiresAt <= expiringSoon && !token.IsExpired(now)),
+            consents.Max(consent => (DateTime?)consent.CreatedAt),
+            refreshTokens.Max(token => token.LastUsedAt),
+            consents.Select(consent => consent.RevokedAt)
+                .Concat(refreshTokens.Select(token => token.RevokedAt))
+                .Where(value => value is not null)
+                .Max());
+
+        return new AdminMcpOverviewDto(
+            from,
+            to,
+            runtime,
+            oauth,
+            usage,
+            daily,
+            tools,
+            recent,
+            McpToolCatalog,
+            await CreateMcpReadinessChecksAsync(runtime, cancellationToken));
+    }
+
     public async Task<BackupRunDto?> GetLatestBackupAsync(CancellationToken cancellationToken = default)
     {
         var run = await _context.BackupRuns
@@ -266,10 +401,15 @@ public class AdminMetricsReader : IAdminMetricsReader
     public async Task<AdminSystemHealthDto> GetSystemHealthAsync(CancellationToken cancellationToken = default)
     {
         var databaseHealthy = await _context.Database.CanConnectAsync(cancellationToken);
+        var runtime = await GetMcpRuntimeAsync(cancellationToken);
 
         return new AdminSystemHealthDto(
             ApiHealthy: true,
             DatabaseHealthy: databaseHealthy,
+            McpHealthy: runtime.McpHealthHealthy,
+            AuthHealthy: runtime.AuthHealthHealthy,
+            McpMetadataHealthy: runtime.McpMetadataHealthy,
+            AuthMetadataHealthy: runtime.AuthMetadataHealthy,
             DiskFreeBytes: GetDiskFreeBytes(),
             PostgresDataSizeBytes: databaseHealthy ? await GetPostgresDataSizeAsync(cancellationToken) : null,
             BackendVersion: _configuration["Backend:Version"] ?? Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
@@ -286,6 +426,160 @@ public class AdminMetricsReader : IAdminMetricsReader
             UptimeSeconds: GetUptimeSeconds(),
             LoadAverage1m: GetLoadAverage1m());
     }
+
+    private async Task<AdminMcpSummaryDto> GetMcpSummaryAsync(DateTime now, CancellationToken cancellationToken)
+    {
+        var since = now.AddHours(-24);
+        var invocations = await _context.McpToolInvocations
+            .AsNoTracking()
+            .Where(invocation => invocation.CreatedAt >= since)
+            .ToListAsync(cancellationToken);
+        var runtime = await GetMcpRuntimeAsync(cancellationToken);
+        var successes = invocations.Count(IsMcpSuccess);
+
+        return new AdminMcpSummaryDto(
+            runtime.McpHealthHealthy,
+            runtime.AuthHealthHealthy,
+            invocations.Count,
+            successes,
+            invocations.Count - successes,
+            Rate(successes, invocations.Count),
+            invocations.Max(invocation => (DateTime?)invocation.CreatedAt));
+    }
+
+    private async Task<AdminMcpRuntimeDto> GetMcpRuntimeAsync(CancellationToken cancellationToken)
+    {
+        var mcpUrl = GetMcpPublicUrl();
+        var authUrl = GetAuthPublicUrl();
+        var issuer = _configuration["McpAuth:Issuer"] ?? authUrl;
+        var audience = _configuration["McpAuth:Audience"] ?? mcpUrl;
+
+        return new AdminMcpRuntimeDto(
+            mcpUrl,
+            authUrl,
+            issuer,
+            audience,
+            McpSupportedScopes,
+            await CheckHttpOkAsync($"{mcpUrl}/health", cancellationToken),
+            await CheckHttpOkAsync($"{authUrl}/health", cancellationToken),
+            await CheckHttpOkAsync($"{mcpUrl}/.well-known/oauth-protected-resource", cancellationToken),
+            await CheckHttpOkAsync($"{authUrl}/.well-known/oauth-authorization-server", cancellationToken));
+    }
+
+    private async Task<IReadOnlyList<McpPublicationReadinessCheckDto>> CreateMcpReadinessChecksAsync(AdminMcpRuntimeDto runtime, CancellationToken cancellationToken)
+    {
+        var mcpUri = new Uri(runtime.McpUrl);
+        var authUri = new Uri(runtime.AuthUrl);
+        var legalUrl = GetLegalUrl();
+        var expectedIp = _configuration["Convy:StagingIp"] ?? _configuration["CONVY_STAGING_IP"] ?? "178.105.70.69";
+        var dnsMatches = await DnsResolvesToAsync(mcpUri.Host, expectedIp, cancellationToken);
+        var privacyHealthy = await CheckHttpOkAsync($"{legalUrl}/privacy", cancellationToken);
+        var termsHealthy = await CheckHttpOkAsync($"{legalUrl}/terms", cancellationToken);
+        var writeScopeSafeguards = McpWriteScopes.SequenceEqual(["convy.items.write", "convy.tasks.write"])
+            && McpSupportedScopes.All(scope => scope is not "convy.lists.write" and not "convy.households.write")
+            && McpToolCatalog.Where(tool => !tool.ReadOnlyHint).All(tool => tool.IdempotentHint && !tool.DestructiveHint && !tool.OpenWorldHint);
+
+        return
+        [
+            Check("dns", "MCP DNS", dnsMatches, $"{mcpUri.Host} resolves to {expectedIp}."),
+            Check("https", "HTTPS endpoints", mcpUri.Scheme == Uri.UriSchemeHttps && authUri.Scheme == Uri.UriSchemeHttps, "MCP and Auth URLs use HTTPS."),
+            Check("mcp_health", "MCP health", runtime.McpHealthHealthy, $"{runtime.McpUrl}/health returns 2xx."),
+            Check("auth_health", "Auth health", runtime.AuthHealthHealthy, $"{runtime.AuthUrl}/health returns 2xx."),
+            Check("mcp_metadata", "Protected resource metadata", runtime.McpMetadataHealthy, "MCP protected resource metadata is reachable."),
+            Check("auth_metadata", "Authorization metadata", runtime.AuthMetadataHealthy, "OAuth authorization server metadata is reachable."),
+            Check("write_scope_safeguards", "Limited write safeguards", writeScopeSafeguards, "Only item/task write scopes are exposed and write tools are idempotent, non-destructive, and closed-world."),
+            Check("privacy", "Privacy URL", privacyHealthy, $"{legalUrl}/privacy returns 2xx."),
+            Check("terms", "Terms URL", termsHealthy, $"{legalUrl}/terms returns 2xx."),
+            Check("public_domain", "Public domain", !mcpUri.Host.EndsWith(".nip.io", StringComparison.OrdinalIgnoreCase), "MCP URL is not using the temporary nip.io hostname."),
+        ];
+    }
+
+    private static McpPublicationReadinessCheckDto Check(string key, string label, bool ok, string details) =>
+        new(key, label, ok ? "Pass" : "Fail", details);
+
+    private static AdminMcpUsageMetricsDto CreateMcpUsage(IReadOnlyList<McpToolInvocation> invocations)
+    {
+        var successes = invocations.Count(IsMcpSuccess);
+        return new AdminMcpUsageMetricsDto(
+            invocations.Count,
+            successes,
+            invocations.Count - successes,
+            invocations.Count(invocation => invocation.Status == McpToolInvocationStatus.ValidationError),
+            invocations.Count(invocation => invocation.Status == McpToolInvocationStatus.Unauthorized),
+            invocations.Count(invocation => invocation.Status == McpToolInvocationStatus.Forbidden),
+            invocations.Count(invocation => invocation.Status == McpToolInvocationStatus.NotFound),
+            invocations.Count(invocation => invocation.Status == McpToolInvocationStatus.ProviderError),
+            invocations.Count(invocation => invocation.Status == McpToolInvocationStatus.UnexpectedError),
+            Rate(successes, invocations.Count),
+            AverageNullable(invocations.Select(invocation => (double?)invocation.LatencyMs)),
+            Percentile(invocations.Select(invocation => invocation.LatencyMs), 0.95),
+            invocations.Max(invocation => (DateTime?)invocation.CreatedAt));
+    }
+
+    private async Task<bool> CheckHttpOkAsync(string url, CancellationToken cancellationToken)
+    {
+        if (_httpClientFactory is null)
+            return false;
+
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(3));
+            var client = _httpClientFactory.CreateClient("admin-mcp-health");
+            using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static async Task<bool> DnsResolvesToAsync(string host, string expectedIp, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var addresses = await Dns.GetHostAddressesAsync(host, cancellationToken);
+            return addresses.Any(address => address.ToString() == expectedIp);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private string GetMcpPublicUrl() =>
+        NormalizeUrl(_configuration["McpAuth:Audience"] ?? _configuration["CONVY_MCP_HOSTNAME"] ?? "https://mcp.convyapp.com");
+
+    private string GetAuthPublicUrl() =>
+        NormalizeUrl(_configuration["McpAuth:Issuer"] ?? _configuration["CONVY_AUTH_HOSTNAME"] ?? "https://auth.convyapp.com");
+
+    private string GetLegalUrl() =>
+        NormalizeUrl(_configuration["Convy:LegalHostname"] ?? _configuration["CONVY_LEGAL_HOSTNAME"] ?? "https://legal.convyapp.com");
+
+    private static string NormalizeUrl(string value)
+    {
+        var trimmed = value.Trim().TrimEnd('/');
+        return trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+            ? trimmed
+            : $"https://{trimmed}";
+    }
+
+    private static bool IsMcpSuccess(McpToolInvocation invocation) => invocation.Status == McpToolInvocationStatus.Success;
+
+    private static double Rate(int value, int total) => total == 0 ? 0 : value / (double)total;
+
+    private static long? Percentile(IEnumerable<long> source, double percentile)
+    {
+        var values = source.OrderBy(value => value).ToList();
+        if (values.Count == 0)
+            return null;
+
+        var index = Math.Clamp((int)Math.Ceiling(percentile * values.Count) - 1, 0, values.Count - 1);
+        return values[index];
+    }
+
+    private static string ShortGuid(Guid value) => value.ToString("N")[..8];
 
     private static BackupRunDto Map(Domain.Entities.BackupRun run) => new(
         run.Id,

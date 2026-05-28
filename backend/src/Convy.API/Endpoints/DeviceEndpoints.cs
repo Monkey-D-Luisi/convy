@@ -10,7 +10,7 @@ public static class DeviceEndpoints
     {
         var group = routes.MapGroup("/api/v1/devices")
             .WithTags("Devices")
-            .RequireAuthorization();
+            .RequireAuthorization("FirebaseOnly");
 
         group.MapPost("/register", async (RegisterDeviceRequest request, IMediator mediator) =>
         {

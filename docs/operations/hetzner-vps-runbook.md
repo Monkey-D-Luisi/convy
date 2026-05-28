@@ -8,8 +8,9 @@ OCI files are intentionally not updated for the admin dashboard, legal host, or 
 
 - `infra/hetzner`: Hetzner Cloud Terraform stack.
 - `ops/vps`: VPS bootstrap, secret push, release deployment, and backup helpers.
-- `docker/docker-compose.vps.yml`: runtime services for `db`, `api`, `dashboard`, and `caddy`.
-- `docker/Caddyfile.vps`: public routing for API, admin dashboard, and legal pages.
+- `docker/docker-compose.vps.yml`: runtime services for `db`, `api`, `dashboard`, `auth`, `mcp`, and `caddy`.
+- `docker/Caddyfile.vps`: public routing for root, API, admin dashboard, OAuth auth, MCP, and legal pages.
+- `public-site`: minimal public Convy landing page copied to `/opt/convy/public` during deploy.
 - `legal`: static legal documents copied to `/opt/convy/legal` during deploy.
 - `dashboard`: Next.js admin dashboard served behind Caddy Basic Auth.
 
@@ -17,11 +18,20 @@ OCI files are intentionally not updated for the admin dashboard, legal host, or 
 
 Configure DNS before the first staging deploy:
 
-- `CONVY_API_HOSTNAME`, for example `api.convy.app`
-- `CONVY_ADMIN_HOSTNAME`, for example `admin.convy.app`
-- `CONVY_LEGAL_HOSTNAME`, for example `legal.convy.app`
+- `CONVY_PUBLIC_HOSTNAME`, currently `convyapp.com`
+- `CONVY_WWW_HOSTNAME`, currently `www.convyapp.com`
+- `CONVY_API_HOSTNAME`, currently `api.convyapp.com`
+- `CONVY_ADMIN_HOSTNAME`, currently `admin.convyapp.com`
+- `CONVY_AUTH_HOSTNAME`, currently `auth.convyapp.com`
+- `CONVY_MCP_HOSTNAME`, currently `mcp.convyapp.com`
+- `CONVY_LEGAL_HOSTNAME`, currently `legal.convyapp.com`
+- `CONVY_LEGACY_API_HOSTNAME`, currently `178.105.70.69.nip.io` for previously installed Android staging builds
+- `CONVY_LEGACY_ADMIN_HOSTNAME`, currently `admin.178.105.70.69.nip.io`
+- `CONVY_LEGACY_AUTH_HOSTNAME`, currently `auth.178.105.70.69.nip.io`
+- `CONVY_LEGACY_MCP_HOSTNAME`, currently `mcp.178.105.70.69.nip.io`
+- `CONVY_LEGACY_LEGAL_HOSTNAME`, currently `legal.178.105.70.69.nip.io`
 
-Caddy obtains and renews TLS certificates for all three hosts.
+Caddy obtains and renews TLS certificates for the public `convyapp.com` hosts and the temporary `nip.io` fallback hosts.
 
 ## Secrets
 
@@ -78,13 +88,16 @@ Only run `apply` after confirming the planned server type:
 
 ```powershell
 $ip = terraform output -raw public_ip
-$apiHost = "api.convy.app"
-$adminHost = "admin.convy.app"
-$legalHost = "legal.convy.app"
+$rootHost = "convyapp.com"
+$apiHost = "api.convyapp.com"
+$adminHost = "admin.convyapp.com"
+$authHost = "auth.convyapp.com"
+$mcpHost = "mcp.convyapp.com"
+$legalHost = "legal.convyapp.com"
 
 scp -i "$env:USERPROFILE\.ssh\convy_vps_deploy" ..\..\ops\vps\bootstrap-server.sh "root@${ip}:/tmp/bootstrap-server.sh"
 ssh -i "$env:USERPROFILE\.ssh\convy_vps_deploy" "root@${ip}" "bash /tmp/bootstrap-server.sh"
-..\..\ops\vps\push-secrets.ps1 -HostName $ip -ConvyApiHostname $apiHost -ConvyAdminHostname $adminHost -ConvyLegalHostname $legalHost
+..\..\ops\vps\push-secrets.ps1 -HostName $ip -ConvyHostname $rootHost -ConvyApiHostname $apiHost -ConvyAdminHostname $adminHost -ConvyAuthHostname $authHost -ConvyMcpHostname $mcpHost -ConvyLegalHostname $legalHost
 ```
 
 ## First Deploy
@@ -95,7 +108,7 @@ scp -i "$env:USERPROFILE\.ssh\convy_vps_deploy" "$env:TEMP\convy-release.tar.gz"
 ssh -i "$env:USERPROFILE\.ssh\convy_vps_deploy" "root@${ip}" "mkdir -p /opt/convy/releases/manual && tar -xzf /tmp/convy-release.tar.gz -C /opt/convy/releases/manual && /opt/convy/releases/manual/ops/vps/deploy-release.sh manual"
 ```
 
-The deploy script copies `legal/` to `/opt/convy/legal`, rebuilds `api` and `dashboard`, starts Compose, and checks `https://$CONVY_API_HOSTNAME/health/ready`.
+The deploy script copies `legal/` to `/opt/convy/legal`, copies `public-site/` to `/opt/convy/public`, rebuilds `api`, `dashboard`, `auth`, and `mcp`, starts Compose, and checks API, Auth, and MCP health endpoints.
 It also writes `/opt/convy/shared/release.env` with the release SHA, deploy timestamp, backend release label, and Android version parsed from `mobile/androidApp/build.gradle.kts`.
 
 ## Backups
@@ -139,8 +152,13 @@ Set these repository variables:
 ```powershell
 curl.exe -fsS "https://$apiHost/health"
 curl.exe -fsS "https://$apiHost/health/ready"
+curl.exe -fsS "https://$authHost/health"
+curl.exe -fsS "https://$mcpHost/health"
+curl.exe -fsS "https://$mcpHost/.well-known/oauth-protected-resource"
 curl.exe -fsS "https://$legalHost/privacy"
+curl.exe -fsS "https://$rootHost"
 curl.exe -I "https://$adminHost"
+curl.exe -fsS "https://178.105.70.69.nip.io/health/ready"
 ```
 
 Expected admin behavior:

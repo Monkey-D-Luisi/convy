@@ -26,7 +26,8 @@ public static class UserEndpoints
             return result.IsSuccess
                 ? Results.Created($"/api/v1/users/{result.Value!.Id}", result.Value)
                 : MapError(result.Error!);
-        });
+        })
+        .RequireAuthorization("FirebaseOnly");
 
         group.MapGet("/me", [Authorize] async (IMediator mediator) =>
         {
@@ -35,7 +36,8 @@ public static class UserEndpoints
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : MapError(result.Error!);
-        });
+        })
+        .RequireAuthorization("FirebaseOnly");
 
         group.MapGet("/me/notification-preferences", [Authorize] async (IMediator mediator) =>
         {
@@ -44,7 +46,8 @@ public static class UserEndpoints
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : MapError(result.Error!);
-        });
+        })
+        .RequireAuthorization("FirebaseOnly");
 
         group.MapPut("/me/notification-preferences", [Authorize] async (
             UpdateNotificationPreferencesRequest request,
@@ -63,7 +66,8 @@ public static class UserEndpoints
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : MapError(result.Error!);
-        });
+        })
+        .RequireAuthorization("FirebaseOnly");
     }
 
     private static IResult MapError(Error error) => error.Code switch
