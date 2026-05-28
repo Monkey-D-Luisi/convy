@@ -34,6 +34,7 @@ const navItems = [
   { href: "/", label: "Overview" },
   { href: "/usage", label: "Usage" },
   { href: "/openai", label: "AI" },
+  { href: "/mcp", label: "MCP" },
   { href: "/backups", label: "Backups" },
   { href: "/system", label: "System" },
 ];

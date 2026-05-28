@@ -10,10 +10,14 @@ using Convy.Infrastructure.Persistence;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -57,9 +61,19 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
-// Authentication — Firebase JWT
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+// Authentication: route Firebase and Convy MCP JWTs behind the normal Bearer header.
+builder.Services.AddAuthentication(AuthSchemes.DefaultBearer)
+    .AddPolicyScheme(AuthSchemes.DefaultBearer, AuthSchemes.DefaultBearer, options =>
+    {
+        options.ForwardDefaultSelector = context =>
+        {
+            var authorization = context.Request.Headers.Authorization.ToString();
+            return LooksLikeMcpAccessToken(authorization)
+                ? AuthSchemes.McpBearer
+                : AuthSchemes.FirebaseBearer;
+        };
+    })
+    .AddJwtBearer(AuthSchemes.FirebaseBearer, options =>
     {
         var projectId = builder.Configuration["Firebase:ProjectId"];
         options.Authority = $"https://securetoken.google.com/{projectId}";
@@ -71,16 +85,76 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = projectId,
             ValidateLifetime = true
         };
+    })
+    .AddJwtBearer(AuthSchemes.McpBearer, options =>
+    {
+        var issuer = builder.Configuration["McpAuth:Issuer"] ?? "https://auth.convy.app";
+        var audience = builder.Configuration["McpAuth:Audience"] ?? "https://mcp.convy.app";
+        SecurityKey publicKey = (SecurityKey?)McpJwtKeyLoader.LoadPublicKey(builder.Configuration)
+            ?? new RsaSecurityKey(RSA.Create(2048));
+
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = issuer,
+            ValidateAudience = true,
+            ValidAudience = audience,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = publicKey,
+            ClockSkew = TimeSpan.FromMinutes(1)
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = context =>
+            {
+                if (context.Principal?.Identity is ClaimsIdentity identity)
+                {
+                    foreach (var existingClaim in identity.FindAll("auth_source").ToList())
+                    {
+                        identity.RemoveClaim(existingClaim);
+                    }
+
+                    identity.AddClaim(new Claim("auth_source", "mcp"));
+                }
+
+                return Task.CompletedTask;
+            }
+        };
     });
 builder.Services.AddAuthorization(options =>
 {
+    options.AddPolicy("FirebaseOnly", policy =>
+    {
+        policy.AddAuthenticationSchemes(AuthSchemes.FirebaseBearer);
+        policy.RequireAuthenticatedUser();
+    });
+
     options.AddPolicy("AdminOnly", policy =>
     {
+        policy.AddAuthenticationSchemes(AuthSchemes.FirebaseBearer);
         policy.RequireAuthenticatedUser();
         policy.AddRequirements(new AdminEmailRequirement());
     });
+
+    foreach (var scope in McpScopes.Supported)
+    {
+        options.AddPolicy(scope, policy =>
+        {
+            policy.RequireAuthenticatedUser();
+            policy.AddRequirements(new McpScopeRequirement(scope));
+        });
+    }
 });
 builder.Services.AddScoped<IAuthorizationHandler, AdminEmailAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, McpScopeAuthorizationHandler>();
+builder.Services.AddHttpClient("mcp-client-metadata");
+builder.Services.AddSingleton<IMcpClientMetadataDnsResolver, DnsMcpClientMetadataResolver>();
+builder.Services.AddScoped<McpClientMetadataValidator>();
+builder.Services.AddScoped<McpOAuthService>();
+builder.Services.AddScoped<McpTokenService>();
+builder.Services.AddScoped<McpWriteIdempotencyService>();
 
 // Firebase Admin SDK uses Application Default Credentials.
 if (FirebaseApp.DefaultInstance is null)
@@ -139,11 +213,42 @@ app.MapTaskEndpoints();
 app.MapActivityEndpoints();
 app.MapDeviceEndpoints();
 app.MapAdminEndpoints();
+app.MapMcpOAuthEndpoints();
+app.MapMcpAuditEndpoints();
 
 // SignalR hub
 app.MapHub<HouseholdHub>("/hubs/household");
 
 app.Run();
+
+static bool LooksLikeMcpAccessToken(string authorizationHeader)
+{
+    const string bearerPrefix = "Bearer ";
+    if (!authorizationHeader.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase))
+        return false;
+
+    var token = authorizationHeader[bearerPrefix.Length..].Trim();
+    var parts = token.Split('.');
+    if (parts.Length < 2)
+        return false;
+
+    try
+    {
+        var payload = parts[1];
+        var padding = payload.Length % 4;
+        if (padding > 0)
+            payload += new string('=', 4 - padding);
+
+        var bytes = Convert.FromBase64String(payload.Replace('-', '+').Replace('_', '/'));
+        using var document = JsonDocument.Parse(bytes);
+        return document.RootElement.TryGetProperty("token_use", out var tokenUse)
+               && string.Equals(tokenUse.GetString(), "mcp_access", StringComparison.Ordinal);
+    }
+    catch
+    {
+        return false;
+    }
+}
 
 // Make Program class accessible for WebApplicationFactory in tests
 public partial class Program { }

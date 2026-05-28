@@ -27,6 +27,9 @@ public class CurrentUserService : ICurrentUserService
     {
         get
         {
+            if (string.Equals(_httpContextAccessor.HttpContext?.User?.FindFirst("auth_source")?.Value, "mcp", StringComparison.Ordinal))
+                return string.Empty;
+
             var uid = _httpContextAccessor.HttpContext?.User?.FindFirst("user_id")?.Value
                 ?? _httpContextAccessor.HttpContext?.User?.FindFirst("sub")?.Value;
 
@@ -38,6 +41,13 @@ public class CurrentUserService : ICurrentUserService
     {
         if (_resolvedUserId.HasValue)
             return;
+
+        if (string.Equals(_httpContextAccessor.HttpContext?.User?.FindFirst("auth_source")?.Value, "mcp", StringComparison.Ordinal)
+            && Guid.TryParse(_httpContextAccessor.HttpContext?.User?.FindFirst("sub")?.Value, out var mcpUserId))
+        {
+            _resolvedUserId = mcpUserId;
+            return;
+        }
 
         var firebaseUid = FirebaseUid;
         if (string.IsNullOrEmpty(firebaseUid))

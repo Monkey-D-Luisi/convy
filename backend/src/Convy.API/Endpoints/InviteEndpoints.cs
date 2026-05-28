@@ -12,7 +12,7 @@ public static class InviteEndpoints
     {
         var group = routes.MapGroup("/api/v1/invites")
             .WithTags("Invites")
-            .RequireAuthorization();
+            .RequireAuthorization("FirebaseOnly");
 
         group.MapPost("/", async (
             CreateInviteRequest request,
@@ -52,7 +52,7 @@ public static class InviteEndpoints
         // registered via separate route to keep RESTful grouping
         var householdGroup = routes.MapGroup("/api/v1/households/{householdId:guid}/invites")
             .WithTags("Invites")
-            .RequireAuthorization();
+            .RequireAuthorization("FirebaseOnly");
 
         householdGroup.MapGet("/", async (Guid householdId, IMediator mediator) =>
         {

@@ -12,6 +12,8 @@ public record GetAdminVoiceMetricsQuery(DateOnly From, DateOnly To) : IRequest<R
 
 public record GetAdminOpenAiMetricsQuery(DateOnly From, DateOnly To) : IRequest<Result<AdminOpenAiMetricsDto>>;
 
+public record GetAdminMcpOverviewQuery(DateOnly From, DateOnly To, DateTime Now) : IRequest<Result<AdminMcpOverviewDto>>;
+
 public record GetLatestBackupRunQuery : IRequest<Result<BackupRunDto?>>;
 
 public record GetBackupRunsQuery(int Limit) : IRequest<Result<IReadOnlyList<BackupRunDto>>>;

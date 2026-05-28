@@ -9,11 +9,12 @@ RELEASE_ENV_FILE="${CONVY_RELEASE_ENV_FILE:-$APP_ROOT/shared/release.env}"
 FIREBASE_FILE="$APP_ROOT/shared/firebase-admin.json"
 COMPOSE_FILE="${COMPOSE_FILE:-$RELEASE_DIR/docker/docker-compose.vps.yml}"
 LEGAL_DIR="$APP_ROOT/legal" # Default staging path: /opt/convy/legal
+PUBLIC_DIR="$APP_ROOT/public" # Default staging path: /opt/convy/public
 BACKUP_ROOT="${BACKUP_ROOT:-$APP_ROOT/backups/postgres}"
 BACKUP_READ_GROUP="${BACKUP_READ_GROUP:-1654}"
 
 if [ "$(id -u)" -ne 0 ]; then
-  exec sudo --preserve-env=APP_ROOT,COMPOSE_FILE,CONVY_RELEASE_ENV_FILE,BACKUP_ROOT,BACKUP_READ_GROUP "$0" "$@"
+  exec sudo --preserve-env=APP_ROOT,COMPOSE_FILE,CONVY_RELEASE_ENV_FILE,BACKUP_ROOT,BACKUP_READ_GROUP,PUBLIC_DIR "$0" "$@"
 fi
 
 if [ ! -f "$ENV_FILE" ]; then
@@ -67,13 +68,24 @@ if [ -d "$RELEASE_DIR/legal" ]; then
   mv "$APP_ROOT/legal.tmp" "$LEGAL_DIR"
 fi
 
+if [ -d "$RELEASE_DIR/public-site" ]; then
+  rm -rf "$APP_ROOT/public.tmp"
+  mkdir -p "$APP_ROOT/public.tmp"
+  cp -a "$RELEASE_DIR/public-site/." "$APP_ROOT/public.tmp/"
+  chown -R root:root "$APP_ROOT/public.tmp"
+  find "$APP_ROOT/public.tmp" -type d -exec chmod 755 {} +
+  find "$APP_ROOT/public.tmp" -type f -exec chmod 644 {} +
+  rm -rf "$PUBLIC_DIR"
+  mv "$APP_ROOT/public.tmp" "$PUBLIC_DIR"
+fi
+
 if [ -d "$BACKUP_ROOT" ]; then
   chown -R "root:$BACKUP_READ_GROUP" "$BACKUP_ROOT"
   find "$BACKUP_ROOT" -type d -exec chmod 750 {} +
   find "$BACKUP_ROOT" -type f -name '*.dump' -exec chmod 640 {} +
 fi
 
-docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" build api dashboard
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" build api dashboard auth mcp
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --remove-orphans --force-recreate
 
 HOSTNAME="$(grep '^CONVY_API_HOSTNAME=' "$ENV_FILE" | cut -d '=' -f2-)"
@@ -82,15 +94,33 @@ if [ -z "$HOSTNAME" ]; then
   exit 1
 fi
 
+AUTH_HOSTNAME="$(grep '^CONVY_AUTH_HOSTNAME=' "$ENV_FILE" | cut -d '=' -f2- || true)"
+MCP_HOSTNAME="$(grep '^CONVY_MCP_HOSTNAME=' "$ENV_FILE" | cut -d '=' -f2- || true)"
+HEALTH_URLS=("https://$HOSTNAME/health/ready")
+if [ -n "$AUTH_HOSTNAME" ]; then
+  HEALTH_URLS+=("https://$AUTH_HOSTNAME/health")
+fi
+if [ -n "$MCP_HOSTNAME" ]; then
+  HEALTH_URLS+=("https://$MCP_HOSTNAME/health")
+fi
+
 for _ in $(seq 1 30); do
-  if curl -fsS "https://$HOSTNAME/health/ready" >/dev/null 2>&1; then
+  all_healthy=true
+  for health_url in "${HEALTH_URLS[@]}"; do
+    if ! curl -fsS "$health_url" >/dev/null 2>&1; then
+      all_healthy=false
+      break
+    fi
+  done
+
+  if [ "$all_healthy" = true ]; then
     docker image prune -f --filter "until=168h" >/dev/null
-    echo "Convy release $RELEASE_SHA deployed and healthy at https://$HOSTNAME/health/ready"
+    echo "Convy release $RELEASE_SHA deployed and healthy."
     exit 0
   fi
   sleep 5
 done
 
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --tail=200
-echo "Health check failed for https://$HOSTNAME/health/ready" >&2
+echo "Health check failed for one or more Convy endpoints." >&2
 exit 1

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Convy.Application.Features.Admin.DTOs;
 
 public record AdminOverviewDto(
@@ -15,8 +17,18 @@ public record AdminOverviewDto(
     int AiFailures7d,
     int VoiceItemsCreated7d,
     long? EstimatedAiCostMicros7d,
+    AdminMcpSummaryDto Mcp,
     BackupRunDto? LastBackup,
     AdminSystemHealthDto Health);
+
+public record AdminMcpSummaryDto(
+    bool McpHealthy,
+    bool AuthHealthy,
+    int ToolCalls24h,
+    int ToolSuccesses24h,
+    int ToolFailures24h,
+    double SuccessRate24h,
+    DateTime? LastInvocationAt);
 
 public record AdminUsageMetricsDto(
     DateOnly From,
@@ -81,6 +93,10 @@ public record BackupRunDto(
 public record AdminSystemHealthDto(
     bool ApiHealthy,
     bool DatabaseHealthy,
+    bool McpHealthy,
+    bool AuthHealthy,
+    bool McpMetadataHealthy,
+    bool AuthMetadataHealthy,
     long? DiskFreeBytes,
     long? PostgresDataSizeBytes,
     string? BackendVersion,
@@ -96,6 +112,95 @@ public record AdminSystemHealthDto(
     long? DiskTotalBytes,
     long? UptimeSeconds,
     double? LoadAverage1m);
+
+public record AdminMcpOverviewDto(
+    DateOnly From,
+    DateOnly To,
+    AdminMcpRuntimeDto Runtime,
+    [property: JsonPropertyName("oauth")]
+    AdminMcpOAuthMetricsDto OAuth,
+    AdminMcpUsageMetricsDto Usage,
+    IReadOnlyList<DailyMcpToolMetricDto> Days,
+    IReadOnlyList<McpToolMetricDto> Tools,
+    IReadOnlyList<McpRecentInvocationDto> RecentInvocations,
+    IReadOnlyList<McpToolCatalogItemDto> ToolCatalog,
+    IReadOnlyList<McpPublicationReadinessCheckDto> ReadinessChecks);
+
+public record AdminMcpRuntimeDto(
+    string McpUrl,
+    string AuthUrl,
+    string Issuer,
+    string Audience,
+    IReadOnlyList<string> Scopes,
+    bool McpHealthHealthy,
+    bool AuthHealthHealthy,
+    bool McpMetadataHealthy,
+    bool AuthMetadataHealthy);
+
+public record AdminMcpOAuthMetricsDto(
+    int ActiveConsents,
+    int RevokedConsents,
+    int ActiveRefreshTokens,
+    int RevokedRefreshTokens,
+    int RefreshTokensExpiring7d,
+    DateTime? LastConsentAt,
+    DateTime? LastTokenUsedAt,
+    DateTime? LastRevokedAt);
+
+public record AdminMcpUsageMetricsDto(
+    int Invocations,
+    int Successes,
+    int Failures,
+    int ValidationErrors,
+    int Unauthorized,
+    int Forbidden,
+    int NotFound,
+    int ProviderErrors,
+    int UnexpectedErrors,
+    double SuccessRate,
+    double? AverageLatencyMs,
+    long? P95LatencyMs,
+    DateTime? LastInvocationAt);
+
+public record DailyMcpToolMetricDto(
+    DateOnly Date,
+    int Invocations,
+    int Successes,
+    int Failures,
+    double? AverageLatencyMs);
+
+public record McpToolMetricDto(
+    string ToolName,
+    int Invocations,
+    int Successes,
+    int Failures,
+    double? AverageLatencyMs,
+    long? P95LatencyMs,
+    DateTime? LastInvocationAt);
+
+public record McpRecentInvocationDto(
+    DateTime CreatedAt,
+    string ToolName,
+    string Status,
+    long LatencyMs,
+    string? ErrorType,
+    string UserId,
+    string? HouseholdId);
+
+public record McpToolCatalogItemDto(
+    string Name,
+    string Title,
+    IReadOnlyList<string> RequiredScopes,
+    bool ReadOnlyHint,
+    bool DestructiveHint,
+    bool IdempotentHint,
+    bool OpenWorldHint);
+
+public record McpPublicationReadinessCheckDto(
+    string Key,
+    string Label,
+    string Status,
+    string Details);
 
 public record AdminOpenAiMetricsDto(
     DateOnly From,

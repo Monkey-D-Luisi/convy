@@ -1,5 +1,6 @@
 using Convy.Application.Common.Models;
 using Convy.Application.Features.Activity.Queries;
+using Convy.API.Authorization;
 using MediatR;
 
 namespace Convy.API.Endpoints;
@@ -24,7 +25,8 @@ public static class ActivityEndpoints
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : MapError(result.Error!);
-        });
+        })
+        .RequireAuthorization(McpScopes.ActivityRead);
 
         // Item history endpoint
         var itemGroup = routes.MapGroup("/api/v1/items/{itemId:guid}/history")
@@ -41,7 +43,8 @@ public static class ActivityEndpoints
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : MapError(result.Error!);
-        });
+        })
+        .RequireAuthorization(McpScopes.ActivityRead);
     }
 
     private static IResult MapError(Error error) => error.Code switch

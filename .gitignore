@@ -131,6 +131,7 @@ mobile/e2e/*.xml
 *~
 node_modules/
 .next/
+dist/
 *.tsbuildinfo
 ui_dump.*
 uidump.*

@@ -15,6 +15,10 @@ export type BackupRun = {
 export type SystemHealth = {
   apiHealthy: boolean;
   databaseHealthy: boolean;
+  mcpHealthy: boolean;
+  authHealthy: boolean;
+  mcpMetadataHealthy: boolean;
+  authMetadataHealthy: boolean;
   diskFreeBytes: number | null;
   postgresDataSizeBytes: number | null;
   backendVersion: string | null;
@@ -32,6 +36,16 @@ export type SystemHealth = {
   loadAverage1m: number | null;
 };
 
+export type McpSummary = {
+  mcpHealthy: boolean;
+  authHealthy: boolean;
+  toolCalls24h: number;
+  toolSuccesses24h: number;
+  toolFailures24h: number;
+  successRate24h: number;
+  lastInvocationAt: string | null;
+};
+
 export type Overview = {
   usersTotal: number;
   householdsTotal: number;
@@ -47,6 +61,7 @@ export type Overview = {
   aiFailures7d: number;
   voiceItemsCreated7d: number;
   estimatedAiCostMicros7d: number | null;
+  mcp: McpSummary;
   lastBackup: BackupRun | null;
   health: SystemHealth;
 };
@@ -153,4 +168,101 @@ export type OpenAiMetrics = {
   averageLatencyMs: number | null;
   days: OpenAiMetric[];
   operations: OpenAiOperationMetric[];
+};
+
+export type McpRuntime = {
+  mcpUrl: string;
+  authUrl: string;
+  issuer: string;
+  audience: string;
+  scopes: string[];
+  mcpHealthHealthy: boolean;
+  authHealthHealthy: boolean;
+  mcpMetadataHealthy: boolean;
+  authMetadataHealthy: boolean;
+};
+
+export type McpOAuthMetrics = {
+  activeConsents: number;
+  revokedConsents: number;
+  activeRefreshTokens: number;
+  revokedRefreshTokens: number;
+  refreshTokensExpiring7d: number;
+  lastConsentAt: string | null;
+  lastTokenUsedAt: string | null;
+  lastRevokedAt: string | null;
+};
+
+export type McpUsageMetrics = {
+  invocations: number;
+  successes: number;
+  failures: number;
+  validationErrors: number;
+  unauthorized: number;
+  forbidden: number;
+  notFound: number;
+  providerErrors: number;
+  unexpectedErrors: number;
+  successRate: number;
+  averageLatencyMs: number | null;
+  p95LatencyMs: number | null;
+  lastInvocationAt: string | null;
+};
+
+export type McpDailyMetric = {
+  date: string;
+  invocations: number;
+  successes: number;
+  failures: number;
+  averageLatencyMs: number | null;
+};
+
+export type McpToolMetric = {
+  toolName: string;
+  invocations: number;
+  successes: number;
+  failures: number;
+  averageLatencyMs: number | null;
+  p95LatencyMs: number | null;
+  lastInvocationAt: string | null;
+};
+
+export type McpRecentInvocation = {
+  createdAt: string;
+  toolName: string;
+  status: string;
+  latencyMs: number;
+  errorType: string | null;
+  userId: string;
+  householdId: string | null;
+};
+
+export type McpToolCatalogItem = {
+  name: string;
+  title: string;
+  requiredScopes: string[];
+  readOnlyHint: boolean;
+  destructiveHint: boolean;
+  idempotentHint: boolean;
+  openWorldHint: boolean;
+};
+
+export type McpPublicationReadinessCheck = {
+  key: string;
+  label: string;
+  status: string;
+  details: string;
+};
+
+export type McpOverview = {
+  from: string;
+  to: string;
+  runtime: McpRuntime;
+  oauth: McpOAuthMetrics;
+  usage: McpUsageMetrics;
+  days: McpDailyMetric[];
+  tools: McpToolMetric[];
+  recentInvocations: McpRecentInvocation[];
+  toolCatalog: McpToolCatalogItem[];
+  readinessChecks: McpPublicationReadinessCheck[];
 };

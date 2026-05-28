@@ -1,6 +1,7 @@
 using Convy.Application.Common.Models;
 using Convy.Application.Features.Lists.Commands;
 using Convy.Application.Features.Lists.Queries;
+using Convy.API.Authorization;
 using Convy.Domain.ValueObjects;
 using MediatR;
 
@@ -25,7 +26,8 @@ public static class ListEndpoints
             return result.IsSuccess
                 ? Results.Created($"/api/v1/households/{householdId}/lists/{result.Value}", new { id = result.Value })
                 : MapError(result.Error!);
-        });
+        })
+        .RequireAuthorization("FirebaseOnly");
 
         group.MapGet("/", async (
             Guid householdId,
@@ -38,7 +40,8 @@ public static class ListEndpoints
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : MapError(result.Error!);
-        });
+        })
+        .RequireAuthorization(McpScopes.ListsRead);
 
         group.MapPut("/{listId:guid}/name", async (
             Guid householdId,
@@ -52,7 +55,8 @@ public static class ListEndpoints
             return result.IsSuccess
                 ? Results.NoContent()
                 : MapError(result.Error!);
-        });
+        })
+        .RequireAuthorization("FirebaseOnly");
 
         group.MapPost("/{listId:guid}/archive", async (
             Guid householdId,
@@ -65,7 +69,8 @@ public static class ListEndpoints
             return result.IsSuccess
                 ? Results.NoContent()
                 : MapError(result.Error!);
-        });
+        })
+        .RequireAuthorization("FirebaseOnly");
     }
 
     private static IResult MapError(Error error) => error.Code switch

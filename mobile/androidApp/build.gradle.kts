@@ -52,7 +52,7 @@ android {
         create("staging") {
             dimension = "environment"
             buildConfigField("String", "API_PROTOCOL", "\"https\"")
-            buildConfigField("String", "API_HOST", "\"${providers.envOrProperty("CONVY_STAGING_API_HOST", "178.105.70.69.nip.io")}\"")
+            buildConfigField("String", "API_HOST", "\"${providers.envOrProperty("CONVY_STAGING_API_HOST", "api.convyapp.com")}\"")
             buildConfigField("int", "API_PORT", "443")
         }
     }

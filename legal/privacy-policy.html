@@ -44,7 +44,7 @@
   <header>
     <div class="wrap">
       <h1>Convy Privacy Policy</h1>
-      <p class="date">Last updated: May 18, 2026</p>
+      <p class="date">Last updated: May 26, 2026</p>
     </div>
   </header>
 
@@ -61,6 +61,7 @@
       <li>Household content such as lists, list items, tasks, invite status, activity events, and notification preferences.</li>
       <li>Device tokens needed to deliver Firebase Cloud Messaging push notifications.</li>
       <li>Voice parsing metadata such as request status, audio size, approximate duration, token usage, latency, parsed item count, and estimated cost when configured.</li>
+      <li>ChatGPT MCP beta audit metadata such as tool name, user identifier, optional household identifier, result status, latency, and error category.</li>
       <li>Operational logs, health data, and local backup metadata needed to operate and secure the service.</li>
     </ul>
 
@@ -76,8 +77,23 @@
       <li>Hetzner hosts the active staging VPS, PostgreSQL database, Caddy reverse proxy, legal pages, and admin dashboard.</li>
       <li>Firebase Authentication verifies user identity and Firebase Cloud Messaging delivers notifications.</li>
       <li>OpenAI processes voice input for transcription and structured parsing when voice features are used.</li>
+      <li>OpenAI ChatGPT may receive household data when you explicitly authorize the Convy ChatGPT MCP beta connector.</li>
       <li>GitHub may process repository, CI, and deployment metadata for development and release operations.</li>
     </ul>
+
+    <h2>ChatGPT MCP Beta</h2>
+    <p>
+      If you connect Convy to ChatGPT, Convy uses Firebase login and a Convy-owned OAuth broker to issue delegated,
+      short-lived access tokens. In beta v1, ChatGPT can view authorized household context, lists, shopping items,
+      tasks, and recent activity through MCP tools, and can create or complete shopping items and tasks after user
+      confirmation. ChatGPT cannot edit, delete, archive, invite, leave, manage lists, view admin metrics, or access
+      backups through this connector.
+    </p>
+    <p>
+      Convy stores hashes of OAuth authorization codes and refresh tokens, not their raw values. MCP audit logs do not
+      store ChatGPT prompts or full tool arguments. You can revoke ChatGPT access through the OAuth revocation flow;
+      after revocation, new access tokens cannot be issued from the revoked refresh token.
+    </p>
 
     <h2>Backups and Retention</h2>
     <p>
@@ -94,8 +110,8 @@
 
     <h2>Your Choices</h2>
     <p>
-      You can stop using voice input at any time and can request account or household data deletion by contacting the
-      Convy project maintainer. Some backup copies may remain until their retention period expires.
+      You can stop using voice input at any time, disconnect ChatGPT access, and request account or household data
+      deletion by contacting the Convy project maintainer. Some backup copies may remain until their retention period expires.
     </p>
 
     <h2>Legal Review</h2>
