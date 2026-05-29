@@ -118,5 +118,10 @@ jobs:
 
       - name: External health check
         env:
-          API_HOSTNAME: ${{ secrets.STAGING_API_HOSTNAME }}
-        run: curl -fsS --retry 10 --retry-delay 5 "https://${API_HOSTNAME}/health/ready"
+          API_HOSTNAME: ${{ secrets.STAGING_API_HOSTNAME || secrets.STAGING_PUBLIC_HOSTNAME }}
+        run: |
+          if [ -z "${API_HOSTNAME}" ]; then
+            echo "Set STAGING_PUBLIC_HOSTNAME or STAGING_API_HOSTNAME for staging health checks." >&2
+            exit 1
+          fi
+          curl -fsS --retry 10 --retry-delay 5 "https://${API_HOSTNAME}/health/ready"
