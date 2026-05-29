@@ -41,6 +41,13 @@ Submission status: `needs-changes` until the manual reviewer account, screenshot
 - Tool annotations are explicit for `readOnlyHint`, `openWorldHint`, `destructiveHint`, and `idempotentHint`.
 - The React Apps SDK widget is a shared read-oriented summary view. Write tools are model-only and are not callable from the widget.
 
+## Widget Isolation
+
+- The widget origin is currently `https://mcp.convyapp.com` because the deployed topology does not yet provision a dedicated `widgets.convyapp.com` host, certificate, and routing path.
+- This still keeps the Apps review surface narrow: the widget is registered as a single Apps SDK resource, has no cookies, uses no browser storage, and declares empty connect, resource, and frame domains in its CSP.
+- The widget can only call read-only tools exposed with `ui.visibility` for the app; write tools remain model-only and still require ChatGPT confirmation.
+- If infrastructure adds `widgets.convyapp.com`, switch `CONVY_WIDGET_DOMAIN` to that dedicated origin before submission or in a follow-up deploy hardening PR.
+
 ## Risks And Required Manual Actions
 
 - Create or verify the reviewer account and sample data outside the repository.

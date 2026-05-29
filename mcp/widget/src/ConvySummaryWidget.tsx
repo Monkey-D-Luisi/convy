@@ -1,4 +1,15 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  arrayOfRecords,
+  createRefreshArgs,
+  createRefreshErrorResult,
+  formatValue,
+  inferActiveTool,
+  normalizeStructuredContent,
+  normalizeToolResult,
+  type ConvyStructuredContent,
+  type ToolResultNotification,
+} from "./widget-helpers.js";
 
 type OpenAiRuntime = {
   toolOutput?: unknown;
@@ -6,27 +17,11 @@ type OpenAiRuntime = {
   callTool?: (name: string, args: Record<string, unknown>) => Promise<unknown>;
 };
 
-type ToolResultNotification = {
-  structuredContent?: unknown;
-  content?: Array<{ type?: string; text?: string }>;
-  isError?: boolean;
-  _meta?: Record<string, unknown>;
-};
-
 type OpenAiGlobalsEvent = CustomEvent<{
   globals?: {
     toolOutput?: unknown;
   };
 }>;
-
-type ConvyStructuredContent = {
-  data?: Record<string, unknown>;
-  meta?: {
-    householdId?: string | null;
-    truncated?: boolean;
-    selectionRequired?: boolean;
-  };
-};
 
 declare global {
   interface Window {
@@ -36,6 +31,7 @@ declare global {
 
 const refreshableReadTools = new Set([
   "convy_get_context",
+  "convy_get_shopping_context",
   "convy_get_shopping_list",
   "convy_get_task_list",
   "convy_get_recent_activity",
@@ -90,6 +86,8 @@ export function ConvySummaryWidget() {
     try {
       const nextResult = await window.openai.callTool(activeTool, refreshArgs);
       setResult(normalizeToolResult(nextResult));
+    } catch (error) {
+      setResult(createRefreshErrorResult(error));
     } finally {
       setRefreshing(false);
     }
@@ -248,63 +246,11 @@ function readInitialResult(): ToolResultNotification {
   return normalizeToolResult(window.openai?.toolOutput ?? {});
 }
 
-function normalizeToolResult(value: unknown): ToolResultNotification {
-  if (isRecord(value) && ("structuredContent" in value || "content" in value || "isError" in value)) {
-    return value as ToolResultNotification;
-  }
-
-  if (isRecord(value) && ("data" in value || "meta" in value)) {
-    return { structuredContent: value };
-  }
-
-  return {};
-}
-
-function normalizeStructuredContent(value: unknown): ConvyStructuredContent {
-  return isRecord(value) ? value as ConvyStructuredContent : {};
-}
-
-function inferActiveTool(data: Record<string, unknown>) {
-  if ("households" in data && !("shoppingLists" in data)) return "convy_get_context";
-  if ("pendingItems" in data || "completedItems" in data) return "convy_get_shopping_list";
-  if ("pendingTasks" in data || "completedTasks" in data) return "convy_get_task_list";
-  if ("activity" in data) return "convy_get_recent_activity";
-  return null;
-}
-
-function createRefreshArgs(activeTool: string | null, data: Record<string, unknown>, meta: ConvyStructuredContent["meta"]) {
-  if (activeTool === "convy_get_shopping_list" || activeTool === "convy_get_task_list") {
-    const list = isRecord(data.list) ? data.list : {};
-    return { listId: list.id, includeCompleted: true, limit: 50 };
-  }
-
-  if (activeTool === "convy_get_recent_activity") {
-    return { householdId: meta?.householdId, limit: 20 };
-  }
-
-  return {};
-}
-
 function headingFor(activeTool: string | null, hasError: boolean) {
   if (hasError) return "Needs attention";
+  if (activeTool === "convy_get_shopping_context") return "Shopping lists";
   if (activeTool === "convy_get_shopping_list") return "Shopping list";
   if (activeTool === "convy_get_task_list") return "Task list";
   if (activeTool === "convy_get_recent_activity") return "Recent activity";
   return "Household context";
-}
-
-function arrayOfRecords(value: unknown) {
-  return Array.isArray(value) ? value.filter(isRecord) : [];
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function formatValue(value: unknown) {
-  if (value === null || value === undefined || value === "") {
-    return "";
-  }
-
-  return String(value);
 }

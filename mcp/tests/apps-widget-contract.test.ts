@@ -27,6 +27,27 @@ test("widget resource declares standard and compatibility domain metadata", () =
   assert.match(serverSource, /"openai\/widgetDomain": CONVY_WIDGET_DOMAIN/);
 });
 
+test("widget HTML is cached after the first filesystem lookup", () => {
+  const serverSource = readFileSync(new URL("../src/tools/server.ts", import.meta.url), "utf8");
+
+  assert.match(serverSource, /let cachedWidgetHtml: string \| null = null/);
+  assert.match(serverSource, /if \(cachedWidgetHtml !== null\)/);
+  assert.match(serverSource, /cachedWidgetHtml = readFileSync\(existing, "utf8"\)/);
+  assert.match(serverSource, /cachedWidgetHtml = \[/);
+});
+
+test("MCP-hosted widget origin has documented Apps review isolation rationale", () => {
+  const readinessAudit = readFileSync(
+    new URL("../../docs/mcp/submission-readiness-audit.md", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(readinessAudit, /https:\/\/mcp\.convyapp\.com/);
+  assert.match(readinessAudit, /widget isolation/i);
+  assert.match(readinessAudit, /no cookies/i);
+  assert.match(readinessAudit, /empty connect, resource, and frame domains/i);
+});
+
 test("every MCP tool references the shared widget and has explicit status text", () => {
   for (const definition of toolDefinitions) {
     const metadata = createToolDescriptorMetadata(definition);
