@@ -88,6 +88,39 @@ describe("admin view UX contract", () => {
     assert.doesNotMatch(source, /from "recharts"/);
     assert.match(charts, /from "recharts"/);
   });
+
+  it("makes charts readable without hover and guards against zero-size containers", async () => {
+    const charts = await readDashboardFile("components", "admin-charts.tsx");
+    const source = await readDashboardFile("components", "admin-views.tsx");
+
+    assert.match(charts, /Legend/);
+    assert.match(charts, /height=\{280\}/);
+    assert.match(charts, /isAnimationActive=\{false\}/);
+    assert.match(charts, /ChartPalette/);
+    assert.match(source, /min-h-\[18rem\]/);
+    assert.match(source, /SystemTrendsChart/);
+  });
+
+  it("uses URL-backed reporting ranges for dashboard metric views", async () => {
+    const source = await readDashboardFile("components", "admin-views.tsx");
+
+    assert.match(source, /useSearchParams/);
+    assert.match(source, /useRouter/);
+    assert.match(source, /URLSearchParams/);
+    assert.match(source, /function RangeControl/);
+    assert.match(source, /setRangeDays/);
+  });
+
+  it("provides risk-first overview and mobile alternatives for dense tables", async () => {
+    const source = await readDashboardFile("components", "admin-views.tsx");
+
+    assert.match(source, /Operations Risk/);
+    assert.match(source, /Action Needed/);
+    assert.match(source, /RiskItemList/);
+    assert.match(source, /function ResponsiveDataTable/);
+    assert.match(source, /md:hidden/);
+    assert.match(source, /hidden md:block/);
+  });
 });
 
 describe("MCP admin dashboard contract", () => {

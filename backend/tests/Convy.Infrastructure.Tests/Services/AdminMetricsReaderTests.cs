@@ -113,6 +113,55 @@ public class AdminMetricsReaderTests
     }
 
     [Fact]
+    public async Task GetOverviewAsync_ExposesRiskGrowthEngagementReliabilityAndBackupSummaries()
+    {
+        await using var context = CreateContext();
+        var now = new DateTime(2026, 5, 29, 12, 0, 0, DateTimeKind.Utc);
+        var userId = Guid.NewGuid();
+        var user = new User("firebase-admin", "Admin", "admin@convyapp.com");
+        SetId(user, userId);
+        SetDate(user, nameof(User.CreatedAt), now.AddDays(-2));
+        var household = new Household("Home", userId);
+        SetDate(household, nameof(Household.CreatedAt), now.AddDays(-2));
+        var list = new HouseholdList("Shopping", ListType.Shopping, household.Id, userId);
+        SetDate(list, nameof(HouseholdList.CreatedAt), now.AddDays(-2));
+
+        context.Users.Add(user);
+        context.Households.Add(household);
+        context.HouseholdLists.Add(list);
+        context.ActivityLogs.AddRange(
+            CreateLog(household.Id, Guid.NewGuid(), ActivityActionType.Created, userId, now.AddDays(-1)),
+            CreateLog(household.Id, Guid.NewGuid(), ActivityActionType.Created, userId, now.AddDays(-1)),
+            CreateLog(household.Id, Guid.NewGuid(), ActivityActionType.Completed, userId, now.AddDays(-1)));
+        context.AiUsageEvents.AddRange(
+            new AiUsageEvent(household.Id, "voice", "transcription", "gpt-4o-mini-transcribe", AiUsageStatus.Success, 1000, 10, 0, null, null, 8, 2, 1.4, 25),
+            new AiUsageEvent(household.Id, "voice", "parsing", "gpt-5.4-nano", AiUsageStatus.Failure, 2000, 100, 20, 50, 3, null, null, null, 75));
+        context.VoiceParseEvents.AddRange(
+            new VoiceParseEvent(userId, household.Id, VoiceParseStatus.Success, 100, 3.5, 2, 10, 1, null, null, 50, 200),
+            new VoiceParseEvent(userId, household.Id, VoiceParseStatus.ProviderError, 80, 2.0, 0, 10, 1, null, null, 50, 300));
+        context.BackupRuns.AddRange(
+            new BackupRun(BackupRunStatus.Success, BackupRunType.Daily, "ok.dump", 1024, new string('a', 64), 1000, BackupVerificationStatus.PgRestoreListOk, null, now.AddDays(-3), now.AddDays(-3).AddMinutes(1)),
+            new BackupRun(BackupRunStatus.Failed, BackupRunType.Daily, null, null, null, 1000, BackupVerificationStatus.Failed, "failed", now.AddHours(-2), now.AddHours(-2).AddMinutes(1)));
+        await context.SaveChangesAsync();
+        var reader = CreateReader(context);
+
+        var overview = await reader.GetOverviewAsync(now);
+
+        overview.Growth.NewUsers7d.Should().Be(1);
+        overview.Growth.NewHouseholds7d.Should().Be(1);
+        overview.Growth.NewLists7d.Should().Be(1);
+        overview.Growth.ActiveHouseholdRate7d.Should().Be(1);
+        overview.Engagement.ItemCompletionRatio7d.Should().Be(0.5);
+        overview.AiReliability.FailureRate7d.Should().Be(0.5);
+        overview.VoiceReliability.SuccessRate7d.Should().Be(0.5);
+        overview.BackupHealth.Successes30d.Should().Be(1);
+        overview.BackupHealth.Failures30d.Should().Be(1);
+        overview.BackupHealth.LatestSuccessful.Should().BeFalse();
+        overview.Risk.WarningCount.Should().BeGreaterThan(0);
+        overview.Risk.Items.Should().Contain(item => item.Key == "backup_latest_failed" && item.TargetPath == "/backups");
+    }
+
+    [Fact]
     public async Task GetMcpOverviewAsync_AggregatesOAuthUsageAndReadinessWithoutSensitiveValues()
     {
         await using var context = CreateContext();
@@ -170,6 +219,54 @@ public class AdminMetricsReaderTests
         serialized.Should().NotContain("active-token-hash-should-never-leak");
         serialized.Should().NotContain("revoked-token-hash-should-never-leak");
         serialized.Should().NotContain(userId.ToString());
+    }
+
+    [Fact]
+    public async Task GetSystemHistoryAsync_ReturnsSamplesInRangeOrderedByCaptureTime()
+    {
+        await using var context = CreateContext();
+        var outside = new SystemMetricSnapshot(new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), 1, 10, 2, 20, 0.1, 100, 1024);
+        var first = new SystemMetricSnapshot(new DateTime(2026, 5, 28, 0, 15, 0, DateTimeKind.Utc), 2, 10, 3, 20, 0.2, 200, 2048);
+        var second = new SystemMetricSnapshot(new DateTime(2026, 5, 29, 0, 15, 0, DateTimeKind.Utc), 3, 10, 4, 20, 0.3, 300, 4096);
+        context.SystemMetricSnapshots.AddRange(second, outside, first);
+        await context.SaveChangesAsync();
+        var reader = CreateReader(context);
+
+        var history = await reader.GetSystemHistoryAsync(new DateOnly(2026, 5, 28), new DateOnly(2026, 5, 29));
+
+        history.From.Should().Be(new DateOnly(2026, 5, 28));
+        history.To.Should().Be(new DateOnly(2026, 5, 29));
+        history.Samples.Select(sample => sample.CapturedAt).Should().Equal(first.CapturedAt, second.CapturedAt);
+        history.Samples.Last().PostgresDataSizeBytes.Should().Be(4096);
+    }
+
+    [Fact]
+    public async Task SystemMetricSnapshotRecorder_RecordAsync_CapturesSampleAndPrunesSnapshotsOlderThanRetention()
+    {
+        await using var context = CreateContext();
+        var now = new DateTime(2026, 5, 29, 12, 0, 0, DateTimeKind.Utc);
+        context.SystemMetricSnapshots.AddRange(
+            new SystemMetricSnapshot(now.AddDays(-31), 1, 10, 2, 20, 0.1, 100, 1024),
+            new SystemMetricSnapshot(now.AddDays(-10), 2, 10, 3, 20, 0.2, 200, 2048));
+        await context.SaveChangesAsync();
+        var recorder = new SystemMetricSnapshotRecorder(context, new FixedSystemMetricSource(
+            new SystemMetricSample(
+                DiskFreeBytes: 4,
+                DiskTotalBytes: 10,
+                MemoryAvailableBytes: 5,
+                MemoryTotalBytes: 20,
+                LoadAverage1m: 0.4,
+                UptimeSeconds: 400,
+                PostgresDataSizeBytes: 8192)));
+
+        await recorder.RecordAsync(now);
+
+        var snapshots = await context.SystemMetricSnapshots.OrderBy(snapshot => snapshot.CapturedAt).ToListAsync();
+        snapshots.Should().HaveCount(2);
+        snapshots.Should().NotContain(snapshot => snapshot.CapturedAt < now.AddDays(-SystemMetricSnapshotRecorder.RetentionDays));
+        snapshots.Last().CapturedAt.Should().Be(now);
+        snapshots.Last().DiskFreeBytes.Should().Be(4);
+        snapshots.Last().PostgresDataSizeBytes.Should().Be(8192);
     }
 
     [Fact]
@@ -269,5 +366,18 @@ public class AdminMetricsReaderTests
             {
                 Content = new StringContent(_content),
             });
+    }
+
+    private sealed class FixedSystemMetricSource : ISystemMetricSource
+    {
+        private readonly SystemMetricSample _sample;
+
+        public FixedSystemMetricSource(SystemMetricSample sample)
+        {
+            _sample = sample;
+        }
+
+        public Task<SystemMetricSample> CaptureAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(_sample);
     }
 }

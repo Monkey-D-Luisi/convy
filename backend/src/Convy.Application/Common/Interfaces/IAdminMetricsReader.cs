@@ -12,4 +12,5 @@ public interface IAdminMetricsReader
     Task<BackupRunDto?> GetLatestBackupAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<BackupRunDto>> GetBackupRunsAsync(int limit, CancellationToken cancellationToken = default);
     Task<AdminSystemHealthDto> GetSystemHealthAsync(CancellationToken cancellationToken = default);
+    Task<AdminSystemHistoryDto> GetSystemHistoryAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken = default);
 }

@@ -19,7 +19,61 @@ public record AdminOverviewDto(
     long? EstimatedAiCostMicros7d,
     AdminMcpSummaryDto Mcp,
     BackupRunDto? LastBackup,
-    AdminSystemHealthDto Health);
+    AdminSystemHealthDto Health,
+    AdminRiskSummaryDto Risk,
+    AdminGrowthSummaryDto Growth,
+    AdminEngagementSummaryDto Engagement,
+    AdminAiReliabilitySummaryDto AiReliability,
+    AdminVoiceReliabilitySummaryDto VoiceReliability,
+    AdminBackupHealthSummaryDto BackupHealth);
+
+public record AdminRiskSummaryDto(
+    int CriticalCount,
+    int WarningCount,
+    IReadOnlyList<AdminRiskItemDto> Items);
+
+public record AdminRiskItemDto(
+    string Key,
+    string Label,
+    string Severity,
+    string Detail,
+    string? TargetPath);
+
+public record AdminGrowthSummaryDto(
+    int NewUsers7d,
+    int NewHouseholds7d,
+    int NewLists7d,
+    double ActiveHouseholdRate7d,
+    double ActiveHouseholdRate30d);
+
+public record AdminEngagementSummaryDto(
+    int ActiveHouseholds7d,
+    int ItemsCreated7d,
+    int ItemsCompleted7d,
+    int TasksCreated7d,
+    int TasksCompleted7d,
+    double ItemCompletionRatio7d);
+
+public record AdminAiReliabilitySummaryDto(
+    int Requests7d,
+    int Failures7d,
+    double FailureRate7d,
+    double? AverageLatencyMs7d,
+    long? EstimatedCostMicros7d);
+
+public record AdminVoiceReliabilitySummaryDto(
+    int Requests7d,
+    int Failures7d,
+    double SuccessRate7d,
+    int ParsedItems7d,
+    int ItemsCreated7d);
+
+public record AdminBackupHealthSummaryDto(
+    int Successes30d,
+    int Failures30d,
+    DateTime? LastSuccessfulAt,
+    bool LatestSuccessful,
+    bool VerificationHealthy);
 
 public record AdminMcpSummaryDto(
     bool McpHealthy,
@@ -112,6 +166,21 @@ public record AdminSystemHealthDto(
     long? DiskTotalBytes,
     long? UptimeSeconds,
     double? LoadAverage1m);
+
+public record AdminSystemHistoryDto(
+    DateOnly From,
+    DateOnly To,
+    IReadOnlyList<SystemMetricSnapshotDto> Samples);
+
+public record SystemMetricSnapshotDto(
+    DateTime CapturedAt,
+    long? DiskFreeBytes,
+    long? DiskTotalBytes,
+    long? MemoryAvailableBytes,
+    long? MemoryTotalBytes,
+    double? LoadAverage1m,
+    long? UptimeSeconds,
+    long? PostgresDataSizeBytes);
 
 public record AdminMcpOverviewDto(
     DateOnly From,

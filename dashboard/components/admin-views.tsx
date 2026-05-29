@@ -1,9 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { useAdminToken } from "@/components/admin-shell";
-import type { BackupRun, McpOverview, OpenAiMetrics, Overview, SystemHealth, UsageMetrics, VoiceMetrics } from "@/lib/types";
+import type { BackupRun, McpOverview, OpenAiMetrics, Overview, SystemHealth, SystemHistory, UsageMetrics, VoiceMetrics } from "@/lib/types";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
@@ -13,6 +15,7 @@ const CompletionSourceChart = dynamic(() => import("@/components/admin-charts").
 const AiCallsChart = dynamic(() => import("@/components/admin-charts").then((module) => module.AiCallsChart), { loading: ChartFallback, ssr: false });
 const VoiceActivityChart = dynamic(() => import("@/components/admin-charts").then((module) => module.VoiceActivityChart), { loading: ChartFallback, ssr: false });
 const DailyMcpCallsChart = dynamic(() => import("@/components/admin-charts").then((module) => module.DailyMcpCallsChart), { loading: ChartFallback, ssr: false });
+const SystemTrendsChart = dynamic(() => import("@/components/admin-charts").then((module) => module.SystemTrendsChart), { loading: ChartFallback, ssr: false });
 
 function useAdminResource<T>(path: string) {
   const token = useAdminToken();
@@ -70,7 +73,33 @@ function useAdminResource<T>(path: string) {
   };
 }
 
-function dateRange(days: number): { query: string; label: string } {
+function useDateRange(defaultDays = 14): { days: number; query: string; label: string; setRangeDays: (days: number) => void } {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const days = normalizeRangeDays(searchParams.get("days"), defaultDays);
+
+  return useMemo(() => {
+    const range = createDateRange(days);
+
+    return {
+      days,
+      query: range.query,
+      label: range.label,
+      setRangeDays: (nextDays: number) => {
+        const nextParams = new URLSearchParams(searchParams.toString());
+        nextParams.set("days", String(normalizeRangeDays(String(nextDays), defaultDays)));
+        router.replace(`?${nextParams.toString()}`, { scroll: false });
+      },
+    };
+  }, [days, defaultDays, router, searchParams]);
+}
+
+function normalizeRangeDays(value: string | null, fallback: number) {
+  const parsed = value === null ? fallback : Number.parseInt(value, 10);
+  return [7, 14, 30, 90].includes(parsed) ? parsed : fallback;
+}
+
+function createDateRange(days: number): { query: string; label: string } {
   const to = new Date();
   const from = new Date();
   from.setDate(to.getDate() - (days - 1));
@@ -131,6 +160,10 @@ function formatRatio(value: number) {
   return `${Math.round(value * 100)}%`;
 }
 
+function formatSignedRatio(value: number) {
+  return `${Math.round(value * 100)}%`;
+}
+
 function formatLatency(value: number | null) {
   return value === null ? "Unknown" : `${Math.round(value)} ms`;
 }
@@ -163,6 +196,7 @@ function ViewHeader({
   lastUpdatedAt,
   loading,
   onRefresh,
+  rangeControl,
 }: {
   title: string;
   description: string;
@@ -170,6 +204,7 @@ function ViewHeader({
   lastUpdatedAt: Date | null;
   loading: boolean;
   onRefresh: () => void;
+  rangeControl?: ReactNode;
 }) {
   return (
     <header className="flex flex-col gap-3 rounded-lg border border-line bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
@@ -183,15 +218,35 @@ function ViewHeader({
           </span>
         </div>
       </div>
-      <button
-        className="inline-flex items-center justify-center rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={loading}
-        onClick={onRefresh}
-        type="button"
-      >
-        {loading ? "Refreshing" : "Refresh"}
-      </button>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        {rangeControl}
+        <button
+          className="inline-flex items-center justify-center rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={loading}
+          onClick={onRefresh}
+          type="button"
+        >
+          {loading ? "Refreshing" : "Refresh"}
+        </button>
+      </div>
     </header>
+  );
+}
+
+function RangeControl({ selectedDays, setRangeDays }: { selectedDays: number; setRangeDays: (days: number) => void }) {
+  return (
+    <div className="inline-flex rounded-md border border-line bg-surface p-1">
+      {[7, 14, 30, 90].map((days) => (
+        <button
+          className={`rounded px-2.5 py-1.5 text-sm font-semibold ${selectedDays === days ? "bg-white text-ink shadow-sm" : "text-muted"}`}
+          key={days}
+          onClick={() => setRangeDays(days)}
+          type="button"
+        >
+          {days}d
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -219,15 +274,57 @@ function StatusPill({ ok, label }: { ok: boolean; label: string }) {
   );
 }
 
+function HealthBadge({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <div className={`rounded-md border p-3 ${ok ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"}`}>
+      <p className="text-sm font-semibold text-ink">{label}</p>
+      <p className={`mt-1 text-sm ${ok ? "text-emerald-800" : "text-red-800"}`}>{ok ? "Healthy" : "Unhealthy"}</p>
+    </div>
+  );
+}
+
+function RiskItemList({ items }: { items: Overview["risk"]["items"] }) {
+  if (items.length === 0) {
+    return <p className="mt-4 text-sm text-muted">No action needed in the current risk window.</p>;
+  }
+
+  return (
+    <ul className="mt-4 divide-y divide-line">
+      {items.map((item) => (
+        <li className="flex flex-col gap-3 py-3 sm:flex-row sm:items-start sm:justify-between" key={item.key}>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`rounded-full px-2 py-1 text-xs font-semibold ${item.severity === "Critical" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"}`}>
+                {item.severity}
+              </span>
+              <p className="font-semibold text-ink">{item.label}</p>
+            </div>
+            <p className="mt-1 text-sm text-muted">{item.detail}</p>
+          </div>
+          {item.targetPath ? <DeepLink href={item.targetPath} label="Open" /> : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function DeepLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link className="mt-4 inline-flex text-sm font-semibold text-brand hover:underline" href={href}>
+      {label}
+    </Link>
+  );
+}
+
 function ChartFallback() {
-  return <div className="flex h-full items-center justify-center text-sm text-muted">Loading chart</div>;
+  return <div className="flex min-h-[18rem] items-center justify-center text-sm text-muted">Loading chart</div>;
 }
 
 function ChartPanel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
       <h2 className="text-lg font-semibold text-ink">{title}</h2>
-      <div className="mt-4 h-72">{children}</div>
+      <div className="mt-4 min-h-[18rem] min-w-0">{children}</div>
     </section>
   );
 }
@@ -241,18 +338,89 @@ function EmptyState({ title, description }: { title: string; description: string
   );
 }
 
+type ResponsiveDataColumn<T> = {
+  header: string;
+  className?: string;
+  render: (item: T) => ReactNode;
+};
+
+function ResponsiveDataTable<T>({
+  items,
+  columns,
+  keyForItem,
+  minWidth = "920px",
+}: {
+  items: T[];
+  columns: ResponsiveDataColumn<T>[];
+  keyForItem: (item: T) => string;
+  minWidth?: string;
+}) {
+  return (
+    <>
+      <div className="hidden md:block overflow-x-auto rounded-lg border border-line bg-white shadow-sm">
+        <table className="w-full border-collapse text-left text-sm" style={{ minWidth }}>
+          <thead className="bg-surface text-muted">
+            <tr>
+              {columns.map((column, index) => (
+                <th className={`px-4 py-3 font-semibold ${index === 0 ? "sticky left-0 z-10 bg-surface" : ""} ${column.className ?? ""}`} key={column.header}>
+                  {column.header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr className="border-t border-line" key={keyForItem(item)}>
+                {columns.map((column, index) => (
+                  <td className={`px-4 py-3 ${index === 0 ? "sticky left-0 z-10 bg-white" : ""} ${column.className ?? ""}`} key={column.header}>
+                    {column.render(item)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="space-y-3 md:hidden">
+        {items.map((item) => (
+          <article className="rounded-lg border border-line bg-white p-4 shadow-sm" key={keyForItem(item)}>
+            <dl className="space-y-3">
+              {columns.map((column) => (
+                <div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3 text-sm" key={column.header}>
+                  <dt className="font-medium text-muted">{column.header}</dt>
+                  <dd className="min-w-0 overflow-hidden break-all text-ink">{column.render(item)}</dd>
+                </div>
+              ))}
+            </dl>
+          </article>
+        ))}
+      </div>
+    </>
+  );
+}
+
 export function OverviewView() {
-  const { data, error, lastUpdatedAt, loading, refresh } = useAdminResource<Overview>("metrics/overview");
+  const range = useDateRange(14);
+  const overview = useAdminResource<Overview>("metrics/overview");
+  const systemHistory = useAdminResource<SystemHistory>(`system/history?${range.query}`);
+  const { data, error, lastUpdatedAt, loading, refresh } = overview;
+  const combinedLoading = loading || systemHistory.loading;
+  const combinedLastUpdatedAt = lastUpdatedAt ?? systemHistory.lastUpdatedAt;
   const state = <PageState loading={loading} error={error} />;
   if (loading || error || !data) {
     return (
       <div className="space-y-6">
         <ViewHeader
           title="Overview"
-          description="Current operational health, household activity, AI usage, and backup status."
-          lastUpdatedAt={lastUpdatedAt}
-          loading={loading}
-          onRefresh={refresh}
+          description="Operations risk, product activity, AI reliability, MCP reliability, backup posture, and system trends."
+          rangeLabel={range.label}
+          lastUpdatedAt={combinedLastUpdatedAt}
+          loading={combinedLoading}
+          onRefresh={() => {
+            refresh();
+            systemHistory.refresh();
+          }}
+          rangeControl={<RangeControl selectedDays={range.days} setRangeDays={range.setRangeDays} />}
         />
         {state}
       </div>
@@ -263,31 +431,65 @@ export function OverviewView() {
     <div className="space-y-6">
       <ViewHeader
         title="Overview"
-        description="Current operational health, household activity, AI usage, and backup status."
-        lastUpdatedAt={lastUpdatedAt}
-        loading={loading}
-        onRefresh={refresh}
+        description="Operations risk, product activity, AI reliability, MCP reliability, backup posture, and system trends."
+        rangeLabel={range.label}
+        lastUpdatedAt={combinedLastUpdatedAt}
+        loading={combinedLoading}
+        onRefresh={() => {
+          refresh();
+          systemHistory.refresh();
+        }}
+        rangeControl={<RangeControl selectedDays={range.days} setRangeDays={range.setRangeDays} />}
       />
+      <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-ink">Operations Risk</h2>
+              <p className="mt-1 text-sm text-muted">Critical and warning signals across runtime, reliability, storage, and backups.</p>
+            </div>
+            <div className="flex gap-2">
+              <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-800">
+                {data.risk.criticalCount} critical
+              </span>
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-800">
+                {data.risk.warningCount} warnings
+              </span>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-4">
+            <HealthBadge ok={data.health.apiHealthy} label="API" />
+            <HealthBadge ok={data.health.databaseHealthy} label="Database" />
+            <HealthBadge ok={data.mcp.mcpHealthy} label="MCP" />
+            <HealthBadge ok={data.mcp.authHealthy} label="Auth" />
+          </div>
+        </section>
+        <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-ink">Action Needed</h2>
+          <RiskItemList items={data.risk.items} />
+        </section>
+      </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Users" value={numberFormatter.format(data.usersTotal)} />
+        <MetricCard label="New users 7d" value={numberFormatter.format(data.growth.newUsers7d)} />
         <MetricCard label="Households" value={numberFormatter.format(data.householdsTotal)} />
         <MetricCard label="Active households 7d" value={numberFormatter.format(data.householdsActive7d)} tone="good" />
-        <MetricCard label="Active households 30d" value={numberFormatter.format(data.householdsActive30d)} />
-        <MetricCard label="Items created 7d" value={numberFormatter.format(data.itemsCreated7d)} />
-        <MetricCard label="Items completed 7d" value={numberFormatter.format(data.itemsCompleted7d)} />
-        <MetricCard label="Tasks completed 7d" value={numberFormatter.format(data.tasksCompleted7d)} />
-        <MetricCard label="Voice items 7d" value={numberFormatter.format(data.voiceItemsCreated7d)} />
+        <MetricCard label="Active rate 7d" value={formatSignedRatio(data.growth.activeHouseholdRate7d)} />
+        <MetricCard label="Items completed 7d" value={numberFormatter.format(data.engagement.itemsCompleted7d)} />
+        <MetricCard label="AI failure rate 7d" value={formatRatio(data.aiReliability.failureRate7d)} tone={data.aiReliability.failures7d > 0 ? "warn" : "default"} />
+        <MetricCard label="Voice success rate 7d" value={formatRatio(data.voiceReliability.successRate7d)} tone={data.voiceReliability.failures7d === 0 ? "good" : "warn"} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-4">
         <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-ink">AI</h2>
           <dl className="mt-4 grid grid-cols-3 gap-4">
-            <Stat label="Requests" value={data.aiRequests7d} />
-            <Stat label="Success" value={data.aiSuccesses7d} />
-            <Stat label="Failed" value={data.aiFailures7d} />
+            <Stat label="Requests" value={data.aiReliability.requests7d} />
+            <Stat label="Failures" value={data.aiReliability.failures7d} />
+            <Stat label="Latency" value={formatLatency(data.aiReliability.averageLatencyMs7d)} />
           </dl>
-          <p className="mt-4 text-sm text-muted">Estimated cost: {formatMicros(data.estimatedAiCostMicros7d)}</p>
+          <p className="mt-4 text-sm text-muted">Estimated cost: {formatMicros(data.aiReliability.estimatedCostMicros7d)}</p>
+          <DeepLink href="/openai" label="Open AI view" />
         </section>
         <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-ink">MCP</h2>
@@ -301,22 +503,72 @@ export function OverviewView() {
             <Stat label="Failed" value={data.mcp.toolFailures24h} />
           </dl>
           <p className="mt-4 text-sm text-muted">Success rate: {formatRatio(data.mcp.successRate24h)}</p>
+          <DeepLink href="/mcp" label="Open MCP view" />
         </section>
         <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-ink">Backup</h2>
           <BackupSummary backup={data.lastBackup} />
+          <dl className="mt-4 grid grid-cols-2 gap-4">
+            <Stat label="Success 30d" value={data.backupHealth.successes30d} />
+            <Stat label="Failed 30d" value={data.backupHealth.failures30d} />
+          </dl>
+          <DeepLink href="/backups" label="Open Backups view" />
         </section>
         <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-ink">System</h2>
           <HealthSummary health={data.health} />
+          <dl className="mt-4 grid grid-cols-2 gap-4">
+            <Stat label="Disk free" value={formatBytes(data.health.diskFreeBytes)} />
+            <Stat label="Uptime" value={formatDuration(data.health.uptimeSeconds)} />
+          </dl>
+          <DeepLink href="/system" label="Open System view" />
         </section>
       </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-ink">Growth</h2>
+          <dl className="mt-4 grid grid-cols-2 gap-4">
+            <Stat label="New households" value={data.growth.newHouseholds7d} />
+            <Stat label="New lists" value={data.growth.newLists7d} />
+            <Stat label="Active 7d" value={formatRatio(data.growth.activeHouseholdRate7d)} />
+            <Stat label="Active 30d" value={formatRatio(data.growth.activeHouseholdRate30d)} />
+          </dl>
+        </section>
+        <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-ink">Engagement</h2>
+          <dl className="mt-4 grid grid-cols-2 gap-4">
+            <Stat label="Items created" value={data.engagement.itemsCreated7d} />
+            <Stat label="Items completed" value={data.engagement.itemsCompleted7d} />
+            <Stat label="Tasks created" value={data.engagement.tasksCreated7d} />
+            <Stat label="Tasks completed" value={data.engagement.tasksCompleted7d} />
+          </dl>
+          <p className="mt-4 text-sm text-muted">Item completion ratio: {formatRatio(data.engagement.itemCompletionRatio7d)}</p>
+        </section>
+        <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-ink">Voice Reliability</h2>
+          <dl className="mt-4 grid grid-cols-2 gap-4">
+            <Stat label="Requests" value={data.voiceReliability.requests7d} />
+            <Stat label="Failures" value={data.voiceReliability.failures7d} />
+            <Stat label="Parsed items" value={data.voiceReliability.parsedItems7d} />
+            <Stat label="Created items" value={data.voiceReliability.itemsCreated7d} />
+          </dl>
+        </section>
+      </div>
+
+      <ChartPanel title="System Trends">
+        {systemHistory.data?.samples.length ? (
+          <SystemTrendsChart samples={systemHistory.data.samples} />
+        ) : (
+          <EmptyState title="No system history yet" description="System history appears after the background sampler records its first 15-minute snapshot." />
+        )}
+      </ChartPanel>
     </div>
   );
 }
 
 export function UsageView() {
-  const range = useMemo(() => dateRange(14), []);
+  const range = useDateRange(14);
   const path = useMemo(() => `metrics/usage?${range.query}`, [range.query]);
   const { data, error, lastUpdatedAt, loading, refresh } = useAdminResource<UsageMetrics>(path);
   const state = <PageState loading={loading} error={error} />;
@@ -330,6 +582,7 @@ export function UsageView() {
           lastUpdatedAt={lastUpdatedAt}
           loading={loading}
           onRefresh={refresh}
+          rangeControl={<RangeControl selectedDays={range.days} setRangeDays={range.setRangeDays} />}
         />
         {state}
       </div>
@@ -345,6 +598,7 @@ export function UsageView() {
         lastUpdatedAt={lastUpdatedAt}
         loading={loading}
         onRefresh={refresh}
+        rangeControl={<RangeControl selectedDays={range.days} setRangeDays={range.setRangeDays} />}
       />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Items created" value={sum(data.days, "itemsCreated")} />
@@ -367,7 +621,7 @@ export function UsageView() {
 }
 
 export function OpenAiView() {
-  const range = useMemo(() => dateRange(14), []);
+  const range = useDateRange(14);
   const openAiPath = useMemo(() => `metrics/openai?${range.query}`, [range.query]);
   const voicePath = useMemo(() => `metrics/voice?${range.query}`, [range.query]);
   const openAi = useAdminResource<OpenAiMetrics>(openAiPath);
@@ -388,6 +642,7 @@ export function OpenAiView() {
             openAi.refresh();
             voice.refresh();
           }}
+          rangeControl={<RangeControl selectedDays={range.days} setRangeDays={range.setRangeDays} />}
         />
         {state}
       </div>
@@ -409,6 +664,7 @@ export function OpenAiView() {
           openAi.refresh();
           voice.refresh();
         }}
+        rangeControl={<RangeControl selectedDays={range.days} setRangeDays={range.setRangeDays} />}
       />
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-ink">AI Usage</h2>
@@ -448,47 +704,37 @@ export function OpenAiView() {
       {data.operations.length === 0 ? (
         <EmptyState title="No AI operation rows" description="No OpenAI usage was recorded in this range. Metrics above will update after the first tracked request." />
       ) : (
-        <section className="overflow-x-auto rounded-lg border border-line bg-white shadow-sm">
-          <table className="w-full min-w-[960px] border-collapse text-left text-sm">
-            <thead className="bg-surface text-muted">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Feature</th>
-                <th className="px-4 py-3 font-semibold">Operation</th>
-                <th className="px-4 py-3 font-semibold">Model</th>
-                <th className="px-4 py-3 font-semibold">Requests</th>
-                <th className="px-4 py-3 font-semibold">Failures</th>
-                <th className="px-4 py-3 font-semibold">Input</th>
-                <th className="px-4 py-3 font-semibold">Output</th>
-                <th className="px-4 py-3 font-semibold">Cost</th>
-                <th className="px-4 py-3 font-semibold">Latency</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.operations.map((operation) => (
-                <tr className="border-t border-line" key={`${operation.feature}-${operation.operation}-${operation.model ?? "none"}`}>
-                  <td className="px-4 py-3">{operation.feature}</td>
-                  <td className="px-4 py-3">{operation.operation}</td>
-                  <td className="max-w-48 truncate px-4 py-3" title={operation.model ?? "Unknown"}>
-                    {operation.model ?? "Unknown"}
-                  </td>
-                  <td className="px-4 py-3">{numberFormatter.format(operation.requests)}</td>
-                  <td className="px-4 py-3">{numberFormatter.format(operation.failures)}</td>
-                  <td className="px-4 py-3">{numberFormatter.format(operation.inputTokens)}</td>
-                  <td className="px-4 py-3">{numberFormatter.format(operation.outputTokens)}</td>
-                  <td className="px-4 py-3">{formatMicros(operation.estimatedCostMicros)}</td>
-                  <td className="px-4 py-3">{operation.averageLatencyMs === null ? "Unknown" : `${Math.round(operation.averageLatencyMs)} ms`}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+        <ResponsiveDataTable
+          columns={[
+            { header: "Feature", render: (operation) => operation.feature },
+            { header: "Operation", render: (operation) => operation.operation },
+            {
+              header: "Model",
+              className: "max-w-48 truncate",
+              render: (operation) => (
+                <span title={operation.model ?? "Unknown"}>
+                  {operation.model ?? "Unknown"}
+                </span>
+              ),
+            },
+            { header: "Requests", render: (operation) => numberFormatter.format(operation.requests) },
+            { header: "Failures", render: (operation) => numberFormatter.format(operation.failures) },
+            { header: "Input", render: (operation) => numberFormatter.format(operation.inputTokens) },
+            { header: "Output", render: (operation) => numberFormatter.format(operation.outputTokens) },
+            { header: "Cost", render: (operation) => formatMicros(operation.estimatedCostMicros) },
+            { header: "Latency", render: (operation) => formatLatency(operation.averageLatencyMs) },
+          ]}
+          items={data.operations}
+          keyForItem={(operation) => `${operation.feature}-${operation.operation}-${operation.model ?? "none"}`}
+          minWidth="960px"
+        />
       )}
     </div>
   );
 }
 
 export function McpView() {
-  const range = useMemo(() => dateRange(14), []);
+  const range = useDateRange(14);
   const path = useMemo(() => `mcp/overview?${range.query}`, [range.query]);
   const { data, error, lastUpdatedAt, loading, refresh } = useAdminResource<unknown>(path);
   const payloadError = data && !isMcpOverviewPayload(data) ? "Unexpected MCP admin payload." : "";
@@ -503,6 +749,7 @@ export function McpView() {
           lastUpdatedAt={lastUpdatedAt}
           loading={loading}
           onRefresh={refresh}
+          rangeControl={<RangeControl selectedDays={range.days} setRangeDays={range.setRangeDays} />}
         />
         {state}
       </div>
@@ -519,6 +766,7 @@ export function McpView() {
         lastUpdatedAt={lastUpdatedAt}
         loading={loading}
         onRefresh={refresh}
+        rangeControl={<RangeControl selectedDays={range.days} setRangeDays={range.setRangeDays} />}
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
@@ -560,34 +808,20 @@ export function McpView() {
       {overview.tools.length === 0 ? (
         <EmptyState title="No MCP tool usage yet" description="Tool metrics appear after ChatGPT invokes Convy MCP tools against this environment." />
       ) : (
-        <section className="overflow-x-auto rounded-lg border border-line bg-white shadow-sm">
-          <table className="w-full min-w-[920px] border-collapse text-left text-sm">
-            <thead className="bg-surface text-muted">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Tool</th>
-                <th className="px-4 py-3 font-semibold">Calls</th>
-                <th className="px-4 py-3 font-semibold">Success</th>
-                <th className="px-4 py-3 font-semibold">Failed</th>
-                <th className="px-4 py-3 font-semibold">Avg latency</th>
-                <th className="px-4 py-3 font-semibold">P95 latency</th>
-                <th className="px-4 py-3 font-semibold">Last invocation</th>
-              </tr>
-            </thead>
-            <tbody>
-              {overview.tools.map((tool) => (
-                <tr className="border-t border-line" key={tool.toolName}>
-                  <td className="px-4 py-3 font-mono text-xs">{tool.toolName}</td>
-                  <td className="px-4 py-3">{numberFormatter.format(tool.invocations)}</td>
-                  <td className="px-4 py-3">{numberFormatter.format(tool.successes)}</td>
-                  <td className="px-4 py-3">{numberFormatter.format(tool.failures)}</td>
-                  <td className="px-4 py-3">{formatLatency(tool.averageLatencyMs)}</td>
-                  <td className="px-4 py-3">{tool.p95LatencyMs === null ? "Unknown" : `${tool.p95LatencyMs} ms`}</td>
-                  <td className="px-4 py-3">{formatNullableDateTime(tool.lastInvocationAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+        <ResponsiveDataTable
+          columns={[
+            { header: "Tool", className: "font-mono text-xs", render: (tool) => tool.toolName },
+            { header: "Calls", render: (tool) => numberFormatter.format(tool.invocations) },
+            { header: "Success", render: (tool) => numberFormatter.format(tool.successes) },
+            { header: "Failed", render: (tool) => numberFormatter.format(tool.failures) },
+            { header: "Avg latency", render: (tool) => formatLatency(tool.averageLatencyMs) },
+            { header: "P95 latency", render: (tool) => (tool.p95LatencyMs === null ? "Unknown" : `${tool.p95LatencyMs} ms`) },
+            { header: "Last invocation", render: (tool) => formatNullableDateTime(tool.lastInvocationAt) },
+          ]}
+          items={overview.tools}
+          keyForItem={(tool) => tool.toolName}
+          minWidth="920px"
+        />
       )}
 
       <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
@@ -600,72 +834,48 @@ export function McpView() {
         </dl>
       </section>
 
-      <section className="overflow-x-auto rounded-lg border border-line bg-white shadow-sm">
-        <div className="p-5">
-          <h2 className="text-lg font-semibold text-ink">Recent Invocations</h2>
-        </div>
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-ink">Recent Invocations</h2>
         {overview.recentInvocations.length === 0 ? (
-          <div className="px-5 pb-5">
-            <EmptyState title="No recent invocations" description="Recent MCP calls will appear here without prompts or full tool arguments." />
-          </div>
+          <EmptyState title="No recent invocations" description="Recent MCP calls will appear here without prompts or full tool arguments." />
         ) : (
-          <table className="w-full min-w-[960px] border-collapse text-left text-sm">
-            <thead className="bg-surface text-muted">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Time</th>
-                <th className="px-4 py-3 font-semibold">Tool</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Latency</th>
-                <th className="px-4 py-3 font-semibold">Error</th>
-                <th className="px-4 py-3 font-semibold">User</th>
-                <th className="px-4 py-3 font-semibold">Household</th>
-              </tr>
-            </thead>
-            <tbody>
-              {overview.recentInvocations.map((invocation) => (
-                <tr className="border-t border-line" key={`${invocation.createdAt}-${invocation.toolName}-${invocation.latencyMs}`}>
-                  <td className="px-4 py-3">{new Date(invocation.createdAt).toLocaleString()}</td>
-                  <td className="px-4 py-3 font-mono text-xs">{invocation.toolName}</td>
-                  <td className="px-4 py-3">
-                    <StatusPill ok={invocation.status === "Success"} label={invocation.status} />
-                  </td>
-                  <td className="px-4 py-3">{invocation.latencyMs} ms</td>
-                  <td className="px-4 py-3">{invocation.errorType ?? "None"}</td>
-                  <td className="px-4 py-3 font-mono text-xs">{invocation.userId}</td>
-                  <td className="px-4 py-3 font-mono text-xs">{invocation.householdId ?? "None"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ResponsiveDataTable
+            columns={[
+              { header: "Time", render: (invocation) => new Date(invocation.createdAt).toLocaleString() },
+              { header: "Tool", className: "font-mono text-xs", render: (invocation) => invocation.toolName },
+              { header: "Status", render: (invocation) => <StatusPill ok={invocation.status === "Success"} label={invocation.status} /> },
+              { header: "Latency", render: (invocation) => `${invocation.latencyMs} ms` },
+              { header: "Error", render: (invocation) => invocation.errorType ?? "None" },
+              { header: "User", className: "font-mono text-xs", render: (invocation) => invocation.userId },
+              { header: "Household", className: "font-mono text-xs", render: (invocation) => invocation.householdId ?? "None" },
+            ]}
+            items={overview.recentInvocations}
+            keyForItem={(invocation) => `${invocation.createdAt}-${invocation.toolName}-${invocation.latencyMs}`}
+            minWidth="960px"
+          />
         )}
       </section>
 
-      <section className="overflow-x-auto rounded-lg border border-line bg-white shadow-sm">
-        <div className="p-5">
-          <h2 className="text-lg font-semibold text-ink">Tool Catalog</h2>
-        </div>
-        <table className="w-full min-w-[920px] border-collapse text-left text-sm">
-          <thead className="bg-surface text-muted">
-            <tr>
-              <th className="px-4 py-3 font-semibold">Tool</th>
-              <th className="px-4 py-3 font-semibold">Title</th>
-              <th className="px-4 py-3 font-semibold">Scopes</th>
-              <th className="px-4 py-3 font-semibold">Annotations</th>
-            </tr>
-          </thead>
-          <tbody>
-            {overview.toolCatalog.map((tool) => (
-              <tr className="border-t border-line" key={tool.name}>
-                <td className="px-4 py-3 font-mono text-xs">{tool.name}</td>
-                <td className="px-4 py-3">{tool.title}</td>
-                <td className="px-4 py-3">{tool.requiredScopes.join(", ")}</td>
-                <td className="px-4 py-3">
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-ink">Tool Catalog</h2>
+        <ResponsiveDataTable
+          columns={[
+            { header: "Tool", className: "font-mono text-xs", render: (tool) => tool.name },
+            { header: "Title", render: (tool) => tool.title },
+            { header: "Scopes", render: (tool) => tool.requiredScopes.join(", ") },
+            {
+              header: "Annotations",
+              render: (tool) => (
+                <>
                   readOnly={String(tool.readOnlyHint)}, destructive={String(tool.destructiveHint)}, idempotent={String(tool.idempotentHint)}, openWorld={String(tool.openWorldHint)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </>
+              ),
+            },
+          ]}
+          items={overview.toolCatalog}
+          keyForItem={(tool) => tool.name}
+          minWidth="920px"
+        />
       </section>
 
       <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
@@ -769,58 +979,61 @@ export function BackupsView() {
           description="The backup table will populate after the first scheduled or manual backup. Until then there is nothing to download or verify."
         />
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-line bg-white shadow-sm">
-          <table className="w-full min-w-[980px] border-collapse text-left text-sm">
-            <thead className="bg-surface text-muted">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Started</th>
-                <th className="px-4 py-3 font-semibold">Type</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Verification</th>
-                <th className="px-4 py-3 font-semibold">Size</th>
-                <th className="px-4 py-3 font-semibold">File</th>
-                <th className="px-4 py-3 font-semibold">SHA256</th>
-                <th className="px-4 py-3 font-semibold">Download</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((backup) => (
-                <tr className="border-t border-line" key={backup.id}>
-                  <td className="px-4 py-3">{new Date(backup.startedAt).toLocaleString()}</td>
-                  <td className="px-4 py-3">{backup.backupType}</td>
-                  <td className="px-4 py-3">
-                    <StatusPill ok={backup.status === "Success"} label={backup.status} />
-                  </td>
-                  <td className="px-4 py-3">{backup.verificationStatus}</td>
-                  <td className="px-4 py-3">{formatBytes(backup.sizeBytes)}</td>
-                  <td className="max-w-sm truncate px-4 py-3" title={backup.fileName ?? "None"}>
-                    {backup.fileName ?? "None"}
-                  </td>
-                  <td className="max-w-[14rem] truncate px-4 py-3 font-mono text-xs" title={backup.sha256 ?? "None"}>
-                    {backup.sha256 ?? "None"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      className="rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-50"
-                      disabled={backup.status !== "Success" || !backup.fileName}
-                      onClick={() => void downloadBackup(backup)}
-                      type="button"
-                    >
-                      Download
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ResponsiveDataTable
+          columns={[
+            { header: "Started", render: (backup) => new Date(backup.startedAt).toLocaleString() },
+            { header: "Type", render: (backup) => backup.backupType },
+            { header: "Status", render: (backup) => <StatusPill ok={backup.status === "Success"} label={backup.status} /> },
+            { header: "Verification", render: (backup) => backup.verificationStatus },
+            { header: "Size", render: (backup) => formatBytes(backup.sizeBytes) },
+            {
+              header: "File",
+              className: "max-w-sm truncate",
+              render: (backup) => (
+                <span title={backup.fileName ?? "None"}>
+                  {backup.fileName ?? "None"}
+                </span>
+              ),
+            },
+            {
+              header: "SHA256",
+              className: "max-w-[14rem] truncate font-mono text-xs",
+              render: (backup) => (
+                <span title={backup.sha256 ?? "None"}>
+                  {backup.sha256 ?? "None"}
+                </span>
+              ),
+            },
+            {
+              header: "Download",
+              render: (backup) => (
+                <button
+                  className="rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={backup.status !== "Success" || !backup.fileName}
+                  onClick={() => void downloadBackup(backup)}
+                  type="button"
+                >
+                  Download
+                </button>
+              ),
+            },
+          ]}
+          items={data}
+          keyForItem={(backup) => backup.id}
+          minWidth="980px"
+        />
       )}
     </section>
   );
 }
 
 export function SystemView() {
-  const { data, error, lastUpdatedAt, loading, refresh } = useAdminResource<SystemHealth>("system/health");
+  const range = useDateRange(14);
+  const health = useAdminResource<SystemHealth>("system/health");
+  const systemHistory = useAdminResource<SystemHistory>(`system/history?${range.query}`);
+  const { data, error, lastUpdatedAt, loading, refresh } = health;
+  const combinedLoading = loading || systemHistory.loading;
+  const combinedLastUpdatedAt = lastUpdatedAt ?? systemHistory.lastUpdatedAt;
   const state = <PageState loading={loading} error={error} />;
   if (loading || error || !data) {
     return (
@@ -828,9 +1041,14 @@ export function SystemView() {
         <ViewHeader
           title="System"
           description="Runtime, database, host, deploy, and resource health."
-          lastUpdatedAt={lastUpdatedAt}
-          loading={loading}
-          onRefresh={refresh}
+          rangeLabel={range.label}
+          lastUpdatedAt={combinedLastUpdatedAt}
+          loading={combinedLoading}
+          onRefresh={() => {
+            refresh();
+            systemHistory.refresh();
+          }}
+          rangeControl={<RangeControl selectedDays={range.days} setRangeDays={range.setRangeDays} />}
         />
         {state}
       </div>
@@ -842,9 +1060,14 @@ export function SystemView() {
       <ViewHeader
         title="System"
         description="Runtime, database, host, deploy, and resource health."
-        lastUpdatedAt={lastUpdatedAt}
-        loading={loading}
-        onRefresh={refresh}
+        rangeLabel={range.label}
+        lastUpdatedAt={combinedLastUpdatedAt}
+        loading={combinedLoading}
+        onRefresh={() => {
+          refresh();
+          systemHistory.refresh();
+        }}
+        rangeControl={<RangeControl selectedDays={range.days} setRangeDays={range.setRangeDays} />}
       />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="API" value={data.apiHealthy ? "Healthy" : "Unhealthy"} tone={data.apiHealthy ? "good" : "warn"} />
@@ -879,6 +1102,13 @@ export function SystemView() {
           </dl>
         </section>
       </div>
+      <ChartPanel title="System Trends">
+        {systemHistory.data?.samples.length ? (
+          <SystemTrendsChart samples={systemHistory.data.samples} />
+        ) : (
+          <EmptyState title="No system history yet" description="System history appears after the background sampler records its first 15-minute snapshot." />
+        )}
+      </ChartPanel>
     </div>
   );
 }

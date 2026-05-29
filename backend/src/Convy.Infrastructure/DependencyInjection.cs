@@ -45,6 +45,8 @@ public static class DependencyInjection
         services.AddScoped<IAdminBackupFileService, AdminBackupFileService>();
         services.AddScoped<IOpenAiVoiceCostEstimator, OpenAiVoiceCostEstimator>();
         services.AddScoped<IAiUsageRecorder, AiUsageRecorder>();
+        services.AddScoped<ISystemMetricSource, SystemMetricSource>();
+        services.AddScoped<SystemMetricSnapshotRecorder>();
 
         services.AddSingleton<PushNotificationBatcher>(sp =>
             new PushNotificationBatcher(
@@ -55,6 +57,7 @@ public static class DependencyInjection
         services.AddHostedService(sp => sp.GetRequiredService<PushNotificationBatcher>());
 
         services.AddHostedService<RecurringItemService>();
+        services.AddHostedService<SystemMetricSnapshotHostedService>();
 
         AddOpenAiServices(services, configuration);
 

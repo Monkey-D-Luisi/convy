@@ -82,6 +82,9 @@ public class AdminMetricsReader : IAdminMetricsReader
             .Distinct()
             .CountAsync(cancellationToken);
         var listsTotal = await _context.HouseholdLists.CountAsync(cancellationToken);
+        var newUsers7d = await _context.Users.CountAsync(u => u.CreatedAt >= since7d, cancellationToken);
+        var newHouseholds7d = await _context.Households.CountAsync(h => h.CreatedAt >= since7d, cancellationToken);
+        var newLists7d = await _context.HouseholdLists.CountAsync(l => l.CreatedAt >= since7d, cancellationToken);
         var itemsCreated7d = await _context.ActivityLogs.CountAsync(a => a.EntityType == ActivityEntityType.Item && a.ActionType == ActivityActionType.Created && a.CreatedAt >= since7d, cancellationToken);
         var itemsCompleted7d = await _context.ActivityLogs.CountAsync(a => a.EntityType == ActivityEntityType.Item && a.ActionType == ActivityActionType.Completed && a.CreatedAt >= since7d, cancellationToken);
         var tasksCreated7d = await _context.ActivityLogs.CountAsync(a => a.EntityType == ActivityEntityType.Task && a.ActionType == ActivityActionType.Created && a.CreatedAt >= since7d, cancellationToken);
@@ -92,9 +95,19 @@ public class AdminMetricsReader : IAdminMetricsReader
             .ToListAsync(cancellationToken);
         var voiceItemsCreated7d = await _context.ListItems
             .CountAsync(i => i.Source == ItemCreationSource.Voice && i.CreatedAt >= since7d, cancellationToken);
+        var voiceEvents7d = await _context.VoiceParseEvents
+            .AsNoTracking()
+            .Where(v => v.CreatedAt >= since7d)
+            .ToListAsync(cancellationToken);
+        var backupRuns30d = await _context.BackupRuns
+            .AsNoTracking()
+            .Where(b => b.StartedAt >= since30d)
+            .ToListAsync(cancellationToken);
         var mcp = await GetMcpSummaryAsync(now, cancellationToken);
         var lastBackup = await GetLatestBackupAsync(cancellationToken);
         var health = await GetSystemHealthAsync(cancellationToken);
+        var aiFailures7d = aiUsageEvents7d.Count(e => e.Status == AiUsageStatus.Failure);
+        var voiceFailures7d = voiceEvents7d.Count(v => v.Status != VoiceParseStatus.Success);
 
         return new AdminOverviewDto(
             usersTotal,
@@ -108,12 +121,47 @@ public class AdminMetricsReader : IAdminMetricsReader
             tasksCompleted7d,
             aiUsageEvents7d.Count,
             aiUsageEvents7d.Count(e => e.Status == AiUsageStatus.Success),
-            aiUsageEvents7d.Count(e => e.Status == AiUsageStatus.Failure),
+            aiFailures7d,
             voiceItemsCreated7d,
             SumNullable(aiUsageEvents7d.Select(e => e.EstimatedCostMicros)),
             mcp,
             lastBackup,
-            health);
+            health,
+            CreateRiskSummary(mcp, lastBackup, health, aiFailures7d, aiUsageEvents7d.Count, voiceFailures7d, voiceEvents7d.Count),
+            new AdminGrowthSummaryDto(
+                newUsers7d,
+                newHouseholds7d,
+                newLists7d,
+                Rate(householdsActive7d, householdsTotal),
+                Rate(householdsActive30d, householdsTotal)),
+            new AdminEngagementSummaryDto(
+                householdsActive7d,
+                itemsCreated7d,
+                itemsCompleted7d,
+                tasksCreated7d,
+                tasksCompleted7d,
+                Rate(itemsCompleted7d, itemsCreated7d)),
+            new AdminAiReliabilitySummaryDto(
+                aiUsageEvents7d.Count,
+                aiFailures7d,
+                Rate(aiFailures7d, aiUsageEvents7d.Count),
+                AverageNullable(aiUsageEvents7d.Select(e => (double?)e.LatencyMs)),
+                SumNullable(aiUsageEvents7d.Select(e => e.EstimatedCostMicros))),
+            new AdminVoiceReliabilitySummaryDto(
+                voiceEvents7d.Count,
+                voiceFailures7d,
+                Rate(voiceEvents7d.Count(v => v.Status == VoiceParseStatus.Success), voiceEvents7d.Count),
+                voiceEvents7d.Sum(v => v.ParsedItemsCount),
+                voiceItemsCreated7d),
+            new AdminBackupHealthSummaryDto(
+                backupRuns30d.Count(b => b.Status == BackupRunStatus.Success),
+                backupRuns30d.Count(b => b.Status == BackupRunStatus.Failed),
+                backupRuns30d
+                    .Where(b => b.Status == BackupRunStatus.Success)
+                    .Select(b => (DateTime?)b.FinishedAt)
+                    .Max(),
+                lastBackup?.Status == BackupRunStatus.Success.ToString(),
+                lastBackup?.VerificationStatus is nameof(BackupVerificationStatus.PgRestoreListOk) or nameof(BackupVerificationStatus.RestoreOk)));
     }
 
     public async Task<AdminUsageMetricsDto> GetUsageAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
@@ -438,6 +486,29 @@ public class AdminMetricsReader : IAdminMetricsReader
             LoadAverage1m: GetLoadAverage1m());
     }
 
+    public async Task<AdminSystemHistoryDto> GetSystemHistoryAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
+    {
+        var start = from.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var end = to.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+
+        var samples = await _context.SystemMetricSnapshots
+            .AsNoTracking()
+            .Where(snapshot => snapshot.CapturedAt >= start && snapshot.CapturedAt < end)
+            .OrderBy(snapshot => snapshot.CapturedAt)
+            .Select(snapshot => new SystemMetricSnapshotDto(
+                snapshot.CapturedAt,
+                snapshot.DiskFreeBytes,
+                snapshot.DiskTotalBytes,
+                snapshot.MemoryAvailableBytes,
+                snapshot.MemoryTotalBytes,
+                snapshot.LoadAverage1m,
+                snapshot.UptimeSeconds,
+                snapshot.PostgresDataSizeBytes))
+            .ToListAsync(cancellationToken);
+
+        return new AdminSystemHistoryDto(from, to, samples);
+    }
+
     private async Task<AdminMcpSummaryDto> GetMcpSummaryAsync(DateTime now, CancellationToken cancellationToken)
     {
         var since = now.AddHours(-24);
@@ -525,6 +596,46 @@ public class AdminMetricsReader : IAdminMetricsReader
             AverageNullable(invocations.Select(invocation => (double?)invocation.LatencyMs)),
             Percentile(invocations.Select(invocation => invocation.LatencyMs), 0.95),
             invocations.Max(invocation => (DateTime?)invocation.CreatedAt));
+    }
+
+    private static AdminRiskSummaryDto CreateRiskSummary(
+        AdminMcpSummaryDto mcp,
+        BackupRunDto? lastBackup,
+        AdminSystemHealthDto health,
+        int aiFailures7d,
+        int aiRequests7d,
+        int voiceFailures7d,
+        int voiceRequests7d)
+    {
+        var items = new List<AdminRiskItemDto>();
+
+        if (!health.ApiHealthy)
+            items.Add(new("api_unhealthy", "API is unhealthy", "Critical", "The API health check is failing.", "/system"));
+        if (!health.DatabaseHealthy)
+            items.Add(new("database_unhealthy", "Database is unhealthy", "Critical", "The database health check is failing.", "/system"));
+        if (!health.McpHealthy)
+            items.Add(new("mcp_unhealthy", "MCP is unhealthy", "Critical", "The MCP health check is failing.", "/mcp"));
+        if (!health.AuthHealthy)
+            items.Add(new("auth_unhealthy", "Auth is unhealthy", "Critical", "The auth health check is failing.", "/system"));
+        if (health.DiskFreeBytes is not null && health.DiskTotalBytes is > 0 && health.DiskFreeBytes.Value / (double)health.DiskTotalBytes.Value < 0.15)
+            items.Add(new("disk_low", "Disk free space is low", "Warning", "The server has less than 15% disk free.", "/system"));
+        if (lastBackup is null)
+            items.Add(new("backup_missing", "No backup has run", "Warning", "No registered backup run is available.", "/backups"));
+        else if (!string.Equals(lastBackup.Status, BackupRunStatus.Success.ToString(), StringComparison.Ordinal))
+            items.Add(new("backup_latest_failed", "Latest backup failed", "Warning", "The latest registered backup did not finish successfully.", "/backups"));
+        else if (lastBackup.VerificationStatus is not nameof(BackupVerificationStatus.PgRestoreListOk) and not nameof(BackupVerificationStatus.RestoreOk))
+            items.Add(new("backup_not_verified", "Latest backup is not verified", "Warning", "The latest backup did not pass restore-list or restore verification.", "/backups"));
+        if (mcp.ToolCalls24h > 0 && mcp.ToolFailures24h > 0)
+            items.Add(new("mcp_failures", "MCP failures in last 24h", "Warning", $"{mcp.ToolFailures24h} MCP calls failed in the last 24 hours.", "/mcp"));
+        if (aiRequests7d > 0 && Rate(aiFailures7d, aiRequests7d) >= 0.1)
+            items.Add(new("ai_failure_rate", "AI failure rate is elevated", "Warning", $"{aiFailures7d} AI requests failed in the last 7 days.", "/openai"));
+        if (voiceRequests7d > 0 && Rate(voiceFailures7d, voiceRequests7d) >= 0.1)
+            items.Add(new("voice_failure_rate", "Voice failure rate is elevated", "Warning", $"{voiceFailures7d} voice parse requests failed in the last 7 days.", "/openai"));
+
+        return new AdminRiskSummaryDto(
+            items.Count(item => item.Severity == "Critical"),
+            items.Count(item => item.Severity == "Warning"),
+            items);
     }
 
     private async Task<bool> CheckHttpOkAsync(string url, CancellationToken cancellationToken)
