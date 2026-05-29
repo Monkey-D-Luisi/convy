@@ -9,6 +9,7 @@ public class NotificationPreferences : Entity
     public bool TasksAdded { get; private set; }
     public bool ItemsCompleted { get; private set; }
     public bool TasksCompleted { get; private set; }
+    public bool TaskReminders { get; private set; }
     public bool ItemTaskChanges { get; private set; }
     public bool ListChanges { get; private set; }
     public bool MemberChanges { get; private set; }
@@ -26,6 +27,7 @@ public class NotificationPreferences : Entity
         TasksAdded = true;
         ItemsCompleted = false;
         TasksCompleted = false;
+        TaskReminders = true;
         ItemTaskChanges = false;
         ListChanges = true;
         MemberChanges = true;
@@ -40,6 +42,7 @@ public class NotificationPreferences : Entity
         bool tasksAdded,
         bool itemsCompleted,
         bool tasksCompleted,
+        bool taskReminders,
         bool itemTaskChanges,
         bool listChanges,
         bool memberChanges)
@@ -48,6 +51,7 @@ public class NotificationPreferences : Entity
         TasksAdded = tasksAdded;
         ItemsCompleted = itemsCompleted;
         TasksCompleted = tasksCompleted;
+        TaskReminders = taskReminders;
         ItemTaskChanges = itemTaskChanges;
         ListChanges = listChanges;
         MemberChanges = memberChanges;
@@ -60,6 +64,7 @@ public class NotificationPreferences : Entity
         NotificationPreferenceCategory.TasksAdded => TasksAdded,
         NotificationPreferenceCategory.ItemsCompleted => ItemsCompleted,
         NotificationPreferenceCategory.TasksCompleted => TasksCompleted,
+        NotificationPreferenceCategory.TaskReminders => TaskReminders,
         NotificationPreferenceCategory.ItemTaskChanges => ItemTaskChanges,
         NotificationPreferenceCategory.ListChanges => ListChanges,
         NotificationPreferenceCategory.MemberChanges => MemberChanges,
@@ -73,6 +78,7 @@ public enum NotificationPreferenceCategory
     TasksAdded,
     ItemsCompleted,
     TasksCompleted,
+    TaskReminders,
     ItemTaskChanges,
     ListChanges,
     MemberChanges

@@ -53,10 +53,20 @@ public class UpdateTaskCommandHandler : IRequestHandler<UpdateTaskCommand, Resul
         if (access.IsFailure)
             return Result.Failure(access.Error!);
 
+        if (request.AssignedToUserId.HasValue && !access.Value!.Household.IsMember(request.AssignedToUserId.Value))
+            return Result.Failure(Error.Validation("Assigned user must be a member of the household."));
+
         var task = access.Value!.Task;
         var title = _textNormalizer.NormalizeTitle(request.Title);
         var normalizedTitle = _textNormalizer.NormalizeForComparison(title);
-        task.Update(title, normalizedTitle, request.Note);
+        task.Update(
+            title,
+            normalizedTitle,
+            request.Note,
+            request.AssignedToUserId,
+            request.DueDate,
+            request.ReminderAtUtc,
+            request.Priority);
 
         await _taskRepository.SaveChangesAsync(cancellationToken);
 
@@ -70,7 +80,9 @@ public class UpdateTaskCommandHandler : IRequestHandler<UpdateTaskCommand, Resul
     private async Task<TaskItemDto> CreateDtoAsync(Domain.Entities.TaskItem task, CancellationToken cancellationToken)
     {
         var userIds = new[] { task.CreatedBy }.Concat(
-            task.CompletedBy.HasValue ? new[] { task.CompletedBy.Value } : Array.Empty<Guid>()).Distinct();
+            task.CompletedBy.HasValue ? new[] { task.CompletedBy.Value } : Array.Empty<Guid>())
+            .Concat(task.AssignedToUserId.HasValue ? new[] { task.AssignedToUserId.Value } : Array.Empty<Guid>())
+            .Distinct();
         var users = await _userRepository.GetByIdsAsync(userIds, cancellationToken);
         var userNames = users.ToDictionary(u => u.Id, u => u.DisplayName);
         return TaskItemMapper.ToDto(task, userNames);

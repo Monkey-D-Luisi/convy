@@ -50,6 +50,7 @@ public class GetListTasksQueryHandler : IRequestHandler<GetListTasksQuery, Resul
 
         var userIds = tasks.Select(t => t.CreatedBy)
             .Concat(tasks.Where(t => t.CompletedBy.HasValue).Select(t => t.CompletedBy!.Value))
+            .Concat(tasks.Where(t => t.AssignedToUserId.HasValue).Select(t => t.AssignedToUserId!.Value))
             .Distinct();
         var users = await _userRepository.GetByIdsAsync(userIds, cancellationToken);
         var userNames = users.ToDictionary(u => u.Id, u => u.DisplayName);

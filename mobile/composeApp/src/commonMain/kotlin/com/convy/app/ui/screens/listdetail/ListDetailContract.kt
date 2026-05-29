@@ -3,6 +3,7 @@ package com.convy.app.ui.screens.listdetail
 import com.convy.app.util.UiText
 import com.convy.shared.domain.model.ListItem
 import com.convy.shared.domain.model.TaskItem
+import com.convy.shared.domain.model.TaskPriority
 
 data class ListDetailState(
     val listId: String = "",
@@ -23,6 +24,7 @@ data class ListDetailState(
     val isProcessingVoice: Boolean = false,
     val voiceTranscription: String = "",
     val parsedVoiceItems: List<ParsedVoiceItem> = emptyList(),
+    val parsedVoiceTasks: List<ParsedVoiceTask> = emptyList(),
     val showVoiceSheet: Boolean = false,
     val pendingSyncCount: Int = 0,
 )
@@ -42,6 +44,10 @@ data class ListEntryUi(
     val quantity: Int? = null,
     val unit: String? = null,
     val recurrenceFrequency: String? = null,
+    val assignedToUserName: String? = null,
+    val dueDate: String? = null,
+    val reminderAtUtc: String? = null,
+    val priority: TaskPriority = TaskPriority.Normal,
 )
 
 enum class ListEntryMetadataKind {
@@ -58,13 +64,35 @@ val ListEntryUi.metadataKind: ListEntryMetadataKind
     }
 
 fun List<ListEntryUi>.sortedByPendingEvent(): List<ListEntryUi> =
-    sortedByDescending { it.returnedToPendingAt ?: it.createdAt }
+    sortedWith(
+        compareBy<ListEntryUi> { it.dueDate ?: "9999-12-31" }
+            .thenByDescending { it.priority.rank }
+            .thenByDescending { it.returnedToPendingAt ?: it.createdAt },
+    )
+
+private val TaskPriority.rank: Int
+    get() = when (this) {
+        TaskPriority.High -> 3
+        TaskPriority.Normal -> 2
+        TaskPriority.Low -> 1
+    }
 
 data class ParsedVoiceItem(
     val title: String,
     val quantity: Int?,
     val unit: String?,
     val matchedExistingItem: String? = null,
+    val isSelected: Boolean = true,
+)
+
+data class ParsedVoiceTask(
+    val title: String,
+    val note: String?,
+    val assignedToUserId: String?,
+    val dueDate: String?,
+    val reminderAtUtc: String?,
+    val priority: TaskPriority,
+    val matchedExistingTask: String? = null,
     val isSelected: Boolean = true,
 )
 
@@ -209,6 +237,15 @@ fun List<ParsedVoiceItem>.toggleSelectionAt(index: Int): List<ParsedVoiceItem> =
         }
     }
 
+fun List<ParsedVoiceTask>.toggleTaskSelectionAt(index: Int): List<ParsedVoiceTask> =
+    if (index !in indices) {
+        this
+    } else {
+        mapIndexed { itemIndex, item ->
+            if (itemIndex == index) item.copy(isSelected = !item.isSelected) else item
+        }
+    }
+
 fun ListItem.toListEntryUi(): ListEntryUi = ListEntryUi(
     id = id,
     title = title,
@@ -238,6 +275,10 @@ fun TaskItem.toListEntryUi(): ListEntryUi = ListEntryUi(
     completedAt = completedAt,
     returnedToPendingByName = null,
     returnedToPendingAt = null,
+    assignedToUserName = assignedToUserName,
+    dueDate = dueDate,
+    reminderAtUtc = reminderAtUtc,
+    priority = priority,
 )
 
 sealed interface ListDetailIntent {

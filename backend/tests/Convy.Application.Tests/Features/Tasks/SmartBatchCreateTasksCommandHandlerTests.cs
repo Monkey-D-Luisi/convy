@@ -59,6 +59,39 @@ public class SmartBatchCreateTasksCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WithStructuredFields_CreatesTaskWithMetadata()
+    {
+        var (household, list) = SetupTaskList();
+        var assignee = Guid.NewGuid();
+        household.AddMember(assignee);
+        var added = new List<TaskItem>();
+        _taskRepository.GetByListIdAsync(list.Id, "All", null, null, null, Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<TaskItem>());
+        _taskRepository.AddAsync(Arg.Do<TaskItem>(added.Add), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        var reminderAtUtc = new DateTime(2026, 5, 30, 7, 0, 0, DateTimeKind.Utc);
+        var command = new SmartBatchCreateTasksCommand(list.Id, [
+            new SmartTaskInput(
+                "limpiar cocina",
+                "antes de comer",
+                assignee,
+                new DateOnly(2026, 5, 30),
+                reminderAtUtc,
+                TaskPriority.High)
+        ]);
+
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        added.Should().ContainSingle();
+        added[0].AssignedToUserId.Should().Be(assignee);
+        added[0].DueDate.Should().Be(new DateOnly(2026, 5, 30));
+        added[0].ReminderAtUtc.Should().Be(reminderAtUtc);
+        added[0].Priority.Should().Be(TaskPriority.High);
+        result.Value!.Created.Should().ContainSingle(task => task.AssignedToUserId == assignee);
+    }
+
+    [Fact]
     public async Task Handle_WithCompletedMatch_UncompletesTask()
     {
         var (_, list) = SetupTaskList();

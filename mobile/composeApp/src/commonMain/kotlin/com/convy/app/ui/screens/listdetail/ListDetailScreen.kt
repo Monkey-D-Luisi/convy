@@ -56,6 +56,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -94,6 +95,7 @@ import com.convy.app.ui.components.convyOutlinedTextFieldColors
 import com.convy.app.ui.components.convyTopAppBarColors
 import com.convy.app.util.UiText
 import com.convy.app.util.rememberRecordAudioPermissionState
+import com.convy.shared.domain.model.TaskPriority
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -215,6 +217,8 @@ fun ListDetailScreen(
         VoiceInputSheet(
             transcription = state.voiceTranscription,
             items = state.parsedVoiceItems,
+            tasks = state.parsedVoiceTasks,
+            isTaskMode = state.isTaskList,
             onToggleItem = { store.processIntent(ListDetailIntent.ToggleVoiceItem(it)) },
             onConfirm = { store.processIntent(ListDetailIntent.ConfirmVoiceItems) },
             onDismiss = { store.processIntent(ListDetailIntent.DismissVoiceSheet) },
@@ -418,9 +422,7 @@ private fun ListDetailBottomActions(
             Spacer(modifier = Modifier.width(8.dp))
             Text(addText)
         }
-        if (!state.isTaskList) {
-            VoiceFloatingAction(state = state, onIntent = onIntent)
-        }
+        VoiceFloatingAction(state = state, onIntent = onIntent)
     }
 }
 
@@ -739,6 +741,7 @@ private fun ListEntryCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+                TaskMetadataChips(entry = entry)
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = when (entry.metadataKind) {
@@ -772,6 +775,49 @@ private fun ListEntryCard(
                 label = entry.completedByName ?: entry.createdByName,
                 containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (entry.isCompleted) 0.38f else 0.58f),
             )
+        }
+    }
+}
+
+@Composable
+private fun TaskMetadataChips(entry: ListEntryUi) {
+    val chips = mutableListOf<String>()
+    if (entry.assignedToUserName != null) {
+        chips.add(entry.assignedToUserName)
+    }
+    if (entry.dueDate != null) {
+        chips.add(entry.dueDate)
+    }
+    if (entry.reminderAtUtc != null) {
+        chips.add(formatTimestamp(entry.reminderAtUtc))
+    }
+    if (entry.priority != TaskPriority.Normal) {
+        chips.add(
+            when (entry.priority) {
+                TaskPriority.Low -> stringResource(Res.string.task_priority_low)
+                TaskPriority.Normal -> stringResource(Res.string.task_priority_normal)
+                TaskPriority.High -> stringResource(Res.string.task_priority_high)
+            },
+        )
+    }
+    if (chips.isEmpty()) {
+        return
+    }
+
+    Spacer(modifier = Modifier.height(6.dp))
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        items(chips) { chip ->
+            Surface(
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
+            ) {
+                Text(
+                    text = chip,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+            }
         }
     }
 }

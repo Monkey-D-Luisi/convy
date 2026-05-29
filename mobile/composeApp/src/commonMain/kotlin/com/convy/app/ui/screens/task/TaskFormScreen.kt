@@ -1,6 +1,7 @@
 package com.convy.app.ui.screens.task
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,6 +10,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -19,6 +22,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +51,7 @@ import com.convy.app.ui.components.ConvySpacing
 import com.convy.app.ui.components.LoadingContent
 import com.convy.app.ui.components.convyTextFieldColors
 import com.convy.app.ui.components.convyTopAppBarColors
+import com.convy.shared.domain.model.TaskPriority
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -125,53 +130,148 @@ fun TaskFormContent(
 
         ConvyBackground(modifier = Modifier.padding(padding)) {
             Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(ConvySpacing.ScreenHorizontal),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(ConvySpacing.ScreenHorizontal),
             ) {
-            TextField(
-                value = state.title,
-                onValueChange = { onIntent(TaskFormIntent.UpdateTitle(it)) },
-                label = { Text(stringResource(Res.string.task_title_label)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().testTag("Task title"),
-                shape = MaterialTheme.shapes.large,
-                colors = convyTextFieldColors(),
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Sentences,
-                    imeAction = ImeAction.Next,
-                ),
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            TextField(
-                value = state.note,
-                onValueChange = { onIntent(TaskFormIntent.UpdateNote(it)) },
-                label = { Text(stringResource(Res.string.task_note_label)) },
-                placeholder = { Text(stringResource(Res.string.task_note_placeholder)) },
-                modifier = Modifier.fillMaxWidth().testTag("Task note"),
-                shape = MaterialTheme.shapes.large,
-                colors = convyTextFieldColors(),
-                minLines = 3,
-                maxLines = 6,
-            )
-
-            if (state.error != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = state.error.asString(),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
+                TextField(
+                    value = state.title,
+                    onValueChange = { onIntent(TaskFormIntent.UpdateTitle(it)) },
+                    label = { Text(stringResource(Res.string.task_title_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("Task title"),
+                    shape = MaterialTheme.shapes.large,
+                    colors = convyTextFieldColors(),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Next,
+                    ),
                 )
-            }
 
-            Spacer(modifier = Modifier.height(104.dp))
-        }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                TextField(
+                    value = state.note,
+                    onValueChange = { onIntent(TaskFormIntent.UpdateNote(it)) },
+                    label = { Text(stringResource(Res.string.task_note_label)) },
+                    placeholder = { Text(stringResource(Res.string.task_note_placeholder)) },
+                    modifier = Modifier.fillMaxWidth().testTag("Task note"),
+                    shape = MaterialTheme.shapes.large,
+                    colors = convyTextFieldColors(),
+                    minLines = 3,
+                    maxLines = 6,
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                TaskAssigneeSelector(state = state, onIntent = onIntent)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                TextField(
+                    value = state.dueDate,
+                    onValueChange = { onIntent(TaskFormIntent.UpdateDueDate(it)) },
+                    label = { Text(stringResource(Res.string.task_due_date_label)) },
+                    placeholder = { Text(stringResource(Res.string.task_due_date_placeholder)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("Task due date"),
+                    shape = MaterialTheme.shapes.large,
+                    colors = convyTextFieldColors(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                TextField(
+                    value = state.reminderAtUtc,
+                    onValueChange = { onIntent(TaskFormIntent.UpdateReminder(it)) },
+                    label = { Text(stringResource(Res.string.task_reminder_label)) },
+                    placeholder = { Text(stringResource(Res.string.task_reminder_placeholder)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("Task reminder"),
+                    shape = MaterialTheme.shapes.large,
+                    colors = convyTextFieldColors(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                TaskPrioritySelector(priority = state.priority, onIntent = onIntent)
+
+                if (state.error != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = state.error.asString(),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(104.dp))
+            }
         }
     }
 }
+
+@Composable
+private fun TaskAssigneeSelector(
+    state: TaskFormState,
+    onIntent: (TaskFormIntent) -> Unit,
+) {
+    Text(
+        text = stringResource(Res.string.task_assignee_label),
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        item {
+            FilterChip(
+                selected = state.assignedToUserId == null,
+                onClick = { onIntent(TaskFormIntent.SelectAssignee(null, null)) },
+                label = { Text(stringResource(Res.string.task_assignee_unassigned)) },
+            )
+        }
+        items(state.assignees) { assignee ->
+            FilterChip(
+                selected = state.assignedToUserId == assignee.userId,
+                onClick = { onIntent(TaskFormIntent.SelectAssignee(assignee.userId, assignee.displayName)) },
+                label = { Text(assignee.displayName) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun TaskPrioritySelector(
+    priority: TaskPriority,
+    onIntent: (TaskFormIntent) -> Unit,
+) {
+    Text(
+        text = stringResource(Res.string.task_priority_label),
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(TaskPriority.entries.toList()) { option ->
+            FilterChip(
+                selected = priority == option,
+                onClick = { onIntent(TaskFormIntent.SelectPriority(option)) },
+                label = { Text(taskPriorityLabel(option)) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun taskPriorityLabel(priority: TaskPriority): String =
+    when (priority) {
+        TaskPriority.Low -> stringResource(Res.string.task_priority_low)
+        TaskPriority.Normal -> stringResource(Res.string.task_priority_normal)
+        TaskPriority.High -> stringResource(Res.string.task_priority_high)
+    }
 
 @Composable
 private fun TaskFormPrimaryAction(

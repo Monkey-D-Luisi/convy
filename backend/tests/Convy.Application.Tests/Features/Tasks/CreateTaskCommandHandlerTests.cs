@@ -55,6 +55,69 @@ public class CreateTaskCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WithStructuredFields_PersistsTaskAndSendsAssigneeName()
+    {
+        var household = new Household("Home", _userId);
+        var assignee = new User("firebase-assignee", "Marina", "marina@example.com");
+        household.AddMember(assignee.Id);
+        var list = new HouseholdList("Chores", ListType.Tasks, household.Id, _userId);
+        _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
+        _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
+        _userRepository.GetByIdsAsync(
+                Arg.Is<IEnumerable<Guid>>(ids => ids.Contains(_userId) && ids.Contains(assignee.Id)),
+                Arg.Any<CancellationToken>())
+            .Returns([new User("firebase-uid", "Test User", "test@example.com"), assignee]);
+        TaskItem? persisted = null;
+        _taskRepository.AddAsync(Arg.Do<TaskItem>(task => persisted = task), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        var reminderAtUtc = new DateTime(2026, 5, 30, 7, 0, 0, DateTimeKind.Utc);
+        var command = new CreateTaskCommand(
+            list.Id,
+            "Clean kitchen",
+            "Before dinner",
+            assignee.Id,
+            new DateOnly(2026, 5, 30),
+            reminderAtUtc,
+            TaskPriority.High);
+
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        persisted.Should().NotBeNull();
+        persisted!.AssignedToUserId.Should().Be(assignee.Id);
+        persisted.DueDate.Should().Be(new DateOnly(2026, 5, 30));
+        persisted.ReminderAtUtc.Should().Be(reminderAtUtc);
+        persisted.Priority.Should().Be(TaskPriority.High);
+        await _notifications.Received(1).NotifyTaskCreated(
+            household.Id,
+            Arg.Is<TaskItemDto>(dto => dto.AssignedToUserId == assignee.Id && dto.AssignedToUserName == "Marina"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WithAssigneeOutsideHousehold_ReturnsValidationFailure()
+    {
+        var household = new Household("Home", _userId);
+        var list = new HouseholdList("Chores", ListType.Tasks, household.Id, _userId);
+        _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
+        _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
+        var command = new CreateTaskCommand(
+            list.Id,
+            "Clean kitchen",
+            null,
+            Guid.NewGuid(),
+            null,
+            null,
+            TaskPriority.Normal);
+
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("Validation");
+        await _taskRepository.DidNotReceive().AddAsync(Arg.Any<TaskItem>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Handle_WithShoppingList_ReturnsValidationFailure()
     {
         var household = new Household("Home", _userId);

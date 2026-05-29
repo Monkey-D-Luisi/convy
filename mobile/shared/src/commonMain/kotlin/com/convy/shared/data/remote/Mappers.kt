@@ -15,6 +15,7 @@ fun NotificationPreferencesDto.toDomain(): NotificationPreferences = Notificatio
     tasksAdded = tasksAdded,
     itemsCompleted = itemsCompleted,
     tasksCompleted = tasksCompleted,
+    taskReminders = taskReminders,
     itemTaskChanges = itemTaskChanges,
     listChanges = listChanges,
     memberChanges = memberChanges,
@@ -26,6 +27,7 @@ fun NotificationPreferences.toRequest(): UpdateNotificationPreferencesRequest =
         tasksAdded = tasksAdded,
         itemsCompleted = itemsCompleted,
         tasksCompleted = tasksCompleted,
+        taskReminders = taskReminders,
         itemTaskChanges = itemTaskChanges,
         listChanges = listChanges,
         memberChanges = memberChanges,
@@ -105,7 +107,26 @@ fun TaskItemDto.toDomain(): TaskItem = TaskItem(
     completedBy = completedBy,
     completedByName = completedByName,
     completedAt = completedAt,
+    assignedToUserId = assignedToUserId,
+    assignedToUserName = assignedToUserName,
+    dueDate = dueDate,
+    reminderAtUtc = reminderAtUtc,
+    reminderSentAtUtc = reminderSentAtUtc,
+    priority = priority.toTaskPriority(),
 )
+
+fun ParsedTaskDto.toDomain(): ParsedTask = ParsedTask(
+    title = title,
+    note = note,
+    assignedToUserId = assignedToUserId,
+    dueDate = dueDate,
+    reminderAtUtc = reminderAtUtc,
+    priority = priority.toTaskPriority(),
+    matchedExistingTask = matchedExistingTask,
+)
+
+private fun String.toTaskPriority(): TaskPriority =
+    TaskPriority.entries.firstOrNull { it.name.equals(this, ignoreCase = true) } ?: TaskPriority.Normal
 
 fun InviteDto.toDomain(): Invite = Invite(
     id = id,

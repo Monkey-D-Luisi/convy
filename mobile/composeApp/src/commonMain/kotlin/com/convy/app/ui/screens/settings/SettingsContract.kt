@@ -24,6 +24,7 @@ enum class NotificationPreferenceKey {
     TasksAdded,
     ItemsCompleted,
     TasksCompleted,
+    TaskReminders,
     ItemTaskChanges,
     ListChanges,
     MemberChanges,

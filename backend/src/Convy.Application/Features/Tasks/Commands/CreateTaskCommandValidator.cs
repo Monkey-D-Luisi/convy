@@ -16,5 +16,12 @@ public class CreateTaskCommandValidator : AbstractValidator<CreateTaskCommand>
         RuleFor(x => x.Note)
             .MaximumLength(500).When(x => x.Note is not null)
             .WithMessage("Note must not exceed 500 characters.");
+
+        RuleFor(x => x.AssignedToUserId)
+            .NotEqual(Guid.Empty).When(x => x.AssignedToUserId.HasValue)
+            .WithMessage("Assigned user ID must not be empty.");
+
+        RuleFor(x => x.Priority)
+            .IsInEnum().WithMessage("Invalid task priority.");
     }
 }

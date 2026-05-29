@@ -34,6 +34,24 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             .HasColumnName("created_by")
             .IsRequired();
 
+        builder.Property(t => t.AssignedToUserId)
+            .HasColumnName("assigned_to_user_id");
+
+        builder.Property(t => t.DueDate)
+            .HasColumnName("due_date");
+
+        builder.Property(t => t.ReminderAtUtc)
+            .HasColumnName("reminder_at_utc");
+
+        builder.Property(t => t.ReminderSentAtUtc)
+            .HasColumnName("reminder_sent_at_utc");
+
+        builder.Property(t => t.Priority)
+            .HasColumnName("priority")
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .IsRequired();
+
         builder.Property(t => t.CreatedAt)
             .HasColumnName("created_at")
             .IsRequired();
@@ -63,5 +81,14 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
 
         builder.HasIndex(t => new { t.ListId, t.NormalizedTitle, t.IsCompleted })
             .HasDatabaseName("ix_task_items_list_id_normalized_title_is_completed");
+
+        builder.HasIndex(t => new { t.ListId, t.AssignedToUserId })
+            .HasDatabaseName("ix_task_items_list_id_assigned_to_user_id");
+
+        builder.HasIndex(t => new { t.ListId, t.DueDate })
+            .HasDatabaseName("ix_task_items_list_id_due_date");
+
+        builder.HasIndex(t => new { t.ReminderAtUtc, t.ReminderSentAtUtc })
+            .HasDatabaseName("ix_task_items_reminder_at_utc_reminder_sent_at_utc");
     }
 }

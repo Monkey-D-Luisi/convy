@@ -44,8 +44,24 @@ public class TaskItemRepository : ITaskItemRepository
             query = query.Where(t => t.CreatedAt <= toDate.Value);
 
         return await query
-            .OrderByDescending(t => t.CreatedAt)
+            .OrderBy(t => t.IsCompleted)
+            .ThenBy(t => t.DueDate == null)
+            .ThenBy(t => t.DueDate)
+            .ThenByDescending(t => t.Priority)
+            .ThenByDescending(t => t.CreatedAt)
             .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<TaskItem>> GetDueRemindersAsync(
+        DateTime asOfUtc,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.TaskItems
+            .Where(t => !t.IsCompleted)
+            .Where(t => t.ReminderAtUtc != null && t.ReminderAtUtc <= asOfUtc)
+            .Where(t => t.ReminderSentAtUtc == null)
+            .OrderBy(t => t.ReminderAtUtc)
             .ToListAsync(cancellationToken);
     }
 

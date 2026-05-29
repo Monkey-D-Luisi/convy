@@ -33,6 +33,11 @@ public class NotificationPreferencesConfiguration : IEntityTypeConfiguration<Not
             .HasColumnName("tasks_completed")
             .IsRequired();
 
+        builder.Property(p => p.TaskReminders)
+            .HasColumnName("task_reminders")
+            .IsRequired()
+            .HasDefaultValue(true);
+
         builder.Property(p => p.ItemTaskChanges)
             .HasColumnName("item_task_changes")
             .IsRequired();

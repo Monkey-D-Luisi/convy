@@ -8,6 +8,7 @@ public enum NotificationCategory
     TasksAdded,
     ItemsCompleted,
     TasksCompleted,
+    TaskReminders,
     ItemTaskChanges,
     ListChanges,
     MemberChanges
@@ -19,6 +20,7 @@ public enum NotificationTemplateKey
     TasksAdded,
     ItemsCompleted,
     TasksCompleted,
+    TaskReminderDue,
     ItemUpdated,
     TaskUpdated,
     ItemDeleted,
@@ -44,6 +46,7 @@ public static class NotificationCategoryExtensions
         NotificationCategory.TasksAdded => NotificationPreferenceCategory.TasksAdded,
         NotificationCategory.ItemsCompleted => NotificationPreferenceCategory.ItemsCompleted,
         NotificationCategory.TasksCompleted => NotificationPreferenceCategory.TasksCompleted,
+        NotificationCategory.TaskReminders => NotificationPreferenceCategory.TaskReminders,
         NotificationCategory.ItemTaskChanges => NotificationPreferenceCategory.ItemTaskChanges,
         NotificationCategory.ListChanges => NotificationPreferenceCategory.ListChanges,
         NotificationCategory.MemberChanges => NotificationPreferenceCategory.MemberChanges,

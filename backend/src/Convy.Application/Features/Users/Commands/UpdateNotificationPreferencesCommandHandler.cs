@@ -34,6 +34,7 @@ public class UpdateNotificationPreferencesCommandHandler : IRequestHandler<Updat
             request.TasksAdded,
             request.ItemsCompleted,
             request.TasksCompleted,
+            request.TaskReminders,
             request.ItemTaskChanges,
             request.ListChanges,
             request.MemberChanges);
@@ -45,6 +46,7 @@ public class UpdateNotificationPreferencesCommandHandler : IRequestHandler<Updat
             preferences.TasksAdded,
             preferences.ItemsCompleted,
             preferences.TasksCompleted,
+            preferences.TaskReminders,
             preferences.ItemTaskChanges,
             preferences.ListChanges,
             preferences.MemberChanges));

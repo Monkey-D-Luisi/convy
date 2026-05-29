@@ -15,6 +15,7 @@ public class UpdateNotificationPreferencesCommandValidatorTests
             TasksAdded: true,
             ItemsCompleted: false,
             TasksCompleted: false,
+            TaskReminders: true,
             ItemTaskChanges: false,
             ListChanges: true,
             MemberChanges: true);

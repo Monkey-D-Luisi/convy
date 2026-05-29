@@ -131,7 +131,7 @@
     <string name="detail_task_completed">Tarea completada</string>
     <string name="detail_task_pending">Tarea marcada como pendiente</string>
     <string name="detail_task_deleted">Tarea eliminada</string>
-    <string name="detail_voice_permission_required">Se necesita permiso de micrófono para añadir artículos por voz.</string>
+    <string name="detail_voice_permission_required">Se necesita permiso de micrófono para añadir entradas por voz.</string>
     <string name="detail_recording_too_short">Grabación muy corta. Mantén el botón más tiempo.</string>
     <string name="detail_recording_failed">Error al iniciar la grabación</string>
     <string name="detail_no_audio">No se grabó audio</string>
@@ -139,6 +139,7 @@
     <string name="detail_speech_not_recognized">No se pudo reconocer el habla. Inténtalo de nuevo.</string>
     <string name="detail_voice_process_failed">Error al procesar la entrada de voz</string>
     <string name="detail_add_items_failed">Error al añadir los artículos. Inténtalo de nuevo.</string>
+    <string name="detail_add_tasks_failed">Error al añadir las tareas. Inténtalo de nuevo.</string>
 
     <!-- Item Form -->
     <string name="item_edit_title">Editar artículo</string>
@@ -168,6 +169,16 @@
     <string name="task_title_label">Título *</string>
     <string name="task_note_label">Nota</string>
     <string name="task_note_placeholder">Nota opcional…</string>
+    <string name="task_assignee_label">Responsable</string>
+    <string name="task_assignee_unassigned">Compartida</string>
+    <string name="task_due_date_label">Fecha</string>
+    <string name="task_due_date_placeholder">AAAA-MM-DD</string>
+    <string name="task_reminder_label">Recordatorio</string>
+    <string name="task_reminder_placeholder">AAAA-MM-DDTHH:MM:SSZ</string>
+    <string name="task_priority_label">Prioridad</string>
+    <string name="task_priority_low">Baja</string>
+    <string name="task_priority_normal">Normal</string>
+    <string name="task_priority_high">Alta</string>
     <string name="task_save_changes">Guardar cambios</string>
     <string name="task_add">Añadir tarea</string>
     <string name="task_not_found">Tarea no encontrada</string>
@@ -224,6 +235,7 @@
     <string name="settings_notify_tasks_added">Tareas añadidas</string>
     <string name="settings_notify_items_completed">Artículos completados</string>
     <string name="settings_notify_tasks_completed">Tareas completadas</string>
+    <string name="settings_notify_task_reminders">Recordatorios de tareas</string>
     <string name="settings_notify_item_task_changes">Ediciones y eliminaciones de artículos y tareas</string>
     <string name="settings_notify_list_changes">Cambios en listas</string>
     <string name="settings_notify_member_changes">Cambios de miembros</string>
@@ -232,7 +244,13 @@
     <!-- Voice Input Sheet -->
     <string name="voice_title">Entrada de voz</string>
     <string name="voice_parsed_items">Artículos detectados:</string>
+    <string name="voice_parsed_tasks">Tareas detectadas:</string>
     <string name="voice_matches">Coincide con: %1$s</string>
+    <string name="voice_task_matches">Coincide con tarea: %1$s</string>
+    <string name="voice_task_assignee">Responsable: %1$s</string>
+    <string name="voice_task_due">Fecha: %1$s</string>
+    <string name="voice_task_reminder">Recordatorio: %1$s</string>
+    <string name="voice_task_note">Nota: %1$s</string>
 
     <!-- Item Card -->
     <string name="item_card_completed_by">Completado por %1$s</string>
@@ -251,5 +269,9 @@
     <plurals name="voice_add_items">
         <item quantity="one">Añadir %1$d artículo</item>
         <item quantity="other">Añadir %1$d artículos</item>
+    </plurals>
+    <plurals name="voice_add_tasks">
+        <item quantity="one">Añadir %1$d tarea</item>
+        <item quantity="other">Añadir %1$d tareas</item>
     </plurals>
 </resources>

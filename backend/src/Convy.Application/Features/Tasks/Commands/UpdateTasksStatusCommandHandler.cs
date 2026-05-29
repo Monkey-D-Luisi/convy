@@ -100,8 +100,12 @@ public class UpdateTasksStatusCommandHandler : IRequestHandler<UpdateTasksStatus
         if (changed.Count > 0)
             await _taskRepository.SaveChangesAsync(cancellationToken);
 
-        var user = await _userRepository.GetByIdAsync(_currentUser.UserId, cancellationToken);
-        var userNames = new Dictionary<Guid, string> { [_currentUser.UserId] = user?.DisplayName ?? "Unknown" };
+        var userIds = changed.Select(t => t.CreatedBy)
+            .Concat(changed.Select(t => _currentUser.UserId))
+            .Concat(changed.Where(t => t.AssignedToUserId.HasValue).Select(t => t.AssignedToUserId!.Value))
+            .Distinct();
+        var users = await _userRepository.GetByIdsAsync(userIds, cancellationToken);
+        var userNames = users.ToDictionary(u => u.Id, u => u.DisplayName);
         foreach (var task in changed)
         {
             var dto = TaskItemMapper.ToDto(task, userNames);

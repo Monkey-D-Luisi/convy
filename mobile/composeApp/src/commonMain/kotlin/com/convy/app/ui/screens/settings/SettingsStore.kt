@@ -189,6 +189,7 @@ class SettingsStore(
         NotificationPreferenceKey.TasksAdded -> copy(tasksAdded = enabled)
         NotificationPreferenceKey.ItemsCompleted -> copy(itemsCompleted = enabled)
         NotificationPreferenceKey.TasksCompleted -> copy(tasksCompleted = enabled)
+        NotificationPreferenceKey.TaskReminders -> copy(taskReminders = enabled)
         NotificationPreferenceKey.ItemTaskChanges -> copy(itemTaskChanges = enabled)
         NotificationPreferenceKey.ListChanges -> copy(listChanges = enabled)
         NotificationPreferenceKey.MemberChanges -> copy(memberChanges = enabled)

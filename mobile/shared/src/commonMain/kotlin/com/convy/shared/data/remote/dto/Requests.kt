@@ -54,12 +54,20 @@ data class UpdateItemRequest(
 data class CreateTaskRequest(
     @SerialName("title") val title: String,
     @SerialName("note") val note: String? = null,
+    @SerialName("assignedToUserId") val assignedToUserId: String? = null,
+    @SerialName("dueDate") val dueDate: String? = null,
+    @SerialName("reminderAtUtc") val reminderAtUtc: String? = null,
+    @SerialName("priority") val priority: String = "Normal",
 )
 
 @Serializable
 data class UpdateTaskRequest(
     @SerialName("title") val title: String,
     @SerialName("note") val note: String? = null,
+    @SerialName("assignedToUserId") val assignedToUserId: String? = null,
+    @SerialName("dueDate") val dueDate: String? = null,
+    @SerialName("reminderAtUtc") val reminderAtUtc: String? = null,
+    @SerialName("priority") val priority: String = "Normal",
 )
 
 @Serializable
@@ -87,6 +95,21 @@ data class BatchCreateItemEntry(
 )
 
 @Serializable
+data class BatchCreateTasksRequest(
+    @SerialName("tasks") val tasks: List<BatchCreateTaskEntry>,
+)
+
+@Serializable
+data class BatchCreateTaskEntry(
+    @SerialName("title") val title: String,
+    @SerialName("note") val note: String? = null,
+    @SerialName("assignedToUserId") val assignedToUserId: String? = null,
+    @SerialName("dueDate") val dueDate: String? = null,
+    @SerialName("reminderAtUtc") val reminderAtUtc: String? = null,
+    @SerialName("priority") val priority: String = "Normal",
+)
+
+@Serializable
 data class RegisterDeviceRequest(
     @SerialName("token") val token: String,
     @SerialName("platform") val platform: String,
@@ -104,6 +127,7 @@ data class UpdateNotificationPreferencesRequest(
     @SerialName("tasksAdded") val tasksAdded: Boolean,
     @SerialName("itemsCompleted") val itemsCompleted: Boolean,
     @SerialName("tasksCompleted") val tasksCompleted: Boolean,
+    @SerialName("taskReminders") val taskReminders: Boolean,
     @SerialName("itemTaskChanges") val itemTaskChanges: Boolean,
     @SerialName("listChanges") val listChanges: Boolean,
     @SerialName("memberChanges") val memberChanges: Boolean,

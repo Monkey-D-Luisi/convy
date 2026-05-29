@@ -5,6 +5,7 @@ data class NotificationPreferences(
     val tasksAdded: Boolean = true,
     val itemsCompleted: Boolean = false,
     val tasksCompleted: Boolean = false,
+    val taskReminders: Boolean = true,
     val itemTaskChanges: Boolean = false,
     val listChanges: Boolean = true,
     val memberChanges: Boolean = true,

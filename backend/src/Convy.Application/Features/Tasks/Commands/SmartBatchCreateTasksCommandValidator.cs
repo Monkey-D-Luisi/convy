@@ -22,6 +22,13 @@ public class SmartBatchCreateTasksCommandValidator : AbstractValidator<SmartBatc
             task.RuleFor(i => i.Note)
                 .MaximumLength(500).When(i => i.Note is not null)
                 .WithMessage("Note must not exceed 500 characters.");
+
+            task.RuleFor(i => i.AssignedToUserId)
+                .NotEqual(Guid.Empty).When(i => i.AssignedToUserId.HasValue)
+                .WithMessage("Assigned user ID must not be empty.");
+
+            task.RuleFor(i => i.Priority)
+                .IsInEnum().WithMessage("Invalid task priority.");
         });
     }
 }
