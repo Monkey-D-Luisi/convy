@@ -41,8 +41,8 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -51,7 +51,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -79,10 +78,19 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.convy.app.generated.resources.*
+import com.convy.app.ui.components.ConvyAvatar
+import com.convy.app.ui.components.ConvyBackground
+import com.convy.app.ui.components.ConvyPanel
+import com.convy.app.ui.components.ConvyPrimaryBottomBar
+import com.convy.app.ui.components.ConvyPrimaryButton
+import com.convy.app.ui.components.ConvySectionHeader
+import com.convy.app.ui.components.ConvySpacing
 import com.convy.app.ui.components.EmptyContent
 import com.convy.app.ui.components.ErrorContent
 import com.convy.app.ui.components.LoadingContent
 import com.convy.app.ui.components.VoiceInputSheet
+import com.convy.app.ui.components.convyOutlinedTextFieldColors
+import com.convy.app.ui.components.convyTopAppBarColors
 import com.convy.app.util.UiText
 import com.convy.app.util.rememberRecordAudioPermissionState
 import org.jetbrains.compose.resources.stringResource
@@ -249,6 +257,7 @@ fun ListDetailContent(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = convyTopAppBarColors(),
                 title = {
                     if (state.isSearching) {
                         OutlinedTextField(
@@ -263,14 +272,12 @@ fun ListDetailContent(
                             },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color.Transparent,
-                                unfocusedBorderColor = Color.Transparent,
-                            ),
+                            shape = MaterialTheme.shapes.large,
+                            colors = convyOutlinedTextFieldColors(),
                         )
                     } else {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(state.listName)
+                            Text(state.listName, style = MaterialTheme.typography.titleLarge)
                             if (state.pendingSyncCount > 0) {
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Icon(
@@ -318,18 +325,17 @@ fun ListDetailContent(
                 },
             )
         },
-        floatingActionButton = {
+        bottomBar = {
             if (state.showNormalListChrome) {
                 ListDetailBottomActions(state = state, onIntent = onIntent)
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
-        Box(
+        ConvyBackground(
             modifier = Modifier
                 .padding(padding)
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerLow),
+                .fillMaxSize(),
         ) {
             val query = state.searchQuery.lowercase()
             val filteredPending = if (query.isBlank()) state.pendingEntries else state.pendingEntries.filter { it.title.lowercase().contains(query) }
@@ -342,7 +348,7 @@ fun ListDetailContent(
                 val filters = listOf("All" to filterAll, "Pending" to filterPending, "Completed" to filterCompleted)
                 if (state.showNormalListChrome) {
                     LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        contentPadding = PaddingValues(horizontal = ConvySpacing.ScreenHorizontal, vertical = 10.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(filters.size) { index ->
@@ -351,6 +357,11 @@ fun ListDetailContent(
                                 selected = state.activeFilter == filter,
                                 onClick = { onIntent(ListDetailIntent.SetFilter(filter)) },
                                 label = { Text(label) },
+                                shape = MaterialTheme.shapes.large,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.52f),
+                                    selectedLabelColor = MaterialTheme.colorScheme.primary,
+                                ),
                             )
                         }
                     }
@@ -393,19 +404,18 @@ private fun ListDetailBottomActions(
 ) {
     val addText = stringResource(if (state.isTaskList) Res.string.detail_add_task else Res.string.detail_add_item)
 
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    ConvyPrimaryBottomBar {
         if (!state.isTaskList) {
             VoiceFloatingAction(state = state, onIntent = onIntent)
         }
-        ExtendedFloatingActionButton(
+        ConvyPrimaryButton(
             onClick = { onIntent(ListDetailIntent.AddItem) },
-            icon = { Icon(Icons.Default.Add, contentDescription = addText) },
-            text = { Text(addText) },
-            modifier = Modifier.testTag(addText),
-        )
+            modifier = Modifier.weight(1f).testTag(addText),
+        ) {
+            Icon(Icons.Default.Add, contentDescription = addText)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(addText)
+        }
     }
 }
 
@@ -428,10 +438,11 @@ private fun VoiceFloatingAction(
             }
         },
         modifier = Modifier.size(56.dp).testTag(label),
+        shape = MaterialTheme.shapes.extraLarge,
         containerColor = if (mode == VoiceActionMode.Recording) {
             MaterialTheme.colorScheme.errorContainer
         } else {
-            MaterialTheme.colorScheme.secondaryContainer
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f)
         },
         contentColor = if (mode == VoiceActionMode.Recording) {
             MaterialTheme.colorScheme.onErrorContainer
@@ -463,19 +474,34 @@ private fun ShoppingModeList(
     val doneCount = completedEntries.size
     val totalCount = allItems.size
     Column(modifier = Modifier.fillMaxSize()) {
-        LinearProgressIndicator(
-            progress = { if (totalCount > 0) doneCount.toFloat() / totalCount else 0f },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-        Text(
-            text = stringResource(Res.string.detail_done_progress, doneCount, totalCount),
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        ConvyPanel(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = ConvySpacing.ScreenHorizontal, vertical = 12.dp),
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                LinearProgressIndicator(
+                    progress = { if (totalCount > 0) doneCount.toFloat() / totalCount else 0f },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(Res.string.detail_done_progress, doneCount, totalCount),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
         LazyColumn(
-            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 128.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(
+                start = ConvySpacing.ScreenHorizontal,
+                top = 8.dp,
+                end = ConvySpacing.ScreenHorizontal,
+                bottom = 32.dp,
+            ),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             items(pendingEntries, key = { it.id }) { entry ->
                 ShoppingModeEntry(
@@ -507,16 +533,19 @@ private fun NormalEntryList(
     onIntent: (ListDetailIntent) -> Unit,
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 128.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(
+            start = ConvySpacing.ScreenHorizontal,
+            top = 14.dp,
+            end = ConvySpacing.ScreenHorizontal,
+            bottom = 112.dp,
+        ),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         if (pendingEntries.isNotEmpty()) {
             item {
-                Text(
-                    text = stringResource(Res.string.detail_pending_header, pendingEntries.size),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 4.dp),
+                ConvySectionHeader(
+                    title = stringResource(Res.string.detail_pending_header, pendingEntries.size),
+                    modifier = Modifier.padding(bottom = 2.dp),
                 )
             }
             items(pendingEntries, key = { it.id }) { entry ->
@@ -546,10 +575,8 @@ private fun NormalEntryList(
                         .padding(top = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = stringResource(Res.string.detail_completed_header, completedEntries.size),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ConvySectionHeader(
+                        title = stringResource(Res.string.detail_completed_header, completedEntries.size),
                         modifier = Modifier.weight(1f),
                     )
                     IconButton(onClick = { onIntent(ListDetailIntent.ToggleCompletedVisibility) }) {
@@ -634,18 +661,19 @@ private fun ListEntryCard(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = if (entry.isCompleted) {
-                MaterialTheme.colorScheme.surface
+                MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f)
             } else {
-                MaterialTheme.colorScheme.surfaceContainerLowest
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
             },
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (entry.isCompleted) 1.dp else 3.dp),
     ) {
         Row(
-            modifier = Modifier.padding(start = 4.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+            modifier = Modifier.padding(start = 8.dp, end = 16.dp, top = 14.dp, bottom = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Checkbox(
@@ -660,7 +688,7 @@ private fun ListEntryCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = entry.title,
-                        style = MaterialTheme.typography.bodyLarge.copy(
+                        style = MaterialTheme.typography.titleMedium.copy(
                             textDecoration = if (entry.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
                         ),
                         color = if (entry.isCompleted) {
@@ -693,7 +721,7 @@ private fun ListEntryCard(
                 if (details.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = details.joinToString(" · "),
+                        text = details.joinToString(" / "),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -725,9 +753,14 @@ private fun ListEntryCard(
                         )
                     },
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            Spacer(modifier = Modifier.width(10.dp))
+            ConvyAvatar(
+                label = entry.completedByName ?: entry.createdByName,
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (entry.isCompleted) 0.38f else 0.58f),
+            )
         }
     }
 }
@@ -742,18 +775,20 @@ private fun ShoppingModeEntry(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onToggleComplete() },
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = if (entry.isCompleted) {
-                MaterialTheme.colorScheme.surfaceContainerHighest
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.34f)
             } else {
-                MaterialTheme.colorScheme.surfaceContainerLowest
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
             },
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (entry.isCompleted) 1.dp else 3.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 20.dp),
+                .padding(horizontal = 18.dp, vertical = 20.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (entry.isCompleted) {

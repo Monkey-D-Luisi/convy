@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -24,6 +25,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.convy.app.generated.resources.*
+import com.convy.app.ui.components.ConvyBackground
+import com.convy.app.ui.components.ConvyIconBubble
+import com.convy.app.ui.components.ConvyPanel
+import com.convy.app.ui.components.ConvyPrimaryButton
+import com.convy.app.ui.components.ConvySpacing
+import com.convy.app.ui.components.convyTextFieldColors
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -55,160 +62,144 @@ fun AuthContent(
     state: AuthState,
     onIntent: (AuthIntent) -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        // Branding section with surfaceVariant background
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(top = 80.dp, bottom = 48.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = "Convy",
-                    style = MaterialTheme.typography.displayMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(Res.string.app_tagline),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
-        }
-
-        // Form section
+    ConvyBackground {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(top = 32.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = ConvySpacing.ScreenHorizontal)
+                .padding(top = 72.dp, bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (state.isSignUp) {
-                TextField(
-                    value = state.displayName,
-                    onValueChange = { onIntent(AuthIntent.UpdateDisplayName(it)) },
-                    label = { Text(stringResource(Res.string.auth_display_name)) },
-                    leadingIcon = {
-                        Icon(Icons.Default.Person, contentDescription = null)
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = TextFieldDefaults.colors(
-                        unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                        focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    ),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    isError = state.nameError != null,
-                    supportingText = state.nameError?.let { error -> { Text(error.asString()) } },
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
-            TextField(
-                value = state.email,
-                onValueChange = { onIntent(AuthIntent.UpdateEmail(it)) },
-                label = { Text(stringResource(Res.string.auth_email)) },
-                leadingIcon = {
-                    Icon(Icons.Default.Email, contentDescription = null)
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = TextFieldDefaults.colors(
-                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                ),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Next,
-                ),
-                isError = state.emailError != null,
-                supportingText = state.emailError?.let { error -> { Text(error.asString()) } },
+            ConvyIconBubble(
+                icon = Icons.Default.Home,
+                contentDescription = null,
+                size = 72.dp,
+                iconSize = 38.dp,
+                containerColor = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.onPrimary,
             )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            TextField(
-                value = state.password,
-                onValueChange = { onIntent(AuthIntent.UpdatePassword(it)) },
-                label = { Text(stringResource(Res.string.auth_password)) },
-                leadingIcon = {
-                    Icon(Icons.Default.Lock, contentDescription = null)
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = TextFieldDefaults.colors(
-                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                ),
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done,
-                ),
-                isError = state.passwordError != null,
-                supportingText = state.passwordError?.let { error -> { Text(error.asString()) } },
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Convy",
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.primary,
             )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = stringResource(Res.string.app_tagline),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 18.dp),
+            )
+            Spacer(modifier = Modifier.height(32.dp))
 
-            if (state.error != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = state.error.asString(),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
+            ConvyPanel(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (state.isSignUp) {
+                        TextField(
+                            value = state.displayName,
+                            onValueChange = { onIntent(AuthIntent.UpdateDisplayName(it)) },
+                            label = { Text(stringResource(Res.string.auth_display_name)) },
+                            leadingIcon = {
+                                Icon(Icons.Default.Person, contentDescription = null)
+                            },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.large,
+                            colors = convyTextFieldColors(),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                            isError = state.nameError != null,
+                            supportingText = state.nameError?.let { error -> { Text(error.asString()) } },
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = { onIntent(AuthIntent.Submit) },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                enabled = !state.isLoading,
-                shape = RoundedCornerShape(28.dp),
-            ) {
-                if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
+                    TextField(
+                        value = state.email,
+                        onValueChange = { onIntent(AuthIntent.UpdateEmail(it)) },
+                        label = { Text(stringResource(Res.string.auth_email)) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Email, contentDescription = null)
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.large,
+                        colors = convyTextFieldColors(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email,
+                            imeAction = ImeAction.Next,
+                        ),
+                        isError = state.emailError != null,
+                        supportingText = state.emailError?.let { error -> { Text(error.asString()) } },
                     )
-                } else {
-                    Text(if (state.isSignUp) stringResource(Res.string.auth_create_account) else stringResource(Res.string.auth_sign_in))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    TextField(
+                        value = state.password,
+                        onValueChange = { onIntent(AuthIntent.UpdatePassword(it)) },
+                        label = { Text(stringResource(Res.string.auth_password)) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Lock, contentDescription = null)
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.large,
+                        colors = convyTextFieldColors(),
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done,
+                        ),
+                        isError = state.passwordError != null,
+                        supportingText = state.passwordError?.let { error -> { Text(error.asString()) } },
+                    )
+
+                    if (state.error != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = state.error.asString(),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(22.dp))
+
+                    ConvyPrimaryButton(
+                        onClick = { onIntent(AuthIntent.Submit) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !state.isLoading,
+                    ) {
+                        if (state.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        } else {
+                            Text(if (state.isSignUp) stringResource(Res.string.auth_create_account) else stringResource(Res.string.auth_sign_in))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedButton(
+                        onClick = { onIntent(AuthIntent.GoogleSignIn) },
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        enabled = !state.isLoading,
+                        shape = MaterialTheme.shapes.large,
+                    ) {
+                        Text(
+                            text = "G",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(Res.string.auth_sign_in_google))
+                    }
                 }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedButton(
-                onClick = { onIntent(AuthIntent.GoogleSignIn) },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                enabled = !state.isLoading,
-                shape = RoundedCornerShape(28.dp),
-            ) {
-                Text(
-                    text = "G",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(Res.string.auth_sign_in_google))
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -225,16 +216,12 @@ fun AuthContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
             Text(
                 text = stringResource(Res.string.auth_terms),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

@@ -82,6 +82,14 @@ public class TaskCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         _taskRepository.Received(1).Remove(task);
         await _notifications.Received(1).NotifyTaskDeleted(household.Id, task.Id, Arg.Any<CancellationToken>());
+        await _activityLogger.Received(1).LogAsync(
+            household.Id,
+            ActivityEntityType.Task,
+            task.Id,
+            ActivityActionType.Deleted,
+            _userId,
+            "Clean kitchen",
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]

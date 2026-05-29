@@ -1,11 +1,28 @@
 package com.convy.app.ui.components
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,9 +32,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.convy.app.generated.resources.Res
+import com.convy.app.generated.resources.archive
+import com.convy.app.generated.resources.lists_type_shopping
+import com.convy.app.generated.resources.lists_type_tasks
+import com.convy.app.generated.resources.options
+import com.convy.app.generated.resources.rename
 import com.convy.shared.domain.model.HouseholdList
 import com.convy.shared.domain.model.ListType
-import com.convy.app.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -29,27 +51,36 @@ fun ListCard(
     onArchiveClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    val accent = when (list.type) {
+        ListType.Shopping -> MaterialTheme.colorScheme.primary
+        ListType.Tasks -> MaterialTheme.colorScheme.secondary
+    }
     Card(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .clickable(onClick = onClick)
+                .padding(18.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Icon(
-                imageVector = when (list.type) {
+            ConvyIconBubble(
+                icon = when (list.type) {
                     ListType.Shopping -> Icons.Default.ShoppingCart
                     ListType.Tasks -> Icons.Default.CheckCircle
                 },
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp),
+                tint = accent,
+                containerColor = accent.copy(alpha = 0.12f),
+                size = 58.dp,
+                iconSize = 31.dp,
             )
-            Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = list.name,
@@ -57,30 +88,32 @@ fun ListCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                AssistChip(
-                    onClick = {},
-                    label = {
-                        Text(
-                            text = when (list.type) {
-                                ListType.Shopping -> stringResource(Res.string.lists_type_shopping)
-                                ListType.Tasks -> stringResource(Res.string.lists_type_tasks)
-                            },
-                            style = MaterialTheme.typography.labelSmall,
-                        )
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    ),
-                )
+                Surface(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = accent.copy(alpha = 0.11f),
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Text(
+                        text = when (list.type) {
+                            ListType.Shopping -> stringResource(Res.string.lists_type_shopping)
+                            ListType.Tasks -> stringResource(Res.string.lists_type_tasks)
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = accent,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    )
+                }
             }
             if (pendingCount > 0) {
-                Badge(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                Surface(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = accent.copy(alpha = 0.13f),
+                    contentColor = accent,
+                    modifier = Modifier.size(44.dp),
                 ) {
-                    Text("$pendingCount")
+                    Box(contentAlignment = Alignment.Center) {
+                        Text("$pendingCount", style = MaterialTheme.typography.titleMedium)
+                    }
                 }
             }
             if (onRenameClick != null || onArchiveClick != null) {
@@ -104,6 +137,8 @@ fun ListCard(
                         }
                     }
                 }
+            } else {
+                Spacer(modifier = Modifier.width(4.dp))
             }
         }
     }

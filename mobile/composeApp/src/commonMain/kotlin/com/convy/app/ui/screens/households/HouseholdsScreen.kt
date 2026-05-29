@@ -53,9 +53,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.convy.app.generated.resources.*
+import com.convy.app.ui.components.ConvyBackground
+import com.convy.app.ui.components.ConvySpacing
 import com.convy.app.ui.components.EmptyContent
 import com.convy.app.ui.components.ErrorContent
 import com.convy.app.ui.components.LoadingContent
+import com.convy.app.ui.components.convyTextFieldColors
+import com.convy.app.ui.components.convyTopAppBarColors
 import com.convy.shared.domain.model.Household
 import org.jetbrains.compose.resources.stringResource
 
@@ -101,6 +105,7 @@ fun HouseholdsContent(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = convyTopAppBarColors(),
                 title = { Text(stringResource(Res.string.households_title)) },
                 navigationIcon = {
                     IconButton(
@@ -114,11 +119,10 @@ fun HouseholdsContent(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize(),
-        ) {
+        ConvyBackground(modifier = Modifier.padding(padding)) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+            ) {
             when {
                 state.isLoading -> LoadingContent()
                 state.error != null -> ErrorContent(
@@ -136,8 +140,13 @@ fun HouseholdsContent(
                     )
                 }
                 else -> LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(
+                        start = ConvySpacing.ScreenHorizontal,
+                        end = ConvySpacing.ScreenHorizontal,
+                        top = ConvySpacing.ScreenTop,
+                        bottom = 24.dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     item {
                         HouseholdActions(
@@ -167,6 +176,7 @@ fun HouseholdsContent(
 
             HouseholdsDialogs(state = state, onIntent = onIntent)
         }
+        }
     }
 }
 
@@ -184,6 +194,7 @@ private fun HouseholdActions(
         Button(
             onClick = onCreate,
             modifier = Modifier.weight(1f).height(48.dp).testTag("Create household"),
+            shape = MaterialTheme.shapes.large,
         ) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
@@ -192,6 +203,7 @@ private fun HouseholdActions(
         OutlinedButton(
             onClick = onJoin,
             modifier = Modifier.weight(1f).height(48.dp).testTag("Join household"),
+            shape = MaterialTheme.shapes.large,
         ) {
             Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
@@ -211,9 +223,11 @@ private fun HouseholdRow(
     Card(
         onClick = onSelect,
         modifier = Modifier.fillMaxWidth().testTag("Household ${household.name}"),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = if (isActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+            containerColor = if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.62f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isActive) 3.dp else 2.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -342,11 +356,8 @@ private fun HouseholdTextDialog(
                 label = { Text(label) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = TextFieldDefaults.colors(
-                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                ),
+                shape = MaterialTheme.shapes.large,
+                colors = convyTextFieldColors(),
             )
         },
         confirmButton = {

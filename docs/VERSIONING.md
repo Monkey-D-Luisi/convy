@@ -44,6 +44,7 @@
 | 19 | 0.1.16 | 2026-05-22 | UI/UX quality and admin hardening |
 | 20 | 0.1.17 | 2026-05-23 | Multi-household management and lower voice action UX |
 | 21 | 0.1.18 | 2026-05-29 | Master audit hardening and staging validation build |
+| 22 | 0.1.19 | 2026-05-29 | Mobile app and landing redesign |
 
 ## Release Procedure
 

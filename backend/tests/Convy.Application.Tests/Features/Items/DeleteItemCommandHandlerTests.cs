@@ -46,6 +46,14 @@ public class DeleteItemCommandHandlerTests
         _itemRepository.Received(1).Remove(item);
         await _itemRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await _notifications.Received(1).NotifyItemDeleted(household.Id, item.Id, Arg.Any<CancellationToken>());
+        await _activityLogger.Received(1).LogAsync(
+            household.Id,
+            ActivityEntityType.Item,
+            item.Id,
+            ActivityActionType.Deleted,
+            _userId,
+            "Milk",
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]

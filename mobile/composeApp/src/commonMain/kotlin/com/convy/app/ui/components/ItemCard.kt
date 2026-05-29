@@ -1,9 +1,23 @@
 package com.convy.app.ui.components
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -11,8 +25,14 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.convy.app.generated.resources.Res
+import com.convy.app.generated.resources.item_card_added_by
+import com.convy.app.generated.resources.item_card_completed_by
+import com.convy.app.generated.resources.item_card_completed_by_at
+import com.convy.app.generated.resources.item_card_recurring
+import com.convy.app.generated.resources.item_card_returned_to_pending_by_at
+import com.convy.app.generated.resources.unknown
 import com.convy.shared.domain.model.ListItem
-import com.convy.app.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -23,18 +43,19 @@ fun ItemCard(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = if (item.isCompleted) {
-                MaterialTheme.colorScheme.surface
+                MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f)
             } else {
-                MaterialTheme.colorScheme.surfaceContainerLowest
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
             },
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (item.isCompleted) 1.dp else 3.dp),
     ) {
         Row(
-            modifier = Modifier.padding(start = 4.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+            modifier = Modifier.padding(start = 8.dp, end = 16.dp, top = 14.dp, bottom = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Checkbox(
@@ -49,7 +70,7 @@ fun ItemCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = item.title,
-                        style = MaterialTheme.typography.bodyLarge.copy(
+                        style = MaterialTheme.typography.titleMedium.copy(
                             textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
                         ),
                         color = if (item.isCompleted) {
@@ -62,7 +83,7 @@ fun ItemCard(
                         modifier = Modifier.weight(1f, fill = false),
                     )
                     if (item.recurrenceFrequency != null) {
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Icon(
                             Icons.Default.Refresh,
                             contentDescription = stringResource(Res.string.item_card_recurring),
@@ -80,16 +101,16 @@ fun ItemCard(
                     }
                 }
                 if (details.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(3.dp))
                     Text(
-                        text = details.joinToString(" · "),
+                        text = details.joinToString(" / "),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = if (item.isCompleted) {
                         item.completedAt?.let {
@@ -111,9 +132,14 @@ fun ItemCard(
                         stringResource(Res.string.item_card_added_by, item.createdByName, formatTimestamp(item.createdAt))
                     },
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            Spacer(modifier = Modifier.width(10.dp))
+            ConvyAvatar(
+                label = item.completedByName ?: item.createdByName,
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (item.isCompleted) 0.38f else 0.58f),
+            )
         }
     }
 }

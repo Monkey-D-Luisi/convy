@@ -11,9 +11,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -23,16 +25,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import com.convy.app.ui.components.ConvyBackground
+import com.convy.app.ui.components.ConvyMetric
+import com.convy.app.ui.components.ConvyPanel
+import com.convy.app.ui.components.ConvySectionHeader
+import com.convy.app.ui.components.ConvySpacing
 import com.convy.app.ui.components.EmptyContent
 import com.convy.app.ui.components.ErrorContent
 import com.convy.app.ui.components.ListCard
 import com.convy.app.ui.components.LoadingContent
+import com.convy.app.ui.components.convyTextFieldColors
+import com.convy.app.ui.components.convyTopAppBarColors
 import com.convy.shared.domain.model.Household
 import com.convy.shared.domain.model.ListType
 import com.convy.app.generated.resources.*
@@ -92,6 +102,7 @@ fun HouseholdListsContent(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = convyTopAppBarColors(),
                 title = {
                     TextButton(
                         onClick = { onIntent(HouseholdListsIntent.ShowHouseholdSwitcher) },
@@ -130,17 +141,19 @@ fun HouseholdListsContent(
             FloatingActionButton(
                 onClick = { onIntent(HouseholdListsIntent.ShowCreateDialog) },
                 modifier = Modifier.testTag("Create list"),
+                shape = MaterialTheme.shapes.extraLarge,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.lists_create_list))
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
-        Box(
+        ConvyBackground(
             modifier = Modifier
                 .padding(padding)
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerLow),
+                .fillMaxSize(),
         ) {
             when {
                 state.isLoading -> LoadingContent()
@@ -148,11 +161,39 @@ fun HouseholdListsContent(
                     message = state.error.asString(),
                     onRetry = { onIntent(HouseholdListsIntent.Refresh) },
                 )
-                state.lists.isEmpty() -> EmptyContent(stringResource(Res.string.lists_empty))
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                state.lists.isEmpty() -> Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = ConvySpacing.ScreenHorizontal)
+                        .padding(top = ConvySpacing.ScreenTop),
                 ) {
+                    HomeOverview(shoppingPending = 0, taskPending = 0)
+                    Box(modifier = Modifier.weight(1f)) {
+                        EmptyContent(stringResource(Res.string.lists_empty))
+                    }
+                }
+                else -> LazyColumn(
+                    contentPadding = PaddingValues(
+                        start = ConvySpacing.ScreenHorizontal,
+                        end = ConvySpacing.ScreenHorizontal,
+                        top = ConvySpacing.ScreenTop,
+                        bottom = 104.dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    item {
+                        HomeOverview(
+                            shoppingPending = state.lists
+                                .filter { it.type == ListType.Shopping }
+                                .sumOf { state.pendingCounts[it.id] ?: 0 },
+                            taskPending = state.lists
+                                .filter { it.type == ListType.Tasks }
+                                .sumOf { state.pendingCounts[it.id] ?: 0 },
+                        )
+                    }
+                    item {
+                        ConvySectionHeader(title = stringResource(Res.string.home_your_lists))
+                    }
                     items(state.lists, key = { it.id }) { list ->
                         ListCard(
                             list = list,
@@ -199,6 +240,8 @@ fun HouseholdListsContent(
                         },
                         label = { Text(stringResource(Res.string.lists_list_name)) },
                         singleLine = true,
+                        shape = MaterialTheme.shapes.large,
+                        colors = convyTextFieldColors(),
                         modifier = Modifier
                             .fillMaxWidth()
                             .focusRequester(focusRequester)
@@ -245,6 +288,59 @@ fun HouseholdListsContent(
                 onManageHouseholds = { onIntent(HouseholdListsIntent.ManageHouseholds) },
                 onDismiss = { onIntent(HouseholdListsIntent.DismissHouseholdSwitcher) },
             )
+        }
+    }
+}
+
+@Composable
+private fun HomeOverview(
+    shoppingPending: Int,
+    taskPending: Int,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Text(
+            text = stringResource(Res.string.home_greeting),
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = stringResource(Res.string.home_today_at_home),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        ConvyPanel(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ConvyMetric(
+                    icon = Icons.Default.ShoppingCart,
+                    value = shoppingPending.toString(),
+                    label = stringResource(Res.string.home_groceries),
+                    modifier = Modifier.weight(1f),
+                )
+                VerticalDivider(
+                    modifier = Modifier.height(72.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                )
+                ConvyMetric(
+                    icon = Icons.Default.Check,
+                    value = taskPending.toString(),
+                    label = stringResource(Res.string.home_chores),
+                    modifier = Modifier.weight(1f),
+                    tint = MaterialTheme.colorScheme.secondary,
+                )
+                VerticalDivider(
+                    modifier = Modifier.height(72.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                )
+                ConvyMetric(
+                    icon = Icons.Default.Mic,
+                    value = stringResource(Res.string.home_voice_ready),
+                    label = stringResource(Res.string.detail_voice_input),
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
@@ -316,11 +412,8 @@ private fun CreateListDialog(
                     label = { Text(stringResource(Res.string.lists_list_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = TextFieldDefaults.colors(
-                        unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                        focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    ),
+                    shape = MaterialTheme.shapes.large,
+                    colors = convyTextFieldColors(),
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
