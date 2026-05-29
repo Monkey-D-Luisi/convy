@@ -28,6 +28,12 @@ import androidx.compose.ui.unit.dp
 import com.convy.app.ui.components.ItemHistorySheet
 import com.convy.app.ui.components.LoadingContent
 import com.convy.app.generated.resources.*
+import com.convy.app.ui.components.ConvyBackground
+import com.convy.app.ui.components.ConvyPrimaryBottomBar
+import com.convy.app.ui.components.ConvyPrimaryButton
+import com.convy.app.ui.components.ConvySpacing
+import com.convy.app.ui.components.convyTextFieldColors
+import com.convy.app.ui.components.convyTopAppBarColors
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -77,6 +83,7 @@ fun ItemFormContent(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = convyTopAppBarColors(),
                 title = { Text(if (state.isEditing) stringResource(Res.string.item_edit_title) else stringResource(Res.string.item_new_title)) },
                 navigationIcon = {
                     IconButton(
@@ -120,24 +127,21 @@ fun ItemFormContent(
             return@Scaffold
         }
 
-        Column(
+        ConvyBackground(modifier = Modifier.padding(padding)) {
+            Column(
             modifier = Modifier
-                .padding(padding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-        ) {
+                .padding(ConvySpacing.ScreenHorizontal),
+            ) {
             TextField(
                 value = state.title,
                 onValueChange = { onIntent(ItemFormIntent.UpdateTitle(it)) },
                 label = { Text(stringResource(Res.string.item_title_label)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = TextFieldDefaults.colors(
-                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                ),
+                shape = MaterialTheme.shapes.large,
+                colors = convyTextFieldColors(),
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.Sentences,
                     imeAction = ImeAction.Next,
@@ -171,7 +175,7 @@ fun ItemFormContent(
                         )
                         state.duplicateWarning.forEach { dup ->
                             Text(
-                                text = "• ${dup.title}${dup.quantity?.let { " ($it${dup.unit?.let { u -> " $u" } ?: ""})" } ?: ""}",
+                                text = "- ${dup.title}${dup.quantity?.let { " ($it${dup.unit?.let { u -> " $u" } ?: ""})" } ?: ""}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onErrorContainer,
                             )
@@ -198,11 +202,8 @@ fun ItemFormContent(
                     label = { Text(stringResource(Res.string.item_qty_label)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = TextFieldDefaults.colors(
-                        unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                        focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    ),
+                    shape = MaterialTheme.shapes.large,
+                    colors = convyTextFieldColors(),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
                         imeAction = ImeAction.Next,
@@ -215,11 +216,8 @@ fun ItemFormContent(
                     placeholder = { Text(stringResource(Res.string.item_unit_placeholder)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = TextFieldDefaults.colors(
-                        unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                        focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    ),
+                    shape = MaterialTheme.shapes.large,
+                    colors = convyTextFieldColors(),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 )
             }
@@ -232,11 +230,8 @@ fun ItemFormContent(
                 label = { Text(stringResource(Res.string.item_note_label)) },
                 placeholder = { Text(stringResource(Res.string.item_note_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = TextFieldDefaults.colors(
-                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                ),
+                shape = MaterialTheme.shapes.large,
+                colors = convyTextFieldColors(),
                 minLines = 2,
                 maxLines = 4,
             )
@@ -312,6 +307,7 @@ fun ItemFormContent(
 
             Spacer(modifier = Modifier.height(104.dp))
         }
+        }
     }
 }
 
@@ -322,19 +318,11 @@ private fun ItemFormPrimaryAction(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    Surface(
-        tonalElevation = 3.dp,
-        shadowElevation = 3.dp,
-    ) {
-        Button(
+    ConvyPrimaryBottomBar {
+        ConvyPrimaryButton(
             onClick = onClick,
             modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .imePadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .height(56.dp),
-            shape = RoundedCornerShape(28.dp),
+                .fillMaxWidth(),
             enabled = enabled,
         ) {
             if (isSaving) {

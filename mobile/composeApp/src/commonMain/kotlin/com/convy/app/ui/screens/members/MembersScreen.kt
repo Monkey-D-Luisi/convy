@@ -21,8 +21,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.convy.app.ui.components.ConvyAvatar
+import com.convy.app.ui.components.ConvyBackground
+import com.convy.app.ui.components.ConvySpacing
 import com.convy.app.ui.components.ErrorContent
 import com.convy.app.ui.components.LoadingContent
+import com.convy.app.ui.components.convyTopAppBarColors
 import com.convy.shared.domain.model.HouseholdMember
 import com.convy.shared.domain.model.HouseholdRole
 import com.convy.app.generated.resources.*
@@ -72,6 +76,7 @@ fun MembersContent(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = convyTopAppBarColors(),
                 title = { Text(stringResource(Res.string.members_title)) },
                 navigationIcon = {
                     IconButton(
@@ -85,86 +90,89 @@ fun MembersContent(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
-        when {
-            state.isLoading -> LoadingContent(modifier = Modifier.padding(padding))
-            state.error != null -> ErrorContent(
-                message = state.error.asString(),
-                onRetry = { onIntent(MembersIntent.Refresh) },
-                modifier = Modifier.padding(padding),
-            )
-            else -> LazyColumn(
-                contentPadding = PaddingValues(
-                    start = 16.dp, end = 16.dp,
-                    top = padding.calculateTopPadding() + 16.dp,
-                    bottom = padding.calculateBottomPadding() + 16.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(state.members, key = { it.userId }) { member ->
-                    MemberCard(member)
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    InviteSection(
-                        invite = state.invite,
-                        isGenerating = state.isGeneratingInvite,
-                        onGenerateInvite = { onIntent(MembersIntent.GenerateInvite) },
-                        onCopyCode = { state.invite?.let { onIntent(MembersIntent.CopyInviteCode(it.id)) } },
-                    )
-                }
-
-                if (state.activeInvites.isNotEmpty()) {
-                    item {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            stringResource(Res.string.members_active_invites),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(horizontal = 4.dp),
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+        ConvyBackground(modifier = Modifier.padding(padding)) {
+            when {
+                state.isLoading -> LoadingContent()
+                state.error != null -> ErrorContent(
+                    message = state.error.asString(),
+                    onRetry = { onIntent(MembersIntent.Refresh) },
+                )
+                else -> LazyColumn(
+                    contentPadding = PaddingValues(
+                        start = ConvySpacing.ScreenHorizontal,
+                        end = ConvySpacing.ScreenHorizontal,
+                        top = ConvySpacing.ScreenTop,
+                        bottom = 24.dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    items(state.members, key = { it.userId }) { member ->
+                        MemberCard(member)
                     }
-                    items(state.activeInvites, key = { it.id }) { invite ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                            ),
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
+
+                    item {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        InviteSection(
+                            invite = state.invite,
+                            isGenerating = state.isGeneratingInvite,
+                            onGenerateInvite = { onIntent(MembersIntent.GenerateInvite) },
+                            onCopyCode = { state.invite?.let { onIntent(MembersIntent.CopyInviteCode(it.id)) } },
+                        )
+                    }
+
+                    if (state.activeInvites.isNotEmpty()) {
+                        item {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                stringResource(Res.string.members_active_invites),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(horizontal = 4.dp),
+                            )
+                        }
+                        items(state.activeInvites, key = { it.id }) { invite ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = MaterialTheme.shapes.large,
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                             ) {
-                                Column {
-                                    Text(
-                                        text = invite.code,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.testTag("active-invite-code"),
-                                    )
-                                    Text(
-                                        text = stringResource(Res.string.members_expires, invite.expiresAt),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    TextButton(
-                                        onClick = { onIntent(MembersIntent.CopyInviteCode(invite.id)) },
-                                        modifier = Modifier.testTag("copy-active-invite-code"),
-                                    ) {
-                                        Text(stringResource(Res.string.members_copy_code))
-                                    }
-                                    IconButton(
-                                        onClick = { onIntent(MembersIntent.RevokeInvite(invite.id)) },
-                                        modifier = Modifier.testTag("Revoke invite"),
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Close,
-                                            contentDescription = stringResource(Res.string.members_revoke),
-                                            tint = MaterialTheme.colorScheme.error,
+                                Row(
+                                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = invite.code,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.testTag("active-invite-code"),
                                         )
+                                        Text(
+                                            text = stringResource(Res.string.members_expires, invite.expiresAt),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        TextButton(
+                                            onClick = { onIntent(MembersIntent.CopyInviteCode(invite.id)) },
+                                            modifier = Modifier.testTag("copy-active-invite-code"),
+                                        ) {
+                                            Text(stringResource(Res.string.members_copy_code))
+                                        }
+                                        IconButton(
+                                            onClick = { onIntent(MembersIntent.RevokeInvite(invite.id)) },
+                                            modifier = Modifier.testTag("Revoke invite"),
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Close,
+                                                contentDescription = stringResource(Res.string.members_revoke),
+                                                tint = MaterialTheme.colorScheme.error,
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -180,28 +188,17 @@ fun MembersContent(
 private fun MemberCard(member: HouseholdMember) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Avatar with initial
-            Surface(
-                modifier = Modifier.size(40.dp),
-                shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.primaryContainer,
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = member.displayName.firstOrNull()?.uppercase() ?: "?",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
-            }
+            ConvyAvatar(label = member.displayName)
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -236,6 +233,8 @@ private fun InviteSection(
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
         ),
         modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(

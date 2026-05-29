@@ -52,11 +52,12 @@ public class DeleteItemCommandHandler : IRequestHandler<DeleteItemCommand, Resul
             return Result.Failure(Error.Forbidden("You are not a member of this household."));
 
         var itemId = item.Id;
+        var itemTitle = item.Title;
         _itemRepository.Remove(item);
         await _itemRepository.SaveChangesAsync(cancellationToken);
 
         await _notifications.NotifyItemDeleted(list.HouseholdId, itemId, cancellationToken);
-        await _activityLogger.LogAsync(list.HouseholdId, ActivityEntityType.Item, itemId, ActivityActionType.Deleted, _currentUser.UserId, cancellationToken: cancellationToken);
+        await _activityLogger.LogAsync(list.HouseholdId, ActivityEntityType.Item, itemId, ActivityActionType.Deleted, _currentUser.UserId, itemTitle, cancellationToken);
 
         return Result.Success();
     }

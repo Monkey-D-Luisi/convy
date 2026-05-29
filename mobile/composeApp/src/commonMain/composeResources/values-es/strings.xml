@@ -74,6 +74,12 @@
 
     <!-- Household Lists -->
     <string name="lists_default_title">Mi Hogar</string>
+    <string name="home_greeting">Buenos dias</string>
+    <string name="home_today_at_home">Hoy en casa</string>
+    <string name="home_groceries">compras</string>
+    <string name="home_chores">tareas</string>
+    <string name="home_voice_ready">Lista</string>
+    <string name="home_your_lists">Tus listas</string>
     <string name="lists_activity">Actividad</string>
     <string name="lists_members">Miembros</string>
     <string name="lists_settings">Ajustes</string>
@@ -194,7 +200,7 @@
     <string name="activity_updated">Actualizó %1$s%2$s</string>
     <string name="activity_completed">Completó %1$s%2$s</string>
     <string name="activity_uncompleted">Marcó %1$s%2$s como pendiente</string>
-    <string name="activity_deleted">Eliminó %1$s</string>
+    <string name="activity_deleted">Eliminó %1$s%2$s</string>
     <string name="activity_archived">Archivó %1$s%2$s</string>
     <string name="activity_renamed">Renombró %1$s a%2$s</string>
     <string name="activity_member_joined">Se unió al hogar</string>
@@ -230,9 +236,9 @@
 
     <!-- Item Card -->
     <string name="item_card_completed_by">Completado por %1$s</string>
-    <string name="item_card_completed_by_at">Completado por %1$s · %2$s</string>
-    <string name="item_card_added_by">Añadido por %1$s · %2$s</string>
-    <string name="item_card_returned_to_pending_by_at">Devuelto a pendientes por %1$s · %2$s</string>
+    <string name="item_card_completed_by_at">Completado por %1$s / %2$s</string>
+    <string name="item_card_added_by">Añadido por %1$s / %2$s</string>
+    <string name="item_card_returned_to_pending_by_at">Devuelto a pendientes por %1$s / %2$s</string>
     <string name="item_card_recurring">Recurrente</string>
     <string name="item_card_completed">Completado</string>
 

@@ -1,17 +1,27 @@
 package com.convy.app.ui.components
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.convy.app.generated.resources.Res
+import com.convy.app.generated.resources.item_card_completed
 import com.convy.shared.domain.model.ListItem
-import com.convy.app.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -24,18 +34,20 @@ fun ShoppingModeItem(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onToggleComplete() },
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = if (item.isCompleted) {
-                MaterialTheme.colorScheme.surfaceContainerHighest
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.34f)
             } else {
-                MaterialTheme.colorScheme.surfaceContainerLowest
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
             },
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (item.isCompleted) 1.dp else 3.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 20.dp),
+                .padding(horizontal = 18.dp, vertical = 20.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (item.isCompleted) {

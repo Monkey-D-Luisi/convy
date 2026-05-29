@@ -3,49 +3,71 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#064f38">
-  <meta name="description" content="Convy is a shared household app for lists, tasks, reminders, invites, real-time updates, and voice-assisted item capture.">
-  <title>Convy</title>
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="manifest" href="site.webmanifest">
+  <meta name="theme-color" content="#067a55">
+  <meta name="description" content="Convy is a calm shared household app for shopping lists, tasks, voice capture, activity, and private collaboration.">
+  <title>Convy - shared household lists and tasks</title>
+  <link rel="icon" type="image/png" href="assets/convy-icon-192.png">
+  <link rel="apple-touch-icon" href="assets/convy-icon-192.png">
   <style>
     :root {
       color-scheme: light;
-      --ink: #172521;
-      --muted: #5d6d68;
-      --line: #d6e3dd;
-      --surface: #f7faf8;
+      --ink: #14211d;
+      --slate: #62706b;
+      --muted: #7b8782;
+      --line: #dce6e1;
       --paper: #ffffff;
-      --green-900: #064f38;
-      --green-800: #08704e;
-      --green-600: #0ba96d;
-      --mint: #d9f7e7;
-      --blue: #e9f1ff;
-      --amber: #fff3cf;
-      --shadow: 0 22px 70px rgba(9, 49, 36, .16);
+      --warm: #fffdf9;
+      --mist: #f7f2fb;
+      --mint: #d7f8e4;
+      --mint-strong: #bdf1d2;
+      --emerald: #087a56;
+      --emerald-deep: #034f38;
+      --lavender: #e9e2f4;
+      --lavender-deep: #654aa0;
+      --sun: #f7c948;
+      --coral: #ff7f6e;
+      --shadow: 0 20px 60px rgba(18, 33, 29, .16);
+      --soft-shadow: 0 12px 34px rgba(18, 33, 29, .11);
+      --radius: 8px;
+      --content: min(1120px, calc(100% - 40px));
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
 
     body {
       margin: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--warm);
       color: var(--ink);
-      background: var(--surface);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
     }
 
-    a { color: inherit; }
+    img {
+      display: block;
+      max-width: 100%;
+    }
 
-    .shell {
+    a {
+      color: inherit;
+    }
+
+    .site {
+      min-height: 100vh;
+      overflow: hidden;
       background:
-        linear-gradient(120deg, rgba(11, 169, 109, .10), transparent 34%),
-        linear-gradient(180deg, #ffffff 0%, #f7faf8 72%);
+        linear-gradient(180deg, #fffdf9 0%, #fbf6ff 42%, #f8fff9 100%);
     }
 
     .nav {
-      width: min(1120px, calc(100% - 32px));
+      position: relative;
+      z-index: 10;
+      width: var(--content);
       height: 76px;
       margin: 0 auto;
       display: flex;
@@ -60,66 +82,151 @@
       gap: 10px;
       text-decoration: none;
       font-size: 1.05rem;
-      font-weight: 750;
+      font-weight: 800;
     }
 
     .brand img {
       width: 36px;
       height: 36px;
-      display: block;
-      filter: drop-shadow(0 8px 18px rgba(6, 79, 56, .22));
+      filter: drop-shadow(0 8px 18px rgba(8, 122, 86, .22));
     }
 
     .nav-links {
       display: flex;
       align-items: center;
-      gap: 10px;
-    }
-
-    .nav-links a,
-    .button {
-      min-height: 44px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      text-decoration: none;
+      gap: 8px;
+      color: var(--slate);
       font-size: .95rem;
       font-weight: 700;
     }
 
     .nav-links a {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
       padding: 0 12px;
-      color: var(--muted);
+      border-radius: var(--radius);
+      text-decoration: none;
     }
 
-    .nav-links a:hover { color: var(--ink); }
+    .nav-links a:hover,
+    .nav-links a:focus-visible {
+      background: rgba(215, 248, 228, .72);
+      color: var(--emerald-deep);
+      outline: none;
+    }
 
     .hero {
-      width: min(1120px, calc(100% - 32px));
-      min-height: 480px;
-      margin: 0 auto;
+      position: relative;
+      min-height: calc(100svh - 76px);
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(320px, 450px);
-      gap: 72px;
       align-items: center;
-      padding: 36px 0 42px;
+      overflow: hidden;
+      border-bottom: 1px solid rgba(220, 230, 225, .68);
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(110deg, rgba(255, 253, 249, .98) 0%, rgba(255, 253, 249, .90) 38%, rgba(255, 253, 249, .42) 64%, rgba(255, 253, 249, .08) 100%),
+        linear-gradient(180deg, rgba(233, 226, 244, .54), rgba(215, 248, 228, .34));
+      z-index: 1;
+    }
+
+    .hero-media {
+      position: absolute;
+      inset: -28px -48px -120px auto;
+      width: min(66vw, 820px);
+      min-width: 620px;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .phone-deck {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 780px;
+    }
+
+    .phone {
+      position: absolute;
+      width: min(34vw, 310px);
+      border: 10px solid #19241f;
+      border-radius: 34px;
+      background: #19241f;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .phone img {
+      width: 100%;
+      aspect-ratio: 1280 / 2856;
+      object-fit: cover;
+      border-radius: 24px;
+    }
+
+    .phone.primary {
+      right: 18%;
+      top: 42px;
+      width: min(36vw, 336px);
+      transform: rotate(1.5deg);
+      z-index: 3;
+    }
+
+    .phone.secondary {
+      right: 0;
+      top: 190px;
+      transform: rotate(7deg);
+      z-index: 2;
+      opacity: .95;
+    }
+
+    .phone.tertiary {
+      right: 42%;
+      top: 220px;
+      transform: rotate(-7deg);
+      z-index: 1;
+      opacity: .92;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      width: var(--content);
+      margin: 0 auto;
+      padding: 56px 0 92px;
+    }
+
+    .hero-copy {
+      width: min(620px, 100%);
+    }
+
+    .eyebrow {
+      margin: 0 0 18px;
+      color: var(--emerald);
+      font-size: .86rem;
+      font-weight: 850;
+      letter-spacing: .08em;
+      text-transform: uppercase;
     }
 
     h1 {
-      max-width: 760px;
       margin: 0;
-      font-size: 5.75rem;
-      line-height: .95;
+      font-size: clamp(4.3rem, 11vw, 9rem);
+      line-height: .9;
       letter-spacing: 0;
     }
 
-    .lead {
-      max-width: 640px;
+    .hero-copy > p {
       margin: 26px 0 0;
-      color: var(--muted);
-      font-size: 1.32rem;
-      line-height: 1.48;
+      max-width: 560px;
+      color: var(--slate);
+      font-size: clamp(1.22rem, 2.1vw, 1.72rem);
+      line-height: 1.35;
+      font-weight: 600;
     }
 
     .actions {
@@ -130,285 +237,674 @@
     }
 
     .button {
-      padding: 0 18px;
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
       border: 1px solid var(--line);
-      color: var(--ink);
+      border-radius: var(--radius);
+      padding: 0 18px;
       background: rgba(255, 255, 255, .78);
+      color: var(--emerald-deep);
+      font-weight: 850;
+      text-decoration: none;
+      box-shadow: 0 8px 22px rgba(18, 33, 29, .08);
     }
 
     .button.primary {
-      border-color: var(--green-800);
-      background: var(--green-800);
-      color: #ffffff;
-      box-shadow: 0 12px 26px rgba(8, 112, 78, .24);
+      border-color: var(--emerald);
+      background: var(--emerald);
+      color: #fff;
+      box-shadow: 0 16px 34px rgba(8, 122, 86, .24);
     }
 
-    .visual {
-      position: relative;
-      min-height: 430px;
+    .button:hover,
+    .button:focus-visible {
+      transform: translateY(-1px);
+      outline: none;
     }
 
-    .icon-mark {
-      width: min(100%, 360px);
-      display: block;
-      margin-left: auto;
-      border-radius: 28px;
-      filter: drop-shadow(0 28px 44px rgba(6, 55, 40, .24));
+    .hero-proof {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 30px;
+      color: var(--slate);
     }
 
-    .list-panel {
-      position: absolute;
-      left: 0;
-      bottom: 16px;
-      width: 260px;
-      padding: 18px;
-      border: 1px solid rgba(214, 227, 221, .92);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, .92);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(16px);
+    .pill {
+      display: inline-flex;
+      min-height: 36px;
+      align-items: center;
+      border: 1px solid rgba(8, 122, 86, .16);
+      border-radius: 999px;
+      padding: 0 12px;
+      background: rgba(255, 255, 255, .72);
+      font-size: .92rem;
+      font-weight: 760;
     }
 
-    .list-panel h2 {
-      margin: 0 0 14px;
-      font-size: 1rem;
+    .section {
+      width: var(--content);
+      margin: 0 auto;
+      padding: 86px 0;
+    }
+
+    .section-head {
+      width: min(720px, 100%);
+      margin-bottom: 34px;
+    }
+
+    .section-head h2,
+    .closing h2 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3.8rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .section-head p,
+    .closing p {
+      margin: 18px 0 0;
+      color: var(--slate);
+      font-size: 1.12rem;
+      line-height: 1.6;
+      font-weight: 560;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .step {
+      min-height: 238px;
+      padding: 22px;
+      border: 1px solid rgba(220, 230, 225, .86);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .78);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .step-mark {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: var(--mint);
+      color: var(--emerald);
+      font-weight: 900;
+    }
+
+    .step:nth-child(2) .step-mark,
+    .step:nth-child(4) .step-mark {
+      background: var(--lavender);
+      color: var(--lavender-deep);
+    }
+
+    .step:nth-child(3) .step-mark {
+      background: #fff1cf;
+      color: #9a5b00;
+    }
+
+    .step h3 {
+      margin: 28px 0 10px;
+      font-size: 1.16rem;
       line-height: 1.2;
     }
 
-    .task-row {
-      display: grid;
-      grid-template-columns: 18px 1fr;
-      gap: 12px;
-      align-items: center;
-      padding: 10px 0;
-      border-top: 1px solid #edf3f0;
-      color: var(--muted);
-      font-size: .94rem;
+    .step p {
+      margin: 0;
+      color: var(--slate);
+      line-height: 1.55;
+      font-weight: 540;
     }
 
-    .check {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: var(--mint);
+    .product-band {
+      background: #f8f4fb;
+      border-block: 1px solid rgba(220, 230, 225, .76);
+    }
+
+    .screens {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .screen-panel {
       position: relative;
-    }
-
-    .check::after {
-      content: "";
-      position: absolute;
-      left: 5px;
-      top: 4px;
-      width: 7px;
-      height: 4px;
-      border-left: 2px solid var(--green-800);
-      border-bottom: 2px solid var(--green-800);
-      transform: rotate(-45deg);
-    }
-
-    .voice-strip {
-      position: absolute;
-      right: 12px;
-      bottom: 0;
-      width: 190px;
-      height: 72px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      border-radius: 8px;
-      background: #092d22;
-      box-shadow: 0 18px 38px rgba(6, 55, 40, .24);
-    }
-
-    .bar {
-      width: 8px;
-      border-radius: 999px;
-      background: linear-gradient(180deg, #b9ffbe, #16c878);
-    }
-
-    .bar:nth-child(1), .bar:nth-child(7) { height: 18px; opacity: .74; }
-    .bar:nth-child(2), .bar:nth-child(6) { height: 38px; }
-    .bar:nth-child(3), .bar:nth-child(5) { height: 50px; }
-    .bar:nth-child(4) { height: 28px; background: #ffffff; }
-
-    .feature-band {
-      border-top: 1px solid var(--line);
+      min-height: 560px;
+      overflow: hidden;
+      border: 1px solid rgba(220, 230, 225, .86);
+      border-radius: var(--radius);
       background: var(--paper);
+      box-shadow: var(--soft-shadow);
     }
 
-    .features {
-      width: min(1120px, calc(100% - 32px));
-      margin: 0 auto;
-      padding: 42px 0 68px;
+    .screen-panel.large {
+      min-height: 690px;
+      background:
+        linear-gradient(180deg, rgba(215, 248, 228, .42), rgba(255, 255, 255, .4)),
+        var(--paper);
+    }
+
+    .screen-caption {
+      position: absolute;
+      z-index: 2;
+      left: 22px;
+      right: 22px;
+      top: 22px;
+    }
+
+    .screen-caption h3 {
+      margin: 0;
+      font-size: 1.28rem;
+    }
+
+    .screen-caption p {
+      margin: 8px 0 0;
+      color: var(--slate);
+      line-height: 1.45;
+      font-weight: 560;
+    }
+
+    .screen-phone {
+      position: absolute;
+      left: 50%;
+      bottom: -180px;
+      width: min(72%, 360px);
+      transform: translateX(-50%);
+      border: 10px solid #17231f;
+      border-radius: 34px;
+      overflow: hidden;
+      background: #17231f;
+      box-shadow: var(--shadow);
+    }
+
+    .screen-phone img {
+      border-radius: 24px;
+      aspect-ratio: 1280 / 2856;
+      object-fit: cover;
+    }
+
+    .screen-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: 1fr 1fr;
       gap: 18px;
     }
 
-    .feature {
-      min-height: 172px;
-      padding: 22px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--paper);
+    .mini-row {
+      position: absolute;
+      inset: 190px 20px 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items: end;
     }
 
-    .feature:nth-child(2) { background: linear-gradient(180deg, #ffffff, var(--blue)); }
-    .feature:nth-child(3) { background: linear-gradient(180deg, #ffffff, var(--amber)); }
-
-    .feature h2 {
-      margin: 0 0 10px;
-      font-size: 1.08rem;
-      line-height: 1.2;
+    .mini-phone {
+      align-self: stretch;
+      justify-self: center;
+      height: 100%;
+      max-width: 100%;
+      aspect-ratio: 1280 / 2856;
+      border: 8px solid #17231f;
+      border-radius: 28px;
+      overflow: hidden;
+      background: #17231f;
+      box-shadow: 0 14px 40px rgba(18, 33, 29, .14);
     }
 
-    .feature p,
-    footer p {
+    .mini-phone img {
+      width: 100%;
+      height: 100%;
+      border-radius: 19px;
+      aspect-ratio: 1280 / 2856;
+      object-fit: cover;
+    }
+
+    .trust {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 46px;
+      align-items: center;
+    }
+
+    .trust-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .trust-item {
+      display: grid;
+      grid-template-columns: 52px 1fr;
+      gap: 14px;
+      align-items: start;
+      padding: 18px;
+      border: 1px solid rgba(220, 230, 225, .86);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .82);
+      box-shadow: 0 10px 28px rgba(18, 33, 29, .08);
+    }
+
+    .trust-icon {
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: var(--mint);
+      color: var(--emerald);
+      font-weight: 900;
+      font-size: 1.12rem;
+    }
+
+    .trust-item:nth-child(2) .trust-icon {
+      background: var(--lavender);
+      color: var(--lavender-deep);
+    }
+
+    .trust-item:nth-child(3) .trust-icon {
+      background: #fff1cf;
+      color: #9a5b00;
+    }
+
+    .trust-item h3 {
+      margin: 0 0 6px;
+      font-size: 1.04rem;
+    }
+
+    .trust-item p {
       margin: 0;
-      color: var(--muted);
-      line-height: 1.58;
+      color: var(--slate);
+      line-height: 1.5;
     }
 
-    footer {
-      width: min(1120px, calc(100% - 32px));
+    .closing-band {
+      background:
+        linear-gradient(90deg, rgba(8, 122, 86, .94), rgba(3, 79, 56, .96)),
+        var(--emerald-deep);
+      color: #fff;
+    }
+
+    .closing {
+      width: var(--content);
       margin: 0 auto;
-      padding: 0 0 34px;
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      color: var(--muted);
-      font-size: .92rem;
+      padding: 74px 0;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 28px;
     }
 
-    footer a {
-      color: var(--green-800);
-      font-weight: 700;
+    .closing p {
+      color: rgba(255, 255, 255, .78);
+    }
+
+    .closing .button {
+      background: #fff;
+      color: var(--emerald-deep);
+      border-color: #fff;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, .16);
+    }
+
+    .footer {
+      width: var(--content);
+      min-height: 82px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      color: var(--muted);
+      font-size: .95rem;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .footer a {
+      font-weight: 750;
       text-decoration: none;
     }
 
-    @media (max-width: 860px) {
-      .nav { height: auto; padding: 18px 0; align-items: flex-start; }
-      .nav-links { flex-wrap: wrap; justify-content: flex-end; }
+    @media (max-width: 920px) {
+      .nav {
+        height: auto;
+        padding: 18px 0;
+        align-items: flex-start;
+      }
+
+      .nav-links {
+        justify-content: flex-end;
+        flex-wrap: wrap;
+      }
+
       .hero {
-        grid-template-columns: 1fr;
         min-height: auto;
-        gap: 34px;
-        padding-top: 26px;
       }
-      h1 { font-size: 4rem; }
-      .lead { font-size: 1.14rem; }
-      .visual {
-        min-height: 360px;
-        width: min(100%, 480px);
+
+      .hero::before {
+        background:
+          linear-gradient(180deg, rgba(255, 253, 249, .98) 0%, rgba(255, 253, 249, .92) 48%, rgba(255, 253, 249, .46) 100%),
+          linear-gradient(180deg, rgba(233, 226, 244, .54), rgba(215, 248, 228, .32));
       }
-      .icon-mark { width: 300px; margin-left: 64px; }
-      .features { grid-template-columns: 1fr; }
-      footer { flex-direction: column; }
+
+      .hero-media {
+        inset: auto -82px -300px auto;
+        width: 760px;
+        min-width: 760px;
+        opacity: .58;
+      }
+
+      .hero-inner {
+        padding: 76px 0 360px;
+      }
+
+      .flow,
+      .screens,
+      .trust,
+      .closing {
+        grid-template-columns: 1fr;
+      }
+
+      .flow {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .closing {
+        align-items: start;
+      }
     }
 
-    @media (max-width: 540px) {
-      .nav { flex-direction: column; }
-      .nav-links { justify-content: flex-start; }
-      .hero {
-        gap: 20px;
-        padding-top: 14px;
-        padding-bottom: 28px;
+    @media (max-width: 640px) {
+      :root {
+        --content: min(100% - 28px, 1120px);
       }
-      h1 { font-size: 2.95rem; }
-      .lead { font-size: 1.05rem; }
-      .actions {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-      }
-      .button { width: auto; }
-      .button.primary { grid-column: 1 / -1; }
-      .visual { min-height: 190px; }
-      .icon-mark { width: 156px; margin-left: auto; }
-      .list-panel {
-        width: 196px;
-        padding: 14px;
-        bottom: 0;
-      }
-      .task-row {
+
+      .nav {
         gap: 10px;
-        padding: 8px 0;
+      }
+
+      .nav-links {
+        gap: 2px;
         font-size: .88rem;
       }
-      .voice-strip {
-        width: 116px;
-        height: 48px;
-        right: 0;
+
+      .nav-links a {
+        padding: 0 8px;
       }
-      .bar { width: 7px; }
+
+      h1 {
+        font-size: clamp(4.2rem, 24vw, 6.2rem);
+      }
+
+      .hero-copy > p {
+        font-size: 1.12rem;
+      }
+
+      .hero-inner {
+        padding-bottom: 318px;
+      }
+
+      .hero-media {
+        right: -170px;
+        bottom: -330px;
+        opacity: .62;
+      }
+
+      .phone.primary {
+        right: 30%;
+      }
+
+      .phone.secondary {
+        right: 10%;
+      }
+
+      .phone.tertiary {
+        right: 56%;
+      }
+
+      .section {
+        padding: 64px 0;
+      }
+
+      .flow {
+        grid-template-columns: 1fr;
+      }
+
+      .step {
+        min-height: auto;
+      }
+
+      .screen-panel,
+      .screen-panel.large {
+        min-height: 620px;
+      }
+
+      .screen-phone {
+        width: min(82%, 340px);
+      }
+
+      .mini-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        inset: 178px 12px 18px;
+      }
+
+      .trust-item {
+        grid-template-columns: 44px 1fr;
+        padding: 16px;
+      }
+
+      .trust-icon {
+        width: 44px;
+        height: 44px;
+      }
+
+      .footer {
+        padding: 24px 0;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .footer-links {
+        justify-content: flex-start;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <nav class="nav" aria-label="Primary">
+  <div class="site">
+    <nav class="nav" aria-label="Primary navigation">
       <a class="brand" href="./" aria-label="Convy home">
         <img src="assets/convy-icon-192.png" alt="">
         <span>Convy</span>
       </a>
       <div class="nav-links">
+        <a href="#product">Product</a>
+        <a href="#privacy">Privacy</a>
         <a href="https://github.com/Monkey-D-Luisi/convy">GitHub</a>
-        <a href="https://legal.convyapp.com/privacy">Privacy</a>
+        <a href="https://legal.convyapp.com/terms">Terms</a>
       </div>
     </nav>
 
     <header class="hero">
-      <div>
-        <h1>Home lists that move with the household.</h1>
-        <p class="lead">Convy keeps shared lists, tasks, reminders, invites, real-time updates, and voice capture in one calm place for everyday home coordination.</p>
-        <div class="actions" aria-label="Convy links">
-          <a class="button primary" href="https://play.google.com/store/apps/details?id=com.monkeydluisi.convy">Play Store</a>
-          <a class="button" href="https://github.com/Monkey-D-Luisi/convy">View source</a>
-          <a class="button" href="https://legal.convyapp.com/privacy">Privacy</a>
+      <div class="hero-media" aria-hidden="true">
+        <div class="phone-deck">
+          <figure class="phone primary">
+            <img src="assets/convy-home.png" alt="">
+          </figure>
+          <figure class="phone secondary">
+            <img src="assets/convy-list.png" alt="">
+          </figure>
+          <figure class="phone tertiary">
+            <img src="assets/convy-activity.png" alt="">
+          </figure>
         </div>
       </div>
-
-      <div class="visual" aria-label="Convy app preview">
-        <img class="icon-mark" src="assets/convy-icon-512.png" alt="Convy app icon">
-        <div class="list-panel" aria-hidden="true">
-          <h2>Today at home</h2>
-          <div class="task-row"><span class="check"></span><span>Groceries synced</span></div>
-          <div class="task-row"><span class="check"></span><span>Chores assigned</span></div>
-          <div class="task-row"><span class="check"></span><span>Voice items ready</span></div>
-        </div>
-        <div class="voice-strip" aria-hidden="true">
-          <span class="bar"></span>
-          <span class="bar"></span>
-          <span class="bar"></span>
-          <span class="bar"></span>
-          <span class="bar"></span>
-          <span class="bar"></span>
-          <span class="bar"></span>
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow">Android-first household coordination</p>
+          <h1>Convy</h1>
+          <p>Shared shopping lists, chores, activity, and fast voice capture in a calmer home app that stays readable when the week gets busy.</p>
+          <div class="actions" aria-label="Primary actions">
+            <a class="button primary" href="https://play.google.com/store/apps/details?id=com.monkeydluisi.convy">Get it on Play Store</a>
+            <a class="button" href="#product">See the app</a>
+          </div>
+          <div class="hero-proof" aria-label="Product highlights">
+            <span class="pill">Realtime household lists</span>
+            <span class="pill">Voice-assisted capture</span>
+            <span class="pill">Private by default</span>
+          </div>
         </div>
       </div>
     </header>
-  </div>
 
-  <main class="feature-band">
-    <section class="features" aria-label="Product areas">
-      <article class="feature">
-        <h2>Shared Lists</h2>
-        <p>Households can create and update lists together with fast item entry, duplicate checks, and live sync.</p>
-      </article>
-      <article class="feature">
-        <h2>Tasks</h2>
-        <p>Assignments, due dates, reminders, and activity history keep routine home work visible.</p>
-      </article>
-      <article class="feature">
-        <h2>Voice</h2>
-        <p>Voice input turns spoken groceries into confirmed list items without exposing operational telemetry to the app.</p>
-      </article>
+    <main>
+      <section class="section" aria-labelledby="flow-title">
+        <div class="section-head">
+          <h2 id="flow-title">Built for the actual rhythm of a home.</h2>
+          <p>Convy keeps the common household loop tight: add things quickly, split attention cleanly, shop without friction, then check what changed later.</p>
+        </div>
+        <div class="flow">
+          <article class="step">
+            <div class="step-mark">1</div>
+            <h3>Capture in seconds</h3>
+            <p>Add groceries manually or use voice capture when your hands are full.</p>
+          </article>
+          <article class="step">
+            <div class="step-mark">2</div>
+            <h3>Keep lists shared</h3>
+            <p>Everyone sees the same household lists, members, and realtime updates.</p>
+          </article>
+          <article class="step">
+            <div class="step-mark">3</div>
+            <h3>Shop with focus</h3>
+            <p>Large touch targets and a dedicated shopping flow keep the list usable in store aisles.</p>
+          </article>
+          <article class="step">
+            <div class="step-mark">4</div>
+            <h3>Review what changed</h3>
+            <p>Activity history shows who added, completed, renamed, or removed household items.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="product-band" id="product">
+        <div class="section">
+          <div class="section-head">
+            <h2>Real screens, redesigned around clarity.</h2>
+            <p>The landing uses screenshots captured from the redesigned Android app, so the public site and product now speak the same visual language.</p>
+          </div>
+          <div class="screens">
+            <article class="screen-panel large">
+              <div class="screen-caption">
+                <h3>Home gives the household status at a glance.</h3>
+                <p>Emerald actions, warm surfaces, and scannable list cards keep the first screen quiet but useful.</p>
+              </div>
+              <div class="screen-phone">
+                <img src="assets/convy-home.png" alt="Convy home screen showing household metrics and a weekly groceries list">
+              </div>
+            </article>
+            <div class="screen-grid">
+              <article class="screen-panel">
+                <div class="screen-caption">
+                  <h3>Lists stay thumb friendly.</h3>
+                  <p>Filters, item rows, voice capture, and the primary action are reachable without visual clutter.</p>
+                </div>
+                <div class="mini-row">
+                  <div class="mini-phone">
+                    <img src="assets/convy-list.png" alt="Convy list detail screen with pending groceries">
+                  </div>
+                  <div class="mini-phone">
+                    <img src="assets/convy-form.png" alt="Convy new item form screen">
+                  </div>
+                </div>
+              </article>
+              <article class="screen-panel">
+                <div class="screen-caption">
+                  <h3>Settings and activity feel native.</h3>
+                  <p>Household controls, notification preferences, and history use the same polished component system.</p>
+                </div>
+                <div class="mini-row">
+                  <div class="mini-phone">
+                    <img src="assets/convy-activity.png" alt="Convy activity history screen">
+                  </div>
+                  <div class="mini-phone">
+                    <img src="assets/convy-settings.png" alt="Convy settings screen with household and notification controls">
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="privacy" aria-labelledby="privacy-title">
+        <div class="trust">
+          <div class="section-head">
+            <h2 id="privacy-title">Private household data needs boringly strong rules.</h2>
+            <p>Convy is built around explicit membership, scoped integrations, and public documentation for the parts that touch your data.</p>
+            <div class="actions">
+              <a class="button" href="https://legal.convyapp.com/privacy">Read privacy policy</a>
+              <a class="button" href="https://mcp.convyapp.com/docs">MCP docs</a>
+            </div>
+          </div>
+          <div class="trust-list">
+            <article class="trust-item">
+              <div class="trust-icon">P</div>
+              <div>
+                <h3>Privacy and terms are public</h3>
+                <p>Legal pages describe household data, voice capture, notifications, and beta integration behavior.</p>
+              </div>
+            </article>
+            <article class="trust-item">
+              <div class="trust-icon">M</div>
+              <div>
+                <h3>MCP access is scoped</h3>
+                <p>The ChatGPT MCP beta uses explicit authorization and limited read/write scopes for household actions.</p>
+              </div>
+            </article>
+            <article class="trust-item">
+              <div class="trust-icon">G</div>
+              <div>
+                <h3>Source is inspectable</h3>
+                <p>The repository documents the mobile app, backend, auth, MCP service, and deployment model.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <section class="closing-band" aria-labelledby="closing-title">
+      <div class="closing">
+        <div>
+          <h2 id="closing-title">Bring the household list back under control.</h2>
+          <p>Install Convy for shared groceries, chores, activity, and voice-assisted capture on Android.</p>
+        </div>
+        <a class="button" href="https://play.google.com/store/apps/details?id=com.monkeydluisi.convy">Open Play Store</a>
+      </div>
     </section>
-  </main>
 
-  <footer>
-    <p>Convy is currently prepared for controlled beta use.</p>
-    <p><a href="https://legal.convyapp.com/privacy">Privacy</a></p>
-  </footer>
+    <footer class="footer">
+      <p>Convy, built for shared household coordination.</p>
+      <div class="footer-links">
+        <a href="https://github.com/Monkey-D-Luisi/convy">GitHub</a>
+        <a href="https://legal.convyapp.com/privacy">Privacy</a>
+        <a href="https://legal.convyapp.com/terms">Terms</a>
+        <a href="https://mcp.convyapp.com/docs">MCP docs</a>
+      </div>
+    </footer>
+  </div>
 </body>
 </html>

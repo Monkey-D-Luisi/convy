@@ -26,6 +26,11 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.convy.app.generated.resources.*
+import com.convy.app.ui.components.ConvyAvatar
+import com.convy.app.ui.components.ConvyBackground
+import com.convy.app.ui.components.ConvySpacing
+import com.convy.app.ui.components.convyOutlinedTextFieldColors
+import com.convy.app.ui.components.convyTopAppBarColors
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -74,6 +79,7 @@ fun SettingsContent(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = convyTopAppBarColors(),
                 title = { Text(stringResource(Res.string.settings_title)) },
                 navigationIcon = {
                     IconButton(
@@ -87,19 +93,20 @@ fun SettingsContent(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-        ) {
-            // Profile card with avatar
+        ConvyBackground(modifier = Modifier.padding(padding)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(ConvySpacing.ScreenHorizontal),
+            ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
                 ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
             ) {
                 Column(
                     modifier = Modifier
@@ -107,20 +114,7 @@ fun SettingsContent(
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    // Large avatar
-                    Surface(
-                        modifier = Modifier.size(64.dp),
-                        shape = MaterialTheme.shapes.extraLarge,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = state.displayName.firstOrNull()?.uppercase() ?: "?",
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            )
-                        }
-                    }
+                    ConvyAvatar(label = state.displayName, size = 64.dp)
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = state.displayName.ifEmpty { stringResource(Res.string.settings_unknown_name) },
@@ -138,9 +132,11 @@ fun SettingsContent(
                 Spacer(modifier = Modifier.height(16.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
                     ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(stringResource(Res.string.settings_household), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -180,9 +176,11 @@ fun SettingsContent(
             // App info card
             Card(
                 modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
                 ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
@@ -203,9 +201,11 @@ fun SettingsContent(
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
                 ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
@@ -346,6 +346,8 @@ fun SettingsContent(
                             },
                             label = { Text(stringResource(Res.string.settings_household_name_label)) },
                             singleLine = true,
+                            shape = MaterialTheme.shapes.large,
+                            colors = convyOutlinedTextFieldColors(),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .focusRequester(focusRequester)
@@ -366,6 +368,7 @@ fun SettingsContent(
                     },
                 )
             }
+        }
         }
     }
 }

@@ -47,11 +47,12 @@ public class DeleteTaskCommandHandler : IRequestHandler<DeleteTaskCommand, Resul
 
         var task = access.Value!.Task;
         var taskId = task.Id;
+        var taskTitle = task.Title;
         _taskRepository.Remove(task);
         await _taskRepository.SaveChangesAsync(cancellationToken);
 
         await _notifications.NotifyTaskDeleted(access.Value.List.HouseholdId, taskId, cancellationToken);
-        await _activityLogger.LogAsync(access.Value.List.HouseholdId, ActivityEntityType.Task, taskId, ActivityActionType.Deleted, _currentUser.UserId, cancellationToken: cancellationToken);
+        await _activityLogger.LogAsync(access.Value.List.HouseholdId, ActivityEntityType.Task, taskId, ActivityActionType.Deleted, _currentUser.UserId, taskTitle, cancellationToken);
 
         return Result.Success();
     }

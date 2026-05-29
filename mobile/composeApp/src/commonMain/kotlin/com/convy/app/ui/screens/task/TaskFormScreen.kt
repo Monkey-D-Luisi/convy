@@ -40,7 +40,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.convy.app.generated.resources.*
+import com.convy.app.ui.components.ConvyBackground
+import com.convy.app.ui.components.ConvyPrimaryBottomBar
+import com.convy.app.ui.components.ConvyPrimaryButton
+import com.convy.app.ui.components.ConvySpacing
 import com.convy.app.ui.components.LoadingContent
+import com.convy.app.ui.components.convyTextFieldColors
+import com.convy.app.ui.components.convyTopAppBarColors
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -74,6 +80,7 @@ fun TaskFormContent(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = convyTopAppBarColors(),
                 title = { Text(if (state.isEditing) stringResource(Res.string.task_edit_title) else stringResource(Res.string.task_new_title)) },
                 navigationIcon = {
                     IconButton(
@@ -116,24 +123,21 @@ fun TaskFormContent(
             return@Scaffold
         }
 
-        Column(
+        ConvyBackground(modifier = Modifier.padding(padding)) {
+            Column(
             modifier = Modifier
-                .padding(padding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-        ) {
+                .padding(ConvySpacing.ScreenHorizontal),
+            ) {
             TextField(
                 value = state.title,
                 onValueChange = { onIntent(TaskFormIntent.UpdateTitle(it)) },
                 label = { Text(stringResource(Res.string.task_title_label)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().testTag("Task title"),
-                shape = RoundedCornerShape(12.dp),
-                colors = TextFieldDefaults.colors(
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                ),
+                shape = MaterialTheme.shapes.large,
+                colors = convyTextFieldColors(),
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.Sentences,
                     imeAction = ImeAction.Next,
@@ -148,11 +152,8 @@ fun TaskFormContent(
                 label = { Text(stringResource(Res.string.task_note_label)) },
                 placeholder = { Text(stringResource(Res.string.task_note_placeholder)) },
                 modifier = Modifier.fillMaxWidth().testTag("Task note"),
-                shape = RoundedCornerShape(12.dp),
-                colors = TextFieldDefaults.colors(
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                ),
+                shape = MaterialTheme.shapes.large,
+                colors = convyTextFieldColors(),
                 minLines = 3,
                 maxLines = 6,
             )
@@ -168,6 +169,7 @@ fun TaskFormContent(
 
             Spacer(modifier = Modifier.height(104.dp))
         }
+        }
     }
 }
 
@@ -178,19 +180,11 @@ private fun TaskFormPrimaryAction(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    Surface(
-        tonalElevation = 3.dp,
-        shadowElevation = 3.dp,
-    ) {
-        Button(
+    ConvyPrimaryBottomBar {
+        ConvyPrimaryButton(
             onClick = onClick,
             modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .imePadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .height(56.dp),
-            shape = RoundedCornerShape(28.dp),
+                .fillMaxWidth(),
             enabled = enabled,
         ) {
             if (isSaving) {

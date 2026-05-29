@@ -74,6 +74,12 @@
 
     <!-- Household Lists -->
     <string name="lists_default_title">My Home</string>
+    <string name="home_greeting">Good morning</string>
+    <string name="home_today_at_home">Today at home</string>
+    <string name="home_groceries">groceries</string>
+    <string name="home_chores">chores</string>
+    <string name="home_voice_ready">Ready</string>
+    <string name="home_your_lists">Your lists</string>
     <string name="lists_activity">Activity</string>
     <string name="lists_members">Members</string>
     <string name="lists_settings">Settings</string>
@@ -195,7 +201,7 @@
     <string name="activity_updated">Updated %1$s%2$s</string>
     <string name="activity_completed">Completed %1$s%2$s</string>
     <string name="activity_uncompleted">Marked %1$s%2$s as pending</string>
-    <string name="activity_deleted">Deleted %1$s</string>
+    <string name="activity_deleted">Deleted %1$s%2$s</string>
     <string name="activity_archived">Archived %1$s%2$s</string>
     <string name="activity_renamed">Renamed %1$s to%2$s</string>
     <string name="activity_member_joined">Joined the household</string>
@@ -233,9 +239,9 @@
 
     <!-- Item Card -->
     <string name="item_card_completed_by">Completed by %1$s</string>
-    <string name="item_card_completed_by_at">Completed by %1$s · %2$s</string>
-    <string name="item_card_added_by">Added by %1$s · %2$s</string>
-    <string name="item_card_returned_to_pending_by_at">Returned to pending by %1$s · %2$s</string>
+    <string name="item_card_completed_by_at">Completed by %1$s / %2$s</string>
+    <string name="item_card_added_by">Added by %1$s / %2$s</string>
+    <string name="item_card_returned_to_pending_by_at">Returned to pending by %1$s / %2$s</string>
     <string name="item_card_recurring">Recurring</string>
     <string name="item_card_completed">Completed</string>
 

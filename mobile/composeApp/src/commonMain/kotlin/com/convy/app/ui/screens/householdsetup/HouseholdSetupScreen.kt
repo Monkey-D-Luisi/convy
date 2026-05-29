@@ -1,9 +1,7 @@
 package com.convy.app.ui.screens.householdsetup
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -18,6 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.convy.app.generated.resources.*
+import com.convy.app.ui.components.ConvyBackground
+import com.convy.app.ui.components.ConvyIconBubble
+import com.convy.app.ui.components.ConvyPanel
+import com.convy.app.ui.components.ConvyPrimaryButton
+import com.convy.app.ui.components.ConvySpacing
+import com.convy.app.ui.components.convyTextFieldColors
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -47,136 +51,114 @@ fun HouseholdSetupContent(
     state: HouseholdSetupState,
     onIntent: (HouseholdSetupIntent) -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        // Illustration area with tonal layering
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(top = 80.dp, bottom = 48.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Home,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = stringResource(Res.string.setup_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = if (state.isCreateMode) stringResource(Res.string.setup_create_subtitle)
-                    else stringResource(Res.string.setup_join_subtitle),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
-        }
-
-        // Form section
+    ConvyBackground {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(top = 32.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = ConvySpacing.ScreenHorizontal)
+                .padding(top = 78.dp, bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (state.isCreateMode) {
-                TextField(
-                    value = state.householdName,
-                    onValueChange = { onIntent(HouseholdSetupIntent.UpdateHouseholdName(it)) },
-                    label = { Text(stringResource(Res.string.setup_household_name)) },
-                    placeholder = { Text(stringResource(Res.string.setup_household_placeholder)) },
-                    leadingIcon = {
-                        Icon(Icons.Default.Home, contentDescription = null)
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = TextFieldDefaults.colors(
-                        unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                        focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    ),
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(Res.string.setup_household_hint),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            } else {
-                TextField(
-                    value = state.inviteCode,
-                    onValueChange = { onIntent(HouseholdSetupIntent.UpdateInviteCode(it)) },
-                    label = { Text(stringResource(Res.string.setup_invite_code)) },
-                    placeholder = { Text(stringResource(Res.string.setup_invite_placeholder)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = TextFieldDefaults.colors(
-                        unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                        focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    ),
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(Res.string.setup_invite_hint),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            ConvyIconBubble(
+                icon = Icons.Default.Home,
+                contentDescription = null,
+                size = 72.dp,
+                iconSize = 38.dp,
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f),
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = stringResource(Res.string.setup_title),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = if (state.isCreateMode) stringResource(Res.string.setup_create_subtitle)
+                else stringResource(Res.string.setup_join_subtitle),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(30.dp))
 
-            if (state.error != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = state.error.asString(),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
+            ConvyPanel(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    if (state.isCreateMode) {
+                        TextField(
+                            value = state.householdName,
+                            onValueChange = { onIntent(HouseholdSetupIntent.UpdateHouseholdName(it)) },
+                            label = { Text(stringResource(Res.string.setup_household_name)) },
+                            placeholder = { Text(stringResource(Res.string.setup_household_placeholder)) },
+                            leadingIcon = {
+                                Icon(Icons.Default.Home, contentDescription = null)
+                            },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.large,
+                            colors = convyTextFieldColors(),
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = stringResource(Res.string.setup_household_hint),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    } else {
+                        TextField(
+                            value = state.inviteCode,
+                            onValueChange = { onIntent(HouseholdSetupIntent.UpdateInviteCode(it)) },
+                            label = { Text(stringResource(Res.string.setup_invite_code)) },
+                            placeholder = { Text(stringResource(Res.string.setup_invite_placeholder)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.large,
+                            colors = convyTextFieldColors(),
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = stringResource(Res.string.setup_invite_hint),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                    if (state.error != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = state.error.asString(),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
 
-            Button(
-                onClick = { onIntent(HouseholdSetupIntent.Submit) },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(28.dp),
-                enabled = !state.isLoading && if (state.isCreateMode) {
-                    state.householdName.isNotBlank()
-                } else {
-                    state.inviteCode.isNotBlank()
-                },
-            ) {
-                if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                } else {
-                    Text(if (state.isCreateMode) stringResource(Res.string.setup_create_household) else stringResource(Res.string.setup_join_household))
+                    Spacer(modifier = Modifier.height(22.dp))
+
+                    ConvyPrimaryButton(
+                        onClick = { onIntent(HouseholdSetupIntent.Submit) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !state.isLoading && if (state.isCreateMode) {
+                            state.householdName.isNotBlank()
+                        } else {
+                            state.inviteCode.isNotBlank()
+                        },
+                    ) {
+                        if (state.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        } else {
+                            Text(if (state.isCreateMode) stringResource(Res.string.setup_create_household) else stringResource(Res.string.setup_join_household))
+                        }
+                    }
                 }
             }
-
             Spacer(modifier = Modifier.height(12.dp))
 
             TextButton(
