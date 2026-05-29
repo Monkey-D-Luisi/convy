@@ -118,7 +118,7 @@
 
     .hero {
       position: relative;
-      min-height: calc(100svh - 76px);
+      min-height: min(calc(100svh - 148px), 980px);
       display: grid;
       align-items: center;
       overflow: hidden;
@@ -130,7 +130,7 @@
       position: absolute;
       inset: 0;
       background:
-        linear-gradient(110deg, rgba(255, 253, 249, .98) 0%, rgba(255, 253, 249, .90) 38%, rgba(255, 253, 249, .42) 64%, rgba(255, 253, 249, .08) 100%),
+        linear-gradient(110deg, rgba(255, 253, 249, .98) 0%, rgba(255, 253, 249, .90) 34%, rgba(255, 253, 249, .20) 60%, rgba(255, 253, 249, 0) 78%),
         linear-gradient(180deg, rgba(233, 226, 244, .54), rgba(215, 248, 228, .34));
       z-index: 1;
     }
@@ -160,9 +160,11 @@
       background: #19241f;
       box-shadow: var(--shadow);
       overflow: hidden;
+      backface-visibility: hidden;
     }
 
     .phone img {
+      display: block;
       width: 100%;
       aspect-ratio: 1280 / 2856;
       object-fit: cover;
@@ -198,7 +200,7 @@
       z-index: 2;
       width: var(--content);
       margin: 0 auto;
-      padding: 56px 0 92px;
+      padding: 40px 0 56px;
     }
 
     .hero-copy {
@@ -595,7 +597,7 @@
 
       .hero::before {
         background:
-          linear-gradient(180deg, rgba(255, 253, 249, .98) 0%, rgba(255, 253, 249, .92) 48%, rgba(255, 253, 249, .46) 100%),
+          linear-gradient(180deg, rgba(255, 253, 249, .99) 0%, rgba(255, 253, 249, .92) 42%, rgba(255, 253, 249, .18) 72%, rgba(255, 253, 249, 0) 100%),
           linear-gradient(180deg, rgba(233, 226, 244, .54), rgba(215, 248, 228, .32));
       }
 
@@ -603,7 +605,7 @@
         inset: auto -82px -300px auto;
         width: 760px;
         min-width: 760px;
-        opacity: .58;
+        opacity: .9;
       }
 
       .hero-inner {
@@ -659,7 +661,7 @@
       .hero-media {
         right: -170px;
         bottom: -330px;
-        opacity: .62;
+        opacity: .95;
       }
 
       .phone.primary {
