@@ -18,8 +18,8 @@ public class McpTokenService
         var privateKey = McpJwtKeyLoader.LoadPrivateKey(_configuration)
             ?? throw new InvalidOperationException("McpAuth private signing key is not configured.");
 
-        var issuer = _configuration["McpAuth:Issuer"] ?? "https://auth.convy.app";
-        var audience = _configuration["McpAuth:Audience"] ?? "https://mcp.convy.app";
+        var issuer = _configuration["McpAuth:Issuer"] ?? "https://auth.convyapp.com";
+        var audience = _configuration["McpAuth:Audience"] ?? "https://mcp.convyapp.com";
         var now = DateTime.UtcNow;
         var expires = now.AddMinutes(_configuration.GetValue("McpAuth:AccessTokenMinutes", 60));
 

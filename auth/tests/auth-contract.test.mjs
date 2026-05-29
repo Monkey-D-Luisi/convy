@@ -11,8 +11,8 @@ test("consent screen states read permissions, limited write permissions, and exc
 
   assert.match(source, /read access/);
   assert.match(source, /limited write access/);
-  assert.match(source, /ChatGPT can create and complete shopping items and tasks/);
-  assert.match(source, /ChatGPT cannot edit, delete, archive, invite, leave, view admin metrics, access backups, or manage lists/);
+  assert.match(source, /ChatGPT can create and update shopping items and tasks when you approve the action/);
+  assert.match(source, /ChatGPT cannot edit, delete, archive, invite, leave, view admin metrics, access backups, modify account settings, or manage lists/);
   assert.match(source, /convy\.items\.write/);
   assert.match(source, /convy\.tasks\.write/);
 });

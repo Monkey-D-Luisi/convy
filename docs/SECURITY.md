@@ -1,6 +1,6 @@
 # Security
 
-This document describes implemented security boundaries and known beta limitations. It is not a substitute for a formal security review.
+This document describes implemented security boundaries and known controlled-release limitations. It is not a substitute for a formal security review.
 
 ## Authentication
 
@@ -33,7 +33,7 @@ Implemented controls:
 - Refresh token grants rotate refresh tokens.
 - Revocation invalidates the presented refresh token.
 
-Current beta scopes:
+Current MCP scopes:
 
 - `convy.households.read`
 - `convy.lists.read`

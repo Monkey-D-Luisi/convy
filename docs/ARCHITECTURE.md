@@ -145,7 +145,7 @@ Access tokens include MCP-specific claims such as `token_use=mcp_access`, `auth_
 
 ## Infrastructure And Routing
 
-The active beta/staging environment runs on Hetzner:
+The active controlled-release/staging environment runs on Hetzner:
 
 ```text
 Caddy

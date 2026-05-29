@@ -1,6 +1,6 @@
 # Hetzner VPS Hosting Runbook
 
-Hetzner is the active beta/staging hosting target. The VPS runs PostgreSQL, ASP.NET Core API, Next.js dashboard, Next.js auth app, Node MCP service, static public/legal pages, and Caddy through Docker Compose.
+Hetzner is the active controlled-release/staging hosting target. The VPS runs PostgreSQL, ASP.NET Core API, Next.js dashboard, Next.js auth app, Node MCP service, static public/legal pages, and Caddy through Docker Compose.
 
 OCI files are fallback/reference material unless explicitly updated for parity.
 

@@ -1,8 +1,10 @@
 # Convy ChatGPT MCP
 
-This directory documents the Convy ChatGPT MCP private beta.
+This directory documents the Convy ChatGPT MCP integration for the current controlled release.
 
 The ChatGPT MCP integration lets an authorized ChatGPT client read a user's Convy household context, lists, shopping items, tasks, and recent activity, plus perform limited confirmed writes for shopping items and tasks.
+
+The MCP server also registers a shared React Apps SDK widget at `ui://widget/convy-summary-v1.html` so ChatGPT can render household, shopping, task, and activity summaries.
 
 For MCP servers used by development agents, see [AI development MCP setup](../ai-tooling/mcp-setup.md).
 
@@ -27,7 +29,7 @@ For MCP servers used by development agents, see [AI development MCP setup](../ai
 - Privacy: `https://legal.convyapp.com/privacy`
 - Terms: `https://legal.convyapp.com/terms`
 
-## Beta Scopes
+## MCP Scopes
 
 Read scopes:
 
@@ -87,4 +89,4 @@ See [security-model.md](security-model.md).
 
 ## Backlog
 
-The current beta has fixed, closed-world tools. Additional "smart" behavior beyond exact normalized duplicate handling should be documented as future/backlog unless it is implemented in `mcp/src/tools/definitions.ts` or the backend command handlers.
+The current integration has fixed, closed-world tools. Additional "smart" behavior beyond exact normalized duplicate handling should be documented as future/backlog unless it is implemented in `mcp/src/tools/definitions.ts` or the backend command handlers.

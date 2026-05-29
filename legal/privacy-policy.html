@@ -51,7 +51,7 @@
   <main class="wrap">
     <p>
       Convy helps households manage shared shopping lists, tasks, reminders, and voice-assisted item capture.
-      This policy explains what data we process, why we process it, and how beta users can request access,
+      This policy explains what data we process, why we process it, and how controlled-release users can request access,
       correction, or deletion.
     </p>
 
@@ -61,7 +61,7 @@
       <li>Household content such as lists, list items, tasks, invite status, activity events, and notification preferences.</li>
       <li>Device tokens needed to deliver Firebase Cloud Messaging push notifications.</li>
       <li>Voice parsing metadata such as request status, audio size, approximate duration, token usage, latency, parsed item count, and estimated cost when configured.</li>
-      <li>ChatGPT MCP beta audit metadata such as tool name, user identifier, optional household identifier, result status, latency, and error category.</li>
+      <li>ChatGPT MCP audit metadata such as tool name, user identifier, optional household identifier, result status, latency, and error category.</li>
       <li>Operational logs, health data, and local backup metadata needed to operate and secure the service.</li>
     </ul>
 
@@ -77,17 +77,17 @@
       <li>Hetzner hosts the active staging VPS, PostgreSQL database, Caddy reverse proxy, legal pages, and admin dashboard.</li>
       <li>Firebase Authentication verifies user identity and Firebase Cloud Messaging delivers notifications.</li>
       <li>OpenAI processes voice input for transcription and structured parsing when voice features are used.</li>
-      <li>OpenAI ChatGPT may receive household data when you explicitly authorize the Convy ChatGPT MCP beta connector.</li>
+      <li>OpenAI ChatGPT may receive household data when you explicitly authorize the Convy ChatGPT MCP connector.</li>
       <li>GitHub may process repository, CI, and deployment metadata for development and release operations.</li>
     </ul>
 
-    <h2>ChatGPT MCP Beta</h2>
+    <h2>ChatGPT MCP Integration</h2>
     <p>
       If you connect Convy to ChatGPT, Convy uses Firebase login and a Convy-owned OAuth broker to issue delegated,
-      short-lived access tokens. In beta v1, ChatGPT can view authorized household context, lists, shopping items,
-      tasks, and recent activity through MCP tools, and can create or complete shopping items and tasks after user
+      short-lived access tokens. In the current integration, ChatGPT can view authorized household context, lists, shopping items,
+      tasks, and recent activity through MCP tools, and can create or update shopping item and task completion status after user
       confirmation. ChatGPT cannot edit, delete, archive, invite, leave, manage lists, view admin metrics, or access
-      backups through this connector.
+      backups, or modify account settings through this connector.
     </p>
     <p>
       Convy stores hashes of OAuth authorization codes and refresh tokens, not their raw values. MCP audit logs do not
@@ -99,7 +99,7 @@
     <p>
       PostgreSQL backups are created locally on the Hetzner VPS using PostgreSQL custom-format dumps with checksums,
       metadata, catalog verification, and scheduled restore verification. Backups are retained for operational recovery.
-      Before Convy is expanded beyond controlled beta usage, encrypted offsite backup storage must be added.
+      Before Convy is expanded beyond controlled-release usage, encrypted offsite backup storage must be added.
     </p>
 
     <h2>Security</h2>
@@ -116,7 +116,7 @@
 
     <h2>Legal Review</h2>
     <p>
-      This policy is a product-operational disclosure for beta use and is not a substitute for professional legal review.
+      This policy is a product-operational disclosure for controlled-release use and is not a substitute for professional legal review.
       It should be reviewed before public launch or broader user onboarding.
     </p>
 

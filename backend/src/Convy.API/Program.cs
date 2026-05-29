@@ -89,8 +89,8 @@ builder.Services.AddAuthentication(AuthSchemes.DefaultBearer)
     })
     .AddJwtBearer(AuthSchemes.McpBearer, options =>
     {
-        var issuer = builder.Configuration["McpAuth:Issuer"] ?? "https://auth.convy.app";
-        var audience = builder.Configuration["McpAuth:Audience"] ?? "https://mcp.convy.app";
+        var issuer = builder.Configuration["McpAuth:Issuer"] ?? "https://auth.convyapp.com";
+        var audience = builder.Configuration["McpAuth:Audience"] ?? "https://mcp.convyapp.com";
         SecurityKey publicKey = (SecurityKey?)McpJwtKeyLoader.LoadPublicKey(builder.Configuration)
             ?? new RsaSecurityKey(RSA.Create(2048));
 

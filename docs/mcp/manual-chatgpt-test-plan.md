@@ -1,6 +1,6 @@
 # Manual ChatGPT MCP Test Plan
 
-Run this plan against staging before granting private beta access or submitting for public review.
+Run this plan against the controlled-release environment before submitting for public review.
 
 ## Setup
 
@@ -18,6 +18,7 @@ curl -fsS https://mcp.convyapp.com/health
 ```bash
 curl -fsS https://mcp.convyapp.com/.well-known/oauth-protected-resource
 curl -fsS https://auth.convyapp.com/.well-known/oauth-authorization-server
+curl -i -X POST https://mcp.convyapp.com/mcp -H "content-type: application/json" -d "{}"
 ```
 
 4. Confirm `scopes_supported` includes only:
@@ -39,21 +40,22 @@ It must not advertise admin, backup, delete, invite, household-management, or li
 3. Start OAuth authorization.
 4. Sign in at `https://auth.convyapp.com`.
 5. Confirm consent text says ChatGPT can read Convy data and perform limited item/task writes.
-6. Confirm consent text says ChatGPT cannot edit, delete, archive, invite, leave, manage lists, view admin metrics, or access backups.
+6. Confirm consent text says ChatGPT cannot edit, delete, archive, invite, leave, manage lists, modify account settings, view admin metrics, or access backups.
 7. Approve requested scopes.
 8. Ask ChatGPT to show Convy households.
 9. Ask ChatGPT to show shopping context.
 10. Ask ChatGPT to show one shopping list, including completed items.
 11. Ask ChatGPT to show one task list, including completed tasks.
 12. Ask ChatGPT to show recent household activity.
-13. Ask: `Anade leche, pan y huevos a la compra.` Confirm one `convy_add_shopping_items` call.
-14. Ask ChatGPT to add an already pending item. Confirm the API reports reuse and no duplicate item appears in the app.
-15. Complete an item in Convy, then ask ChatGPT to add it again. Confirm the API returns it to pending and reports that state.
-16. Ask ChatGPT to create one task.
-17. Ask ChatGPT to mark that task completed through the task status-batch tool.
-18. Ask ChatGPT to mark the task pending again.
-19. Revoke access through ChatGPT.
-20. Confirm refresh no longer works and ChatGPT loses access.
+13. Confirm the Convy summary widget renders household/list/item/task/activity data without exposing write buttons.
+14. Ask: `Add milk, bread, and eggs to my grocery list.` Confirm one `convy_add_shopping_items` call.
+15. Ask ChatGPT to add an already pending item. Confirm the API reports reuse and no duplicate item appears in the app.
+16. Complete an item in Convy, then ask ChatGPT to add it again. Confirm the API returns it to pending and reports that state.
+17. Ask ChatGPT to create one task.
+18. Ask ChatGPT to mark that task completed through the task status-batch tool.
+19. Ask ChatGPT to mark the task pending again.
+20. Revoke access through ChatGPT.
+21. Confirm refresh no longer works and ChatGPT loses access.
 
 ## Google Sign-In Check
 
