@@ -405,9 +405,6 @@ private fun ListDetailBottomActions(
     val addText = stringResource(if (state.isTaskList) Res.string.detail_add_task else Res.string.detail_add_item)
 
     ConvyPrimaryBottomBar {
-        if (!state.isTaskList) {
-            VoiceFloatingAction(state = state, onIntent = onIntent)
-        }
         ConvyPrimaryButton(
             onClick = { onIntent(ListDetailIntent.AddItem) },
             modifier = Modifier.weight(1f).testTag(addText),
@@ -415,6 +412,9 @@ private fun ListDetailBottomActions(
             Icon(Icons.Default.Add, contentDescription = addText)
             Spacer(modifier = Modifier.width(8.dp))
             Text(addText)
+        }
+        if (!state.isTaskList) {
+            VoiceFloatingAction(state = state, onIntent = onIntent)
         }
     }
 }
