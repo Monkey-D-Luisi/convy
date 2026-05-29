@@ -12,22 +12,22 @@ class InviteRepositoryImpl(
 ) : InviteRepository {
 
     override suspend fun create(householdId: String): Result<Invite> =
-        runCatching {
+        cancellableRunCatching {
             api.createInvite(CreateInviteRequest(householdId)).toDomain()
         }
 
     override suspend fun join(inviteCode: String): Result<String> =
-        runCatching {
+        cancellableRunCatching {
             api.joinHousehold(JoinHouseholdRequest(inviteCode)).householdId
         }
 
     override suspend fun getByHousehold(householdId: String): Result<List<Invite>> =
-        runCatching {
+        cancellableRunCatching {
             api.getHouseholdInvites(householdId).map { it.toDomain() }
         }
 
     override suspend fun revoke(inviteId: String): Result<Unit> =
-        runCatching {
+        cancellableRunCatching {
             api.revokeInvite(inviteId)
         }
 }

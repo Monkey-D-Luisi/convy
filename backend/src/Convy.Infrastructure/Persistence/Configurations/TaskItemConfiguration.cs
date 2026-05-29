@@ -55,6 +55,12 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
         builder.HasIndex(t => new { t.ListId, t.IsCompleted })
             .HasDatabaseName("ix_task_items_list_id_is_completed");
 
+        builder.HasIndex(t => new { t.ListId, t.CreatedAt })
+            .HasDatabaseName("ix_task_items_list_id_created_at");
+
+        builder.HasIndex(t => new { t.ListId, t.IsCompleted, t.CreatedAt })
+            .HasDatabaseName("ix_task_items_list_id_is_completed_created_at");
+
         builder.HasIndex(t => new { t.ListId, t.NormalizedTitle, t.IsCompleted })
             .HasDatabaseName("ix_task_items_list_id_normalized_title_is_completed");
     }

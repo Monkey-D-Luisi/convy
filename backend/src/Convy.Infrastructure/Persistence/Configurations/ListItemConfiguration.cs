@@ -85,6 +85,15 @@ public class ListItemConfiguration : IEntityTypeConfiguration<ListItem>
         builder.HasIndex(i => new { i.ListId, i.IsCompleted })
             .HasDatabaseName("ix_list_items_list_id_is_completed");
 
+        builder.HasIndex(i => new { i.ListId, i.IsCompleted, i.CreatedAt })
+            .HasDatabaseName("ix_list_items_list_id_is_completed_created_at");
+
+        builder.HasIndex(i => new { i.ListId, i.IsCompleted, i.CompletedAt })
+            .HasDatabaseName("ix_list_items_list_id_is_completed_completed_at");
+
+        builder.HasIndex(i => new { i.ListId, i.IsCompleted, i.ReturnedToPendingAt })
+            .HasDatabaseName("ix_list_items_list_id_is_completed_returned_at");
+
         builder.HasIndex(i => new { i.ListId, i.NormalizedTitle, i.IsCompleted })
             .HasDatabaseName("ix_list_items_list_id_normalized_title_is_completed");
 

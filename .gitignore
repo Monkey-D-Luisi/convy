@@ -113,6 +113,7 @@ GoogleService-Info.plist
 mobile/e2e/screenshots/
 mobile/e2e/*.png
 mobile/e2e/*.xml
+backend/diag-logs*.json
 
 # =====================
 # Environment

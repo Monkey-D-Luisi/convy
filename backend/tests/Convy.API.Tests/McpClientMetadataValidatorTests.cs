@@ -40,6 +40,9 @@ public class McpClientMetadataValidatorTests
     [InlineData("https://localhost/mcp/client.json")]
     [InlineData("https://127.0.0.1/mcp/client.json")]
     [InlineData("https://10.0.0.1/mcp/client.json")]
+    [InlineData("https://0.0.0.0/mcp/client.json")]
+    [InlineData("https://100.64.0.1/mcp/client.json")]
+    [InlineData("https://198.18.0.1/mcp/client.json")]
     public async Task ValidateAsync_WithUnsafeClientId_ReturnsInvalid(string clientId)
     {
         using var httpClient = CreateHttpClient("{}");
@@ -51,6 +54,32 @@ public class McpClientMetadataValidatorTests
         var result = await validator.ValidateAsync(clientId, "https://chat.openai.com/aip/callback", CancellationToken.None);
 
         result.IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WithIpv4MappedPrivateResolvedHost_ReturnsInvalid()
+    {
+        using var httpClient = CreateHttpClient("{}");
+        var validator = new McpClientMetadataValidator(
+            new StaticHttpClientFactory(httpClient),
+            NullLogger<McpClientMetadataValidator>.Instance,
+            new StaticDnsResolver(IPAddress.Parse("::ffff:10.0.0.5")));
+
+        var result = await validator.ValidateAsync(
+            "https://metadata.example.com/client.json",
+            "https://chat.openai.com/aip/callback",
+            CancellationToken.None);
+
+        result.IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Program_ShouldDisableAutomaticRedirectsForMcpClientMetadataFetches()
+    {
+        var source = File.ReadAllText(Path.Combine(FindRepoRoot(), "backend", "src", "Convy.API", "Program.cs"));
+
+        source.Should().Contain("ConfigurePrimaryHttpMessageHandler");
+        source.Should().Contain("AllowAutoRedirect = false");
     }
 
     [Fact]
@@ -145,5 +174,22 @@ public class McpClientMetadataValidatorTests
 
         public Task<IReadOnlyList<IPAddress>> GetHostAddressesAsync(string host, CancellationToken cancellationToken) =>
             Task.FromResult(_addresses);
+    }
+
+    private static string FindRepoRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+
+        while (directory is not null)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "backend", "src", "Convy.API", "Program.cs")))
+            {
+                return directory.FullName;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new InvalidOperationException("Repository root could not be found.");
     }
 }

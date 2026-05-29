@@ -13,7 +13,7 @@ class ListRepositoryImpl(
 ) : ListRepository {
 
     override suspend fun create(householdId: String, name: String, type: ListType): Result<String> =
-        runCatching {
+        cancellableRunCatching {
             val typeString = when (type) {
                 ListType.Shopping -> "Shopping"
                 ListType.Tasks -> "Tasks"
@@ -22,17 +22,17 @@ class ListRepositoryImpl(
         }
 
     override suspend fun getByHousehold(householdId: String, includeArchived: Boolean): Result<List<HouseholdList>> =
-        runCatching {
+        cancellableRunCatching {
             api.getHouseholdLists(householdId, includeArchived).map { it.toDomain() }
         }
 
     override suspend fun rename(householdId: String, listId: String, newName: String): Result<Unit> =
-        runCatching {
+        cancellableRunCatching {
             api.renameList(householdId, listId, RenameListRequest(newName))
         }
 
     override suspend fun archive(householdId: String, listId: String): Result<Unit> =
-        runCatching {
+        cancellableRunCatching {
             api.archiveList(householdId, listId)
         }
 }

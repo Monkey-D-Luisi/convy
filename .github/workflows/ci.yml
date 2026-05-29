@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, master]
   pull_request:
-    branches: [main, master, master]
+    branches: [main, master]
 
 jobs:
   backend:
@@ -62,6 +62,10 @@ jobs:
       - name: Install
         working-directory: dashboard
         run: npm ci
+
+      - name: Test
+        working-directory: dashboard
+        run: npm test
 
       - name: Lint
         working-directory: dashboard
@@ -130,3 +134,36 @@ jobs:
       - name: Build
         working-directory: mcp
         run: npm run build
+
+  infra:
+    name: Infrastructure Config
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate compose files
+        run: |
+          docker compose -f docker/docker-compose.yml config --quiet
+          docker compose -f docker/docker-compose.vps.yml config --quiet
+          docker compose -f docker/docker-compose.oci.yml config --quiet
+
+      - name: Validate deploy scripts
+        shell: pwsh
+        run: |
+          Get-ChildItem ops -Recurse -Filter *.sh | ForEach-Object { bash -n $_.FullName }
+          Get-ChildItem ops -Recurse -Filter *.ps1 | ForEach-Object {
+            $errors = $null
+            [System.Management.Automation.PSParser]::Tokenize((Get-Content -Raw $_.FullName), [ref]$errors) | Out-Null
+            if ($errors) {
+              $errors | ForEach-Object { Write-Error "$($_.Message) in $($_.Token.Content)" }
+              exit 1
+            }
+          }
+
+      - name: Validate Docker builds
+        run: |
+          docker build -f docker/backend/Dockerfile backend
+          docker build -f dashboard/Dockerfile dashboard
+          docker build -f auth/Dockerfile auth
+          docker build -f mcp/Dockerfile mcp

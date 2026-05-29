@@ -220,6 +220,9 @@ class ConvyApi(private val client: HttpClient) {
     }
 
     suspend fun unregisterDevice(token: String) {
-        client.delete("api/v1/devices/$token")
+        client.delete("api/v1/devices") {
+            contentType(ContentType.Application.Json)
+            setBody(UnregisterDeviceRequest(token))
+        }
     }
 }

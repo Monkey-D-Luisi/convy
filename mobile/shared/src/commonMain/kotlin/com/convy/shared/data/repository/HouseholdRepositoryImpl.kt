@@ -13,27 +13,27 @@ class HouseholdRepositoryImpl(
 ) : HouseholdRepository {
 
     override suspend fun create(name: String): Result<String> =
-        runCatching {
+        cancellableRunCatching {
             api.createHousehold(CreateHouseholdRequest(name)).id
         }
 
     override suspend fun getMyHouseholds(): Result<List<Household>> =
-        runCatching {
+        cancellableRunCatching {
             api.getMyHouseholds().map { it.toDomain() }
         }
 
     override suspend fun getById(id: String): Result<HouseholdDetail> =
-        runCatching {
+        cancellableRunCatching {
             api.getHousehold(id).toDomain()
         }
 
     override suspend fun rename(id: String, newName: String): Result<Unit> =
-        runCatching {
+        cancellableRunCatching {
             api.renameHousehold(id, RenameHouseholdRequest(newName))
         }
 
     override suspend fun leave(id: String): Result<Unit> =
-        runCatching {
+        cancellableRunCatching {
             api.leaveHousehold(id)
         }
 }

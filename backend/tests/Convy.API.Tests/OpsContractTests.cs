@@ -50,6 +50,7 @@ public class OpsContractTests
     public void VpsDeployScript_ShouldPublishLegalAndCheckReadyEndpoint()
     {
         var source = ReadRepoFile("ops", "vps", "deploy-release.sh");
+        var cd = ReadRepoFile(".github", "workflows", "cd.yml");
 
         source.Should().Contain("/opt/convy/legal");
         source.Should().Contain("/opt/convy/public");
@@ -60,6 +61,12 @@ public class OpsContractTests
         source.Should().Contain("CONVY_MCP_HOSTNAME");
         source.Should().Contain("/health/ready");
         source.Should().Contain("/health");
+        cd.Should().Contain("API_HOSTNAME");
+        cd.Should().Contain("/health/ready");
+        cd.Should().NotContain("PUBLIC_HOSTNAME}/health");
+        cd.Should().Contain("Ensure non-root deploy user");
+        cd.Should().Contain("BOOTSTRAP_DEPLOY_USER");
+        cd.Should().Contain("vars.STAGING_DEPLOY_USER || 'convy-deploy'");
     }
 
     [Fact]
@@ -89,6 +96,70 @@ public class OpsContractTests
         source.Should().Contain("CONVY_STAGING_API_HOST");
         source.Should().Contain("\"api.convyapp.com\"");
         source.Should().NotContain("\"178.105.70.69.nip.io\")");
+    }
+
+    [Fact]
+    public void AndroidLocalRelease_ShouldBeDisabledAndSensitiveTokensShouldNotUseUrlsOrLogs()
+    {
+        var gradle = ReadRepoFile("mobile", "androidApp", "build.gradle.kts");
+        var messagingService = ReadRepoFile("mobile", "androidApp", "src", "main", "kotlin", "com", "convy", "ConvyFirebaseMessagingService.kt");
+        var signalR = ReadRepoFile("mobile", "shared", "src", "commonMain", "kotlin", "com", "convy", "shared", "data", "remote", "SignalRClient.kt");
+        var api = ReadRepoFile("mobile", "shared", "src", "commonMain", "kotlin", "com", "convy", "shared", "data", "remote", "ConvyApi.kt");
+
+        gradle.Should().Contain("androidComponents");
+        gradle.Should().Contain("variantBuilder.enable = false");
+        messagingService.Should().NotContain("New token:");
+        messagingService.Should().NotContain("Log.d(\"FCM\", \"New token");
+        signalR.Should().NotContain("parameter(\"access_token\", token)");
+        signalR.Should().Contain("header(\"Authorization\", \"Bearer $token\")");
+        api.Should().NotContain("client.delete(\"api/v1/devices/$token\")");
+        api.Should().Contain("UnregisterDeviceRequest(token)");
+    }
+
+    [Fact]
+    public void DeploymentSecretsAndBootstrapScripts_ShouldUseSafeDefaults()
+    {
+        var vpsSecrets = ReadRepoFile("ops", "vps", "push-secrets.ps1");
+        var ociSecrets = ReadRepoFile("ops", "oci", "push-secrets.ps1");
+        var vpsBootstrap = ReadRepoFile("ops", "vps", "bootstrap-server.sh");
+        var ociBootstrap = ReadRepoFile("ops", "oci", "bootstrap-server.sh");
+        var hetznerVariables = ReadRepoFile("infra", "hetzner", "variables.tf");
+        var ociVariables = ReadRepoFile("infra", "oci", "variables.tf");
+
+        vpsSecrets.Should().Contain("chmod 600 /opt/convy/shared/firebase-admin.json");
+        ociSecrets.Should().Contain("chmod 600 /opt/convy/shared/firebase-admin.json");
+        vpsBootstrap.Should().Contain("ALLOW_FORMAT_DATA_DEVICE");
+        ociBootstrap.Should().Contain("ALLOW_FORMAT_DATA_DEVICE");
+        hetznerVariables.Should().NotContain("default     = [\"0.0.0.0/0\"]");
+        ociVariables.Should().NotContain("default     = [\"0.0.0.0/0\"]");
+    }
+
+    [Fact]
+    public void DiagnosticsAndCi_ShouldNotCommitSensitiveRuntimeLogsAndShouldValidateOps()
+    {
+        var root = FindRepoRoot();
+        var gitignore = ReadRepoFile(".gitignore");
+        var ci = ReadRepoFile(".github", "workflows", "ci.yml");
+
+        File.Exists(Path.Combine(root, "backend", "diag-logs.json")).Should().BeFalse();
+        gitignore.Should().Contain("backend/diag-logs*.json");
+        ci.Should().Contain("Validate compose files");
+        ci.Should().Contain("Validate deploy scripts");
+        ci.Should().Contain("docker compose -f docker/docker-compose.vps.yml config --quiet");
+    }
+
+    [Fact]
+    public void NextApps_ShouldDefineSecurityHeaders()
+    {
+        var dashboardConfig = ReadRepoFile("dashboard", "next.config.ts");
+        var authConfig = ReadRepoFile("auth", "next.config.ts");
+
+        dashboardConfig.Should().Contain("Content-Security-Policy");
+        dashboardConfig.Should().Contain("frame-ancestors 'none'");
+        dashboardConfig.Should().Contain("X-Frame-Options");
+        authConfig.Should().Contain("Content-Security-Policy");
+        authConfig.Should().Contain("frame-ancestors 'none'");
+        authConfig.Should().Contain("X-Frame-Options");
     }
 
     [Fact]

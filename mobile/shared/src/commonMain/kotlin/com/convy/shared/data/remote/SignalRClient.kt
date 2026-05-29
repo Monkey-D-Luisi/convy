@@ -68,8 +68,8 @@ class SignalRClient(
 
                 try {
                     connectWebSocket(token, householdId)
-                } catch (_: CancellationException) {
-                    throw CancellationException()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (_: Exception) {
                     // Connection failed or dropped
                 }
@@ -106,12 +106,12 @@ class SignalRClient(
 
         wsClient.webSocket(
             request = {
+                header("Authorization", "Bearer $token")
                 url {
                     protocol = wsProtocol
                     host = baseHost
                     port = basePort
                     path("hubs", "household")
-                    parameter("access_token", token)
                     if (connectionToken != null) {
                         parameter("id", connectionToken)
                     }
@@ -156,6 +156,8 @@ class SignalRClient(
         connectionJob = null
         try {
             session?.close()
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {}
         session = null
         _connectionState.value = ConnectionState.Disconnected
@@ -187,6 +189,8 @@ class SignalRClient(
                     session?.send(Frame.Text("{\"type\":6}\u001E"))
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {}
     }
 

@@ -13,7 +13,7 @@ class UserRepositoryImpl(
 ) : UserRepository {
 
     override suspend fun register(firebaseUid: String, displayName: String, email: String): Result<User> =
-        runCatching {
+        cancellableRunCatching {
             val response = api.registerUser(
                 RegisterUserRequest(displayName, email)
             )
@@ -21,17 +21,17 @@ class UserRepositoryImpl(
         }
 
     override suspend fun getProfile(): Result<User> =
-        runCatching {
+        cancellableRunCatching {
             api.getUserProfile().toDomain()
         }
 
     override suspend fun getNotificationPreferences(): Result<NotificationPreferences> =
-        runCatching {
+        cancellableRunCatching {
             api.getNotificationPreferences().toDomain()
         }
 
     override suspend fun updateNotificationPreferences(preferences: NotificationPreferences): Result<NotificationPreferences> =
-        runCatching {
+        cancellableRunCatching {
             api.updateNotificationPreferences(preferences.toRequest()).toDomain()
         }
 }

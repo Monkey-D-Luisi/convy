@@ -84,6 +84,12 @@ android {
     }
 }
 
+androidComponents {
+    beforeVariants(selector().withFlavor("environment" to "local").withBuildType("release")) { variantBuilder ->
+        variantBuilder.enable = false
+    }
+}
+
 dependencies {
     implementation(project(":composeApp"))
     implementation(project(":shared"))

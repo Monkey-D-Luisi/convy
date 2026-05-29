@@ -14,6 +14,10 @@ export type McpConfig = {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): McpConfig {
   const mcpPublicUrl = env.MCP_PUBLIC_URL ?? "https://mcp.convy.app";
   const authPublicUrl = env.AUTH_PUBLIC_URL ?? "https://auth.convy.app";
+  const auditApiKey = env.CONVY_MCP_AUDIT_API_KEY;
+  if (env.NODE_ENV === "production" && !auditApiKey) {
+    throw new Error("CONVY_MCP_AUDIT_API_KEY is required in production.");
+  }
 
   return {
     port: Number.parseInt(env.PORT ?? "3001", 10),
@@ -23,7 +27,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): McpConfig {
     jwtIssuer: env.MCP_JWT_ISSUER ?? authPublicUrl,
     jwtAudience: env.MCP_JWT_AUDIENCE ?? mcpPublicUrl,
     jwtPublicKeyPem: readPublicKey(env),
-    auditApiKey: env.CONVY_MCP_AUDIT_API_KEY,
+    auditApiKey,
   };
 }
 

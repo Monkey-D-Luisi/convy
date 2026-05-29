@@ -12,32 +12,32 @@ class TaskRepositoryImpl(
 ) : TaskRepository {
 
     override suspend fun getByList(listId: String, status: String?, createdBy: String?): Result<List<TaskItem>> =
-        runCatching {
+        cancellableRunCatching {
             api.getListTasks(listId, status, createdBy).map { it.toDomain() }
         }
 
     override suspend fun create(listId: String, title: String, note: String?): Result<String> =
-        runCatching {
+        cancellableRunCatching {
             api.createTask(listId, CreateTaskRequest(title, note)).id
         }
 
     override suspend fun update(listId: String, taskId: String, title: String, note: String?): Result<Unit> =
-        runCatching {
+        cancellableRunCatching {
             api.updateTask(listId, taskId, UpdateTaskRequest(title, note))
         }
 
     override suspend fun delete(listId: String, taskId: String): Result<Unit> =
-        runCatching {
+        cancellableRunCatching {
             api.deleteTask(listId, taskId)
         }
 
     override suspend fun complete(listId: String, taskId: String): Result<Unit> =
-        runCatching {
+        cancellableRunCatching {
             api.completeTask(listId, taskId)
         }
 
     override suspend fun uncomplete(listId: String, taskId: String): Result<Unit> =
-        runCatching {
+        cancellableRunCatching {
             api.uncompleteTask(listId, taskId)
         }
 }

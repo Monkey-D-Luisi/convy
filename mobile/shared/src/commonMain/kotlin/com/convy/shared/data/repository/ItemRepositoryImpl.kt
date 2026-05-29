@@ -15,6 +15,7 @@ import com.convy.shared.domain.model.VoiceParseResult
 import com.convy.shared.domain.repository.ItemRepository
 import io.ktor.client.plugins.*
 import io.ktor.utils.io.errors.*
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -24,7 +25,7 @@ class ItemRepositoryImpl(
 ) : ItemRepository {
 
     override suspend fun getByList(listId: String, status: String?, createdBy: String?): Result<List<ListItem>> =
-        runCatching {
+        cancellableRunCatching {
             api.getListItems(listId, status, createdBy).map { it.toDomain() }
         }
 
@@ -37,7 +38,7 @@ class ItemRepositoryImpl(
         recurrenceFrequency: Int?,
         recurrenceInterval: Int?,
     ): Result<String> =
-        runCatching {
+        cancellableRunCatching {
             api.createItem(listId, CreateItemRequest(title, quantity, unit, note, recurrenceFrequency, recurrenceInterval)).id
         }
 
@@ -51,7 +52,7 @@ class ItemRepositoryImpl(
         recurrenceFrequency: Int?,
         recurrenceInterval: Int?,
     ): Result<Unit> =
-        runCatching {
+        cancellableRunCatching {
             api.updateItem(listId, itemId, UpdateItemRequest(title, quantity, unit, note, recurrenceFrequency, recurrenceInterval))
         }
 
@@ -101,6 +102,8 @@ class ItemRepositoryImpl(
         return try {
             apiCall()
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             if (e.isNetworkError()) {
                 offlineQueue.enqueue(offlineAction)
@@ -117,12 +120,12 @@ class ItemRepositoryImpl(
             this.cause is IOException
 
     override suspend fun checkDuplicate(listId: String, title: String): Result<DuplicateCheck> =
-        runCatching {
+        cancellableRunCatching {
             api.checkDuplicate(listId, title).toDomain()
         }
 
     override suspend fun getSuggestions(householdId: String, query: String?): Result<List<String>> =
-        runCatching {
+        cancellableRunCatching {
             api.getItemSuggestions(householdId, query).suggestions
         }
 
@@ -141,6 +144,8 @@ class ItemRepositoryImpl(
             Result.failure(Exception("The voice processing timed out. Please try again with a shorter recording."))
         } catch (e: IOException) {
             Result.failure(Exception("No internet connection. Please check your network and try again."))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             if (e.cause is IOException) {
                 Result.failure(Exception("No internet connection. Please check your network and try again."))
@@ -160,6 +165,8 @@ class ItemRepositoryImpl(
             Result.failure(Exception("The request timed out. Please try again."))
         } catch (e: IOException) {
             Result.failure(Exception("No internet connection. Please check your network and try again."))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             if (e.cause is IOException) {
                 Result.failure(Exception("No internet connection. Please check your network and try again."))
@@ -167,4 +174,5 @@ class ItemRepositoryImpl(
                 Result.failure(e)
             }
         }
+
 }

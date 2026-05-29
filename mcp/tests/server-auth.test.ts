@@ -3,6 +3,7 @@ import { generateKeyPairSync } from "node:crypto";
 import type { AddressInfo } from "node:net";
 import { test } from "node:test";
 import { exportSPKI, SignJWT } from "jose";
+import { loadConfig } from "../src/config.js";
 import { createApp } from "../src/server.js";
 import { supportedScopes } from "../src/metadata.js";
 
@@ -146,4 +147,17 @@ test("MCP root endpoint is not a transport alias", async () => {
   } finally {
     server.close();
   }
+});
+
+test("production MCP config requires an audit API key", async () => {
+  const { publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+
+  assert.throws(
+    () => loadConfig({
+      NODE_ENV: "production",
+      CONVY_API_BASE_URL: "https://api.convy.app",
+      MCP_JWT_PUBLIC_KEY: publicKey.export({ type: "spki", format: "pem" }).toString(),
+    } as NodeJS.ProcessEnv),
+    /CONVY_MCP_AUDIT_API_KEY is required/,
+  );
 });

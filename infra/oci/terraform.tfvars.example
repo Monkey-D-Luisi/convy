@@ -11,5 +11,5 @@ data_volume_size_gb = 100
 # Leave null for default placement, or retry with FAULT-DOMAIN-1, FAULT-DOMAIN-2, or FAULT-DOMAIN-3.
 fault_domain = null
 
-# Keep the default if GitHub Actions will deploy by SSH.
-allowed_ssh_cidr = "0.0.0.0/0"
+# Use a trusted administrator IP or VPN CIDR. Do not expose SSH to 0.0.0.0/0.
+allowed_ssh_cidr = "203.0.113.10/32"

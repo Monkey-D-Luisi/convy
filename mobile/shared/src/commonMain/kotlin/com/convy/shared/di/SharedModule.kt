@@ -17,7 +17,6 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.api.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import io.ktor.client.request.forms.FormDataContent
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -66,8 +65,7 @@ val networkModule = module {
             HttpResponseValidator {
                 validateResponse { response ->
                     if (!response.status.isSuccess()) {
-                        val body = response.bodyAsText()
-                        throw ResponseException(response, body)
+                        throw ResponseException(response, "Convy request failed with HTTP ${response.status.value}.")
                     }
                 }
             }

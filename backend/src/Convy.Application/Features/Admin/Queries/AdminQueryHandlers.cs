@@ -5,6 +5,22 @@ using MediatR;
 
 namespace Convy.Application.Features.Admin.Queries;
 
+internal static class AdminDateRangePolicy
+{
+    public const int MaxDays = 90;
+
+    public static Error? Validate(DateOnly from, DateOnly to)
+    {
+        if (to < from)
+            return Error.Validation("The end date must be on or after the start date.");
+
+        var days = to.DayNumber - from.DayNumber + 1;
+        return days > MaxDays
+            ? Error.Validation($"Date range must be {MaxDays} days or fewer.")
+            : null;
+    }
+}
+
 public class GetAdminOverviewQueryHandler : IRequestHandler<GetAdminOverviewQuery, Result<AdminOverviewDto>>
 {
     private readonly IAdminMetricsReader _metricsReader;
@@ -32,8 +48,9 @@ public class GetAdminUsageMetricsQueryHandler : IRequestHandler<GetAdminUsageMet
 
     public async Task<Result<AdminUsageMetricsDto>> Handle(GetAdminUsageMetricsQuery request, CancellationToken cancellationToken)
     {
-        if (request.To < request.From)
-            return Result<AdminUsageMetricsDto>.Failure(Error.Validation("The end date must be on or after the start date."));
+        var dateError = AdminDateRangePolicy.Validate(request.From, request.To);
+        if (dateError is not null)
+            return Result<AdminUsageMetricsDto>.Failure(dateError);
 
         var usage = await _metricsReader.GetUsageAsync(request.From, request.To, cancellationToken);
         return Result<AdminUsageMetricsDto>.Success(usage);
@@ -51,8 +68,9 @@ public class GetAdminVoiceMetricsQueryHandler : IRequestHandler<GetAdminVoiceMet
 
     public async Task<Result<AdminVoiceMetricsDto>> Handle(GetAdminVoiceMetricsQuery request, CancellationToken cancellationToken)
     {
-        if (request.To < request.From)
-            return Result<AdminVoiceMetricsDto>.Failure(Error.Validation("The end date must be on or after the start date."));
+        var dateError = AdminDateRangePolicy.Validate(request.From, request.To);
+        if (dateError is not null)
+            return Result<AdminVoiceMetricsDto>.Failure(dateError);
 
         var voice = await _metricsReader.GetVoiceAsync(request.From, request.To, cancellationToken);
         return Result<AdminVoiceMetricsDto>.Success(voice);
@@ -86,8 +104,9 @@ public class GetAdminOpenAiMetricsQueryHandler : IRequestHandler<GetAdminOpenAiM
 
     public async Task<Result<AdminOpenAiMetricsDto>> Handle(GetAdminOpenAiMetricsQuery request, CancellationToken cancellationToken)
     {
-        if (request.To < request.From)
-            return Result<AdminOpenAiMetricsDto>.Failure(Error.Validation("The end date must be on or after the start date."));
+        var dateError = AdminDateRangePolicy.Validate(request.From, request.To);
+        if (dateError is not null)
+            return Result<AdminOpenAiMetricsDto>.Failure(dateError);
 
         var usage = await _metricsReader.GetOpenAiAsync(request.From, request.To, cancellationToken);
         return Result<AdminOpenAiMetricsDto>.Success(usage);
@@ -124,8 +143,9 @@ public class GetAdminMcpOverviewQueryHandler : IRequestHandler<GetAdminMcpOvervi
 
     public async Task<Result<AdminMcpOverviewDto>> Handle(GetAdminMcpOverviewQuery request, CancellationToken cancellationToken)
     {
-        if (request.To < request.From)
-            return Result<AdminMcpOverviewDto>.Failure(Error.Validation("The end date must be on or after the start date."));
+        var dateError = AdminDateRangePolicy.Validate(request.From, request.To);
+        if (dateError is not null)
+            return Result<AdminMcpOverviewDto>.Failure(dateError);
 
         var overview = await _metricsReader.GetMcpOverviewAsync(request.From, request.To, request.Now, cancellationToken);
         return Result<AdminMcpOverviewDto>.Success(overview);

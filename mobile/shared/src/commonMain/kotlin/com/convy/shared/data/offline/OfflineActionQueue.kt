@@ -8,6 +8,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.SerializationException
 
 class OfflineActionQueue(
     private val fileStorage: FileStorage,
@@ -23,7 +24,7 @@ class OfflineActionQueue(
             if (content != null) {
                 _actions.value = try {
                     json.decodeFromString<List<OfflineAction>>(content)
-                } catch (_: Exception) {
+                } catch (_: SerializationException) {
                     emptyList()
                 }
             }

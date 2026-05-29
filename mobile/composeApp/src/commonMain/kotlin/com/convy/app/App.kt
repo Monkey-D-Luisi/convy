@@ -15,7 +15,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
-import kotlinx.coroutines.launch
 import com.convy.app.navigation.AppNavigator
 import com.convy.app.navigation.NavRoute
 import com.convy.app.platform.PlatformBackHandler
@@ -37,14 +36,11 @@ import com.convy.app.ui.screens.members.MembersScreen
 import com.convy.app.ui.screens.members.MembersStore
 import com.convy.app.ui.screens.settings.SettingsScreen
 import com.convy.app.ui.screens.settings.SettingsStore
+import com.convy.app.ui.screens.startup.StartupDestination
+import com.convy.app.ui.screens.startup.StartupStore
 import com.convy.app.ui.screens.task.TaskFormScreen
 import com.convy.app.ui.screens.task.TaskFormStore
 import com.convy.app.ui.theme.ConvyTheme
-import com.convy.shared.domain.repository.ActiveHouseholdRepository
-import com.convy.shared.domain.repository.AuthRepository
-import com.convy.shared.domain.repository.HouseholdRepository
-import com.convy.shared.domain.repository.UserRepository
-import com.convy.shared.data.remote.DeviceTokenManager
 import com.convy.app.util.rememberNotificationPermissionState
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
@@ -55,11 +51,7 @@ fun App() {
     Box(Modifier.semantics { testTagsAsResourceId = true }) {
     ConvyTheme {
         val navigator = koinInject<AppNavigator>()
-        val authRepository = koinInject<AuthRepository>()
-        val userRepository = koinInject<UserRepository>()
-        val householdRepository = koinInject<HouseholdRepository>()
-        val activeHouseholdRepository = koinInject<ActiveHouseholdRepository>()
-        val deviceTokenManager = koinInject<DeviceTokenManager>()
+        val startupStore = koinInject<StartupStore>()
         val currentRoute by navigator.currentRoute.collectAsState()
         val canNavigateBack by navigator.canNavigateBack.collectAsState()
         var isCheckingAuth by remember { mutableStateOf(true) }
@@ -70,20 +62,19 @@ fun App() {
         }
 
         LaunchedEffect(Unit) {
-            val user = authRepository.getCurrentUser()
-            if (user != null) {
-                // Ensure user is registered in the backend (idempotent)
-                userRepository.register(user.id, user.displayName, user.email)
-                launch { deviceTokenManager.registerCurrentToken() }
-                if (!notificationPermission.isGranted) {
-                    notificationPermission.launchRequest()
-                }
-                val households = householdRepository.getMyHouseholds().getOrNull().orEmpty()
-                val activeHousehold = activeHouseholdRepository.resolveActiveHousehold(households)
-                if (activeHousehold != null) {
-                    navigator.replaceWith(NavRoute.HouseholdLists(activeHousehold.id))
-                } else {
+            when (val destination = startupStore.resolveDestination()) {
+                StartupDestination.Auth -> Unit
+                StartupDestination.HouseholdSetup -> {
+                    if (!notificationPermission.isGranted) {
+                        notificationPermission.launchRequest()
+                    }
                     navigator.replaceWith(NavRoute.HouseholdSetup)
+                }
+                is StartupDestination.HouseholdLists -> {
+                    if (!notificationPermission.isGranted) {
+                        notificationPermission.launchRequest()
+                    }
+                    navigator.replaceWith(NavRoute.HouseholdLists(destination.householdId))
                 }
             }
             isCheckingAuth = false
