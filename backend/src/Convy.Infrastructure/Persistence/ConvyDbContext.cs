@@ -23,6 +23,7 @@ public class ConvyDbContext : DbContext
     public DbSet<McpOAuthConsent> McpOAuthConsents => Set<McpOAuthConsent>();
     public DbSet<McpToolInvocation> McpToolInvocations => Set<McpToolInvocation>();
     public DbSet<McpIdempotencyRecord> McpIdempotencyRecords => Set<McpIdempotencyRecord>();
+    public DbSet<SystemMetricSnapshot> SystemMetricSnapshots => Set<SystemMetricSnapshot>();
 
     public ConvyDbContext(DbContextOptions<ConvyDbContext> options) : base(options)
     {

@@ -19,3 +19,5 @@ public record GetLatestBackupRunQuery : IRequest<Result<BackupRunDto?>>;
 public record GetBackupRunsQuery(int Limit) : IRequest<Result<IReadOnlyList<BackupRunDto>>>;
 
 public record GetAdminSystemHealthQuery : IRequest<Result<AdminSystemHealthDto>>;
+
+public record GetAdminSystemHistoryQuery(DateOnly From, DateOnly To) : IRequest<Result<AdminSystemHistoryDto>>;

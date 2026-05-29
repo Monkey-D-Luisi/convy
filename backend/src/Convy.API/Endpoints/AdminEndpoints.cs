@@ -79,6 +79,13 @@ public static class AdminEndpoints
             var result = await mediator.Send(new GetAdminSystemHealthQuery());
             return result.IsSuccess ? Results.Ok(result.Value) : MapError(result.Error!);
         });
+
+        group.MapGet("/system/history", async (DateOnly? from, DateOnly? to, IMediator mediator) =>
+        {
+            var (rangeFrom, rangeTo) = ResolveDateRange(from, to);
+            var result = await mediator.Send(new GetAdminSystemHistoryQuery(rangeFrom, rangeTo));
+            return result.IsSuccess ? Results.Ok(result.Value) : MapError(result.Error!);
+        });
     }
 
     private static (DateOnly From, DateOnly To) ResolveDateRange(DateOnly? from, DateOnly? to)

@@ -36,6 +36,23 @@ export type SystemHealth = {
   loadAverage1m: number | null;
 };
 
+export type SystemHistory = {
+  from: string;
+  to: string;
+  samples: SystemMetricSnapshot[];
+};
+
+export type SystemMetricSnapshot = {
+  capturedAt: string;
+  diskFreeBytes: number | null;
+  diskTotalBytes: number | null;
+  memoryAvailableBytes: number | null;
+  memoryTotalBytes: number | null;
+  loadAverage1m: number | null;
+  uptimeSeconds: number | null;
+  postgresDataSizeBytes: number | null;
+};
+
 export type McpSummary = {
   mcpHealthy: boolean;
   authHealthy: boolean;
@@ -64,6 +81,67 @@ export type Overview = {
   mcp: McpSummary;
   lastBackup: BackupRun | null;
   health: SystemHealth;
+  risk: AdminRiskSummary;
+  growth: AdminGrowthSummary;
+  engagement: AdminEngagementSummary;
+  aiReliability: AdminAiReliabilitySummary;
+  voiceReliability: AdminVoiceReliabilitySummary;
+  backupHealth: AdminBackupHealthSummary;
+};
+
+export type AdminRiskSummary = {
+  criticalCount: number;
+  warningCount: number;
+  items: AdminRiskItem[];
+};
+
+export type AdminRiskItem = {
+  key: string;
+  label: string;
+  severity: string;
+  detail: string;
+  targetPath: string | null;
+};
+
+export type AdminGrowthSummary = {
+  newUsers7d: number;
+  newHouseholds7d: number;
+  newLists7d: number;
+  activeHouseholdRate7d: number;
+  activeHouseholdRate30d: number;
+};
+
+export type AdminEngagementSummary = {
+  activeHouseholds7d: number;
+  itemsCreated7d: number;
+  itemsCompleted7d: number;
+  tasksCreated7d: number;
+  tasksCompleted7d: number;
+  itemCompletionRatio7d: number;
+};
+
+export type AdminAiReliabilitySummary = {
+  requests7d: number;
+  failures7d: number;
+  failureRate7d: number;
+  averageLatencyMs7d: number | null;
+  estimatedCostMicros7d: number | null;
+};
+
+export type AdminVoiceReliabilitySummary = {
+  requests7d: number;
+  failures7d: number;
+  successRate7d: number;
+  parsedItems7d: number;
+  itemsCreated7d: number;
+};
+
+export type AdminBackupHealthSummary = {
+  successes30d: number;
+  failures30d: number;
+  lastSuccessfulAt: string | null;
+  latestSuccessful: boolean;
+  verificationHealthy: boolean;
 };
 
 export type UsageMetric = {

@@ -167,3 +167,23 @@ public class GetAdminSystemHealthQueryHandler : IRequestHandler<GetAdminSystemHe
         return Result<AdminSystemHealthDto>.Success(health);
     }
 }
+
+public class GetAdminSystemHistoryQueryHandler : IRequestHandler<GetAdminSystemHistoryQuery, Result<AdminSystemHistoryDto>>
+{
+    private readonly IAdminMetricsReader _metricsReader;
+
+    public GetAdminSystemHistoryQueryHandler(IAdminMetricsReader metricsReader)
+    {
+        _metricsReader = metricsReader;
+    }
+
+    public async Task<Result<AdminSystemHistoryDto>> Handle(GetAdminSystemHistoryQuery request, CancellationToken cancellationToken)
+    {
+        var dateError = AdminDateRangePolicy.Validate(request.From, request.To);
+        if (dateError is not null)
+            return Result<AdminSystemHistoryDto>.Failure(dateError);
+
+        var history = await _metricsReader.GetSystemHistoryAsync(request.From, request.To, cancellationToken);
+        return Result<AdminSystemHistoryDto>.Success(history);
+    }
+}

@@ -195,13 +195,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <p className="text-sm font-medium text-muted">Convy</p>
               <h1 className="text-2xl font-semibold text-ink">Admin</h1>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <nav className="flex flex-wrap gap-2" aria-label="Dashboard views">
+            <div className="flex min-w-0 max-w-full flex-wrap items-center gap-3">
+              <nav className="flex w-full max-w-full min-w-0 flex-nowrap gap-2 overflow-x-auto pb-1 lg:w-auto lg:flex-wrap lg:overflow-visible lg:pb-0" aria-label="Dashboard views">
                 {navItems.map((item) => {
                   const active = pathname === item.href;
                   return (
                     <Link
-                      className={`rounded-md px-3 py-2 text-sm font-semibold ${
+                      className={`shrink-0 rounded-md px-3 py-2 text-sm font-semibold ${
                         active ? "bg-brand text-white" : "border border-line bg-white text-ink"
                       }`}
                       href={item.href}
