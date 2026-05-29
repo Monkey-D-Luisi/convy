@@ -58,25 +58,21 @@ install -m 600 -o root -g root "$RELEASE_ENV_FILE.tmp" "$RELEASE_ENV_FILE"
 rm -f "$RELEASE_ENV_FILE.tmp"
 
 if [ -d "$RELEASE_DIR/legal" ]; then
-  rm -rf "$APP_ROOT/legal.tmp"
-  mkdir -p "$APP_ROOT/legal.tmp"
-  cp -a "$RELEASE_DIR/legal/." "$APP_ROOT/legal.tmp/"
-  chown -R root:root "$APP_ROOT/legal.tmp"
-  find "$APP_ROOT/legal.tmp" -type d -exec chmod 755 {} +
-  find "$APP_ROOT/legal.tmp" -type f -exec chmod 644 {} +
-  rm -rf "$LEGAL_DIR"
-  mv "$APP_ROOT/legal.tmp" "$LEGAL_DIR"
+  mkdir -p "$LEGAL_DIR"
+  find "$LEGAL_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+  cp -a "$RELEASE_DIR/legal/." "$LEGAL_DIR/"
+  chown -R root:root "$LEGAL_DIR"
+  find "$LEGAL_DIR" -type d -exec chmod 755 {} +
+  find "$LEGAL_DIR" -type f -exec chmod 644 {} +
 fi
 
 if [ -d "$RELEASE_DIR/public-site" ]; then
-  rm -rf "$APP_ROOT/public.tmp"
-  mkdir -p "$APP_ROOT/public.tmp"
-  cp -a "$RELEASE_DIR/public-site/." "$APP_ROOT/public.tmp/"
-  chown -R root:root "$APP_ROOT/public.tmp"
-  find "$APP_ROOT/public.tmp" -type d -exec chmod 755 {} +
-  find "$APP_ROOT/public.tmp" -type f -exec chmod 644 {} +
-  rm -rf "$PUBLIC_DIR"
-  mv "$APP_ROOT/public.tmp" "$PUBLIC_DIR"
+  mkdir -p "$PUBLIC_DIR"
+  find "$PUBLIC_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+  cp -a "$RELEASE_DIR/public-site/." "$PUBLIC_DIR/"
+  chown -R root:root "$PUBLIC_DIR"
+  find "$PUBLIC_DIR" -type d -exec chmod 755 {} +
+  find "$PUBLIC_DIR" -type f -exec chmod 644 {} +
 fi
 
 if [ -d "$BACKUP_ROOT" ]; then
