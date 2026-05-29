@@ -52,13 +52,43 @@
 2. Increment `versionCode` by 1 in `mobile/androidApp/build.gradle.kts`.
 3. Update `versionName` according to the table above.
 4. Add a row to the history table.
-5. Build the release bundle:
+5. Confirm local-only mobile files exist. They are intentionally git-ignored and must be present in every worktree used to generate Android artifacts:
+   ```text
+   mobile/local.properties
+   mobile/androidApp/google-services.json
+   mobile/keystore.properties
+   mobile/keystore/convy-release.keystore
+   ```
+   If a generated worktree is missing them, copy them from the canonical local checkout before building. Do not commit these files.
+6. Build the local debug APK, signed staging APK, and signed staging AAB:
    ```powershell
    cd mobile
+   .\gradlew :androidApp:assembleLocalDebug
+   .\gradlew :androidApp:assembleStagingRelease
    .\gradlew :androidApp:bundleStagingRelease
    ```
-6. Upload the generated AAB from:
+7. Use the standard Gradle output paths. Do not copy release artifacts into ad hoc zip files or custom top-level artifact directories:
+   ```text
+   mobile/androidApp/build/outputs/apk/local/debug/androidApp-local-debug.apk
+   mobile/androidApp/build/outputs/apk/staging/release/androidApp-staging-release.apk
+   mobile/androidApp/build/outputs/bundle/stagingRelease/androidApp-staging-release.aab
+   ```
+8. If QA screenshots are captured, keep them in standard build output folders:
+   ```text
+   mobile/build/outputs/qa/<scenario>/
+   docs/build/outputs/qa/
+   ```
+9. Upload the generated AAB from:
    ```text
    mobile/androidApp/build/outputs/bundle/stagingRelease/androidApp-staging-release.aab
    ```
-7. Commit with a conventional message such as `chore: bump versionCode to X (vN.N.N)`.
+10. Commit with a conventional message such as `chore: bump versionCode to X (vN.N.N)`.
+
+## Artifact Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `processLocalDebugGoogleServices` or `processStagingReleaseGoogleServices` fails | Missing `mobile/androidApp/google-services.json` | Copy the ignored Firebase config into `mobile/androidApp/` |
+| `signStagingReleaseBundle` or `packageStagingRelease` fails | Missing `mobile/keystore.properties` or `mobile/keystore/convy-release.keystore` | Copy both ignored signing files into the worktree |
+| Only an intermediary unsigned AAB exists under `build/intermediates` | Signing did not complete | Fix signing files and rerun `.\gradlew :androidApp:bundleStagingRelease`; use only `build/outputs/bundle/stagingRelease/androidApp-staging-release.aab` |
+| Release artifacts were copied into custom directories | Non-standard local packaging | Regenerate them with Gradle and reference the standard `mobile/androidApp/build/outputs/...` paths |
