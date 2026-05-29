@@ -1,4 +1,5 @@
 using Convy.Application.Common.Models;
+using Convy.Application.Common.Interfaces;
 using Convy.Application.Features.Items.Commands;
 using Convy.Application.Features.Items.Queries;
 using Convy.API.Authorization;
@@ -17,7 +18,7 @@ public static class ItemEndpoints
             .RequireAuthorization();
 
         group.MapPost("/", CreateItemWithMcpIdempotencyAsync)
-            .RequireAuthorization(McpScopes.ItemsWrite);
+            .RequireAuthorization("FirebaseOnly");
 
         group.MapGet("/", async (
             Guid listId,
@@ -66,10 +67,18 @@ public static class ItemEndpoints
         .RequireAuthorization("FirebaseOnly");
 
         group.MapPost("/{itemId:guid}/complete", CompleteItemWithMcpIdempotencyAsync)
-            .RequireAuthorization(McpScopes.ItemsWrite);
+            .RequireAuthorization("FirebaseOnly");
 
         group.MapPost("/{itemId:guid}/uncomplete", UncompleteItemWithMcpIdempotencyAsync)
-            .RequireAuthorization(McpScopes.ItemsWrite);
+            .RequireAuthorization("FirebaseOnly");
+
+        group.MapPost("/smart-batch", SmartBatchCreateItemsWithMcpIdempotencyAsync)
+            .RequireAuthorization(McpScopes.ItemsWrite)
+            .RequireRateLimiting("mcp-write");
+
+        group.MapPost("/status-batch", UpdateShoppingItemsStatusWithMcpIdempotencyAsync)
+            .RequireAuthorization(McpScopes.ItemsWrite)
+            .RequireRateLimiting("mcp-write");
 
         group.MapGet("/check-duplicate", async (
             Guid listId,
@@ -159,7 +168,7 @@ public static class ItemEndpoints
     {
         var snapshot = await idempotency.ExecuteAsync(
             httpContext,
-            "convy_create_shopping_item",
+            "firebase_create_shopping_item",
             new
             {
                 listId,
@@ -193,7 +202,7 @@ public static class ItemEndpoints
     {
         var snapshot = await idempotency.ExecuteAsync(
             httpContext,
-            "convy_complete_shopping_item",
+            "firebase_complete_shopping_item",
             new { listId, itemId },
             async () =>
             {
@@ -216,7 +225,7 @@ public static class ItemEndpoints
     {
         var snapshot = await idempotency.ExecuteAsync(
             httpContext,
-            "convy_uncomplete_shopping_item",
+            "firebase_uncomplete_shopping_item",
             new { listId, itemId },
             async () =>
             {
@@ -227,6 +236,84 @@ public static class ItemEndpoints
             cancellationToken);
 
         return snapshot.ToResult();
+    }
+
+    private static async Task<IResult> SmartBatchCreateItemsWithMcpIdempotencyAsync(
+        Guid listId,
+        SmartBatchCreateItemsRequest request,
+        IMediator mediator,
+        McpWriteIdempotencyService idempotency,
+        IUserFacingTextNormalizer textNormalizer,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        var source = ResolveSource(httpContext, request.Source);
+        var normalizedItems = request.Items.Select(item => new
+        {
+            title = textNormalizer.NormalizeForComparison(textNormalizer.NormalizeTitle(item.Title)),
+            item.Quantity,
+            unit = string.IsNullOrWhiteSpace(item.Unit) ? null : textNormalizer.NormalizeForComparison(item.Unit),
+            note = string.IsNullOrWhiteSpace(item.Note) ? null : item.Note.Trim(),
+        }).ToArray();
+
+        var snapshot = await idempotency.ExecuteAsync(
+            httpContext,
+            "convy_add_shopping_items",
+            new { listId, source, items = normalizedItems },
+            async () =>
+            {
+                var command = new SmartBatchCreateItemsCommand(
+                    listId,
+                    request.Items.Select(item => new SmartShoppingItemInput(item.Title, item.Quantity, item.Unit, item.Note)).ToList(),
+                    source);
+                var result = await mediator.Send(command, cancellationToken);
+                return result.IsSuccess
+                    ? McpIdempotencySnapshot.Json(StatusCodes.Status200OK, null, result.Value!)
+                    : ErrorToSnapshot(result.Error!);
+            },
+            cancellationToken);
+
+        return snapshot.ToResult();
+    }
+
+    private static async Task<IResult> UpdateShoppingItemsStatusWithMcpIdempotencyAsync(
+        Guid listId,
+        UpdateShoppingItemsStatusRequest request,
+        IMediator mediator,
+        McpWriteIdempotencyService idempotency,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        if (!Enum.TryParse<SmartItemStatus>(request.Status, ignoreCase: true, out var status))
+            return Results.BadRequest(new { error = "invalid_status" });
+
+        var snapshot = await idempotency.ExecuteAsync(
+            httpContext,
+            "convy_update_shopping_items_status",
+            new { listId, itemIds = request.ItemIds, status },
+            async () =>
+            {
+                var command = new UpdateShoppingItemsStatusCommand(listId, request.ItemIds, status);
+                var result = await mediator.Send(command, cancellationToken);
+                return result.IsSuccess
+                    ? McpIdempotencySnapshot.Json(StatusCodes.Status200OK, null, result.Value!)
+                    : ErrorToSnapshot(result.Error!);
+            },
+            cancellationToken);
+
+        return snapshot.ToResult();
+    }
+
+    private static ItemCreationSource ResolveSource(HttpContext httpContext, string? requestedSource)
+    {
+        if (string.Equals(httpContext.User.FindFirst("auth_source")?.Value, "mcp", StringComparison.Ordinal))
+            return ItemCreationSource.Mcp;
+
+        if (Enum.TryParse<ItemCreationSource>(requestedSource ?? nameof(ItemCreationSource.Manual), ignoreCase: true, out var parsed)
+            && parsed is ItemCreationSource.Manual or ItemCreationSource.Voice)
+            return parsed;
+
+        return ItemCreationSource.Manual;
     }
 
     private static McpIdempotencySnapshot ErrorToSnapshot(Error error) => error.Code switch
@@ -243,4 +330,7 @@ public record CreateItemRequest(string Title, int? Quantity, string? Unit, strin
 public record UpdateItemRequest(string Title, int? Quantity, string? Unit, string? Note, RecurrenceFrequency? RecurrenceFrequency, int? RecurrenceInterval);
 public record BatchCreateItemsRequest(List<BatchCreateItemRequest> Items, string? Source = null);
 public record BatchCreateItemRequest(string Title, int? Quantity, string? Unit, string? Note);
+public record SmartBatchCreateItemsRequest(IReadOnlyList<SmartBatchCreateItemRequest> Items, string? Source = null);
+public record SmartBatchCreateItemRequest(string Title, int? Quantity, string? Unit, string? Note);
+public record UpdateShoppingItemsStatusRequest(IReadOnlyList<Guid> ItemIds, string Status);
 public record VoiceParseResponse(string Transcription, List<ParsedItemDto> Items);

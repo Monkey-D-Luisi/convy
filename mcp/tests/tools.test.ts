@@ -7,61 +7,62 @@ test("MCP exposes read tools and limited idempotent write tools", () => {
   const toolNames = toolDefinitions.map((tool) => tool.name).sort();
 
   assert.deepEqual(toolNames, [
-    "convy_complete_shopping_item",
-    "convy_complete_task",
-    "convy_create_shopping_item",
-    "convy_create_task",
+    "convy_add_shopping_items",
+    "convy_add_tasks",
     "convy_get_context",
-    "convy_get_household_overview",
-    "convy_get_lists",
     "convy_get_recent_activity",
-    "convy_get_shopping_items",
-    "convy_get_tasks",
-    "convy_uncomplete_shopping_item",
-    "convy_uncomplete_task",
+    "convy_get_shopping_context",
+    "convy_get_shopping_list",
+    "convy_get_task_list",
+    "convy_update_shopping_items_status",
+    "convy_update_tasks_status",
   ]);
 
-  for (const tool of toolDefinitions.filter((definition) => definition.name.startsWith("convy_get_"))) {
-    assert.equal(tool.annotations.readOnlyHint, true);
+  for (const tool of toolDefinitions.filter((definition) => definition.annotations.readOnlyHint)) {
     assert.equal(tool.annotations.destructiveHint, false);
     assert.ok(!tool.requiredScopes.some((scope) => scope.includes(".write")));
   }
 
-  for (const tool of toolDefinitions.filter((definition) => !definition.name.startsWith("convy_get_"))) {
-    assert.equal(tool.annotations.readOnlyHint, false);
+  for (const tool of toolDefinitions.filter((definition) => !definition.annotations.readOnlyHint)) {
     assert.equal(tool.annotations.destructiveHint, false);
     assert.equal(tool.annotations.openWorldHint, false);
     assert.equal(tool.annotations.idempotentHint, true);
     assert.ok(tool.requiredScopes.some((scope) => scope.includes(".write")));
-    assert.deepEqual(Object.keys(tool.inputSchema.shape).includes("idempotencyKey"), true);
   }
 });
 
-test("write tool input schemas keep optional fields non-null for ChatGPT compatibility", () => {
-  const createShoppingItem = toolDefinitions.find((tool) => tool.name === "convy_create_shopping_item");
-  const createTask = toolDefinitions.find((tool) => tool.name === "convy_create_task");
-  assert.ok(createShoppingItem);
-  assert.ok(createTask);
+test("smart write tool schemas are strict and idempotency keys are optional", () => {
+  const addShoppingItems = toolDefinitions.find((tool) => tool.name === "convy_add_shopping_items");
+  const updateShoppingStatus = toolDefinitions.find((tool) => tool.name === "convy_update_shopping_items_status");
+  const addTasks = toolDefinitions.find((tool) => tool.name === "convy_add_tasks");
+  assert.ok(addShoppingItems);
+  assert.ok(updateShoppingStatus);
+  assert.ok(addTasks);
 
   const listId = "11111111-1111-4111-8111-111111111111";
-  const idempotencyKey = "debug-key-123";
+  assert.equal(addShoppingItems.inputSchema.safeParse({
+    listId,
+    items: [{ title: "Leche", quantity: 2, unit: "litros" }],
+  }).success, true);
+  assert.equal(addShoppingItems.inputSchema.safeParse({
+    listId,
+    items: Array.from({ length: 21 }, () => ({ title: "Leche" })),
+  }).success, false);
+  assert.equal(updateShoppingStatus.inputSchema.safeParse({
+    listId,
+    itemIds: ["22222222-2222-4222-8222-222222222222"],
+    status: "Archived",
+  }).success, false);
+  assert.equal(addTasks.inputSchema.safeParse({
+    listId,
+    tasks: [{ title: "Limpiar cocina", unexpected: true }],
+  }).success, false);
+});
 
-  assert.equal(createShoppingItem.inputSchema.safeParse({
-    listId,
-    title: "Milk",
-    quantity: null,
-    idempotencyKey,
-  }).success, false);
-  assert.equal(createShoppingItem.inputSchema.safeParse({
-    listId,
-    title: "Milk",
-    note: null,
-    idempotencyKey,
-  }).success, false);
-  assert.equal(createTask.inputSchema.safeParse({
-    listId,
-    title: "Clean kitchen",
-    note: null,
-    idempotencyKey,
-  }).success, false);
+test("smart shopping guidance is present in tool descriptions", () => {
+  const addShoppingItems = toolDefinitions.find((tool) => tool.name === "convy_add_shopping_items");
+  assert.ok(addShoppingItems);
+  assert.match(addShoppingItems.description, /^Use this when/);
+  assert.match(addShoppingItems.description, /Do not invent quantities or units/);
+  assert.match(addShoppingItems.description, /Do not include negated items/);
 });

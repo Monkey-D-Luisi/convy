@@ -4,7 +4,7 @@
   "app_info": {
     "display_name": "Convy",
     "subtitle": "Lists and tasks",
-    "description": "Convy helps households use ChatGPT to inspect household context, shopping lists, shopping items, tasks, and recent activity, with limited confirmed actions to create and complete shopping items and tasks.",
+    "description": "Convy helps households use ChatGPT to inspect household context, shopping lists, tasks, and recent activity, with limited confirmed actions to add shopping items or tasks and mark existing items or tasks completed or pending.",
     "category": "PRODUCTIVITY"
   },
   "tools": {
@@ -21,7 +21,7 @@
         "destructive_justification": "Does not delete, overwrite, revoke, or modify any Convy record."
       }
     },
-    "convy_get_household_overview": {
+    "convy_get_shopping_context": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": false,
@@ -29,25 +29,12 @@
         "idempotentHint": true
       },
       "justifications": {
-        "read_only_justification": "Returns household summary, member roles, list counts, and latest activity without changing Convy data.",
-        "open_world_justification": "Only reads private Convy household data for the authorized user.",
-        "destructive_justification": "Does not delete, overwrite, revoke, or modify any Convy record."
-      }
-    },
-    "convy_get_lists": {
-      "annotations": {
-        "readOnlyHint": true,
-        "openWorldHint": false,
-        "destructiveHint": false,
-        "idempotentHint": true
-      },
-      "justifications": {
-        "read_only_justification": "Returns shopping and task lists for an authorized household without changing Convy data.",
-        "open_world_justification": "Only reads private Convy list data and does not contact public or third-party write surfaces.",
+        "read_only_justification": "Returns household and shopping-list selection context without changing Convy data.",
+        "open_world_justification": "Only reads private Convy household and list data for the authorized user.",
         "destructive_justification": "Does not delete, archive, overwrite, or modify lists."
       }
     },
-    "convy_get_shopping_items": {
+    "convy_get_shopping_list": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": false,
@@ -60,7 +47,7 @@
         "destructive_justification": "Does not delete, complete, edit, or create shopping items."
       }
     },
-    "convy_get_tasks": {
+    "convy_get_task_list": {
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": false,
@@ -86,7 +73,7 @@
         "destructive_justification": "Does not delete, overwrite, revoke, or modify any Convy record."
       }
     },
-    "convy_create_shopping_item": {
+    "convy_add_shopping_items": {
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": false,
@@ -94,12 +81,12 @@
         "idempotentHint": true
       },
       "justifications": {
-        "read_only_justification": "Creates one private shopping item in a Convy list after user confirmation and an idempotency key.",
+        "read_only_justification": "Adds private shopping items in a Convy list after user confirmation and API idempotency.",
         "open_world_justification": "Writes only to the user's private Convy account and cannot publish to public or third-party systems.",
         "destructive_justification": "Does not delete, archive, overwrite, invite, revoke, or perform irreversible actions."
       }
     },
-    "convy_complete_shopping_item": {
+    "convy_update_shopping_items_status": {
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": false,
@@ -107,12 +94,12 @@
         "idempotentHint": true
       },
       "justifications": {
-        "read_only_justification": "Changes one private Convy shopping item completion state after user confirmation and an idempotency key.",
+        "read_only_justification": "Changes private Convy shopping item completion state after user confirmation and API idempotency.",
         "open_world_justification": "Writes only to the user's private Convy account and cannot publish to public or third-party systems.",
         "destructive_justification": "Does not delete, archive, overwrite, invite, revoke, or perform irreversible actions."
       }
     },
-    "convy_uncomplete_shopping_item": {
+    "convy_add_tasks": {
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": false,
@@ -120,12 +107,12 @@
         "idempotentHint": true
       },
       "justifications": {
-        "read_only_justification": "Changes one private Convy shopping item back to pending after user confirmation and an idempotency key.",
+        "read_only_justification": "Adds private tasks in a Convy task list after user confirmation and API idempotency.",
         "open_world_justification": "Writes only to the user's private Convy account and cannot publish to public or third-party systems.",
         "destructive_justification": "Does not delete, archive, overwrite, invite, revoke, or perform irreversible actions."
       }
     },
-    "convy_create_task": {
+    "convy_update_tasks_status": {
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": false,
@@ -133,33 +120,7 @@
         "idempotentHint": true
       },
       "justifications": {
-        "read_only_justification": "Creates one private task in a Convy task list after user confirmation and an idempotency key.",
-        "open_world_justification": "Writes only to the user's private Convy account and cannot publish to public or third-party systems.",
-        "destructive_justification": "Does not delete, archive, overwrite, invite, revoke, or perform irreversible actions."
-      }
-    },
-    "convy_complete_task": {
-      "annotations": {
-        "readOnlyHint": false,
-        "openWorldHint": false,
-        "destructiveHint": false,
-        "idempotentHint": true
-      },
-      "justifications": {
-        "read_only_justification": "Changes one private Convy task completion state after user confirmation and an idempotency key.",
-        "open_world_justification": "Writes only to the user's private Convy account and cannot publish to public or third-party systems.",
-        "destructive_justification": "Does not delete, archive, overwrite, invite, revoke, or perform irreversible actions."
-      }
-    },
-    "convy_uncomplete_task": {
-      "annotations": {
-        "readOnlyHint": false,
-        "openWorldHint": false,
-        "destructiveHint": false,
-        "idempotentHint": true
-      },
-      "justifications": {
-        "read_only_justification": "Changes one private Convy task back to pending after user confirmation and an idempotency key.",
+        "read_only_justification": "Changes private Convy task completion state after user confirmation and API idempotency.",
         "open_world_justification": "Writes only to the user's private Convy account and cannot publish to public or third-party systems.",
         "destructive_justification": "Does not delete, archive, overwrite, invite, revoke, or perform irreversible actions."
       }
@@ -175,51 +136,43 @@
       "expected_output_url": null
     },
     {
-      "description": "List shopping and task lists for a household.",
-      "user_prompt": "Show my Convy shopping and task lists.",
+      "description": "Choose the right shopping list.",
+      "user_prompt": "Which Convy shopping lists can I use?",
       "file_attachment_urls": null,
-      "tools_triggered": "convy_get_lists",
-      "expected_output": "Returns concise list records for the selected or default household.",
+      "tools_triggered": "convy_get_shopping_context",
+      "expected_output": "Returns active shopping lists or asks the user to choose when selection is ambiguous.",
       "expected_output_url": null
     },
     {
       "description": "Inspect pending shopping items.",
       "user_prompt": "Show pending items in my grocery list.",
       "file_attachment_urls": null,
-      "tools_triggered": "convy_get_shopping_items",
+      "tools_triggered": "convy_get_shopping_list",
       "expected_output": "Returns pending shopping items from the requested list with concise item details.",
       "expected_output_url": null
     },
     {
-      "description": "Inspect pending tasks.",
-      "user_prompt": "Show my pending tasks.",
+      "description": "Add multiple shopping items after confirmation.",
+      "user_prompt": "Añade leche, pan y huevos a mi lista de la compra.",
       "file_attachment_urls": null,
-      "tools_triggered": "convy_get_tasks",
-      "expected_output": "Returns pending tasks from the requested task list with concise task details.",
+      "tools_triggered": "convy_add_shopping_items",
+      "expected_output": "Requests confirmation, then adds the requested items in one batch and reports created, reused, or uncompleted items.",
       "expected_output_url": null
     },
     {
-      "description": "Create a shopping item after confirmation.",
-      "user_prompt": "Add milk to my Convy grocery list.",
+      "description": "Mark shopping items completed after confirmation.",
+      "user_prompt": "Mark milk and bread as bought in Convy.",
       "file_attachment_urls": null,
-      "tools_triggered": "convy_create_shopping_item",
-      "expected_output": "Requests confirmation, then creates one shopping item and returns the created item ID.",
+      "tools_triggered": "convy_update_shopping_items_status",
+      "expected_output": "Requests confirmation, then marks only selected existing shopping items completed.",
       "expected_output_url": null
     },
     {
-      "description": "Complete a shopping item after confirmation.",
-      "user_prompt": "Mark milk as complete in Convy.",
+      "description": "Create and complete tasks after confirmation.",
+      "user_prompt": "Create tasks to clean the kitchen and take out trash, then mark take out trash done.",
       "file_attachment_urls": null,
-      "tools_triggered": "convy_complete_shopping_item",
-      "expected_output": "Requests confirmation, then marks the selected shopping item completed.",
-      "expected_output_url": null
-    },
-    {
-      "description": "Create and complete a task after confirmation.",
-      "user_prompt": "Create a task to clean the kitchen, then mark it done.",
-      "file_attachment_urls": null,
-      "tools_triggered": "convy_create_task, convy_complete_task",
-      "expected_output": "Requests confirmation for each write and updates only the private Convy task list.",
+      "tools_triggered": "convy_add_tasks, convy_update_tasks_status",
+      "expected_output": "Requests confirmation for writes and updates only the private Convy task list.",
       "expected_output_url": null
     }
   ],

@@ -21,7 +21,7 @@ public class McpWriteIdempotencyServiceTests
 
         var result = await service.ExecuteAsync(
             httpContext,
-            "convy_create_shopping_item",
+            "convy_add_shopping_items",
             new { listId = Guid.NewGuid(), title = "Milk" },
             () =>
             {
@@ -45,7 +45,7 @@ public class McpWriteIdempotencyServiceTests
 
         var first = await service.ExecuteAsync(
             httpContext,
-            "convy_create_task",
+            "convy_add_tasks",
             new { listId = Guid.Parse("11111111-1111-4111-8111-111111111111"), title = "Clean kitchen" },
             () =>
             {
@@ -55,7 +55,7 @@ public class McpWriteIdempotencyServiceTests
             CancellationToken.None);
         var second = await service.ExecuteAsync(
             httpContext,
-            "convy_create_task",
+            "convy_add_tasks",
             new { listId = Guid.Parse("11111111-1111-4111-8111-111111111111"), title = "Clean kitchen" },
             () =>
             {
@@ -83,14 +83,14 @@ public class McpWriteIdempotencyServiceTests
 
         await service.ExecuteAsync(
             httpContext,
-            "convy_create_shopping_item",
+            "convy_add_shopping_items",
             new { listId = Guid.NewGuid(), title = "Milk" },
             () => Task.FromResult(McpIdempotencySnapshot.Json(201, "/items/abc", new { id = "abc" })),
             CancellationToken.None);
 
         var conflict = await service.ExecuteAsync(
             httpContext,
-            "convy_create_shopping_item",
+            "convy_add_shopping_items",
             new { listId = Guid.NewGuid(), title = "Bread" },
             () => Task.FromResult(McpIdempotencySnapshot.Json(201, "/items/other", new { id = "other" })),
             CancellationToken.None);
@@ -109,7 +109,7 @@ public class McpWriteIdempotencyServiceTests
 
         var result = await service.ExecuteAsync(
             httpContext,
-            "convy_create_task",
+            "convy_add_tasks",
             new { title = "Clean kitchen" },
             () =>
             {

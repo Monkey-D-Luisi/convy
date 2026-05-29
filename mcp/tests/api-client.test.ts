@@ -41,12 +41,14 @@ test("audit logging does not send prompts or full arguments", async () => {
   await client.recordToolInvocation({
     userId: "11111111-1111-4111-8111-111111111111",
     householdId: "22222222-2222-4222-8222-222222222222",
-    toolName: "convy_get_lists",
+    clientId: "https://chatgpt.com/aip/g-test/.well-known/oauth-client",
+    toolName: "convy_get_shopping_context",
     status: "Success",
     latencyMs: 12,
   });
 
   assert.deepEqual(Object.keys(body ?? {}).sort(), [
+    "clientId",
     "errorType",
     "householdId",
     "latencyMs",
@@ -56,7 +58,7 @@ test("audit logging does not send prompts or full arguments", async () => {
   ]);
 });
 
-test("Convy API client sends write calls with idempotency keys", async () => {
+test("Convy API client sends smart write calls with idempotency keys", async () => {
   const requests: Array<{ url: string; method?: string; key?: string; body?: string }> = [];
   const client = new ConvyApiClient({
     baseUrl: "https://api.convy.app",
@@ -76,20 +78,25 @@ test("Convy API client sends write calls with idempotency keys", async () => {
     },
   });
 
-  await client.createShoppingItem("token", "11111111-1111-4111-8111-111111111111", {
-    title: "Milk",
-    quantity: 2,
-    unit: "l",
-    note: "Whole",
+  await client.addShoppingItems("token", "11111111-1111-4111-8111-111111111111", {
+    items: [{ title: "Milk", quantity: 2, unit: "l", note: "Whole" }],
     idempotencyKey: "stable-key",
   });
-  await client.completeShoppingItem("token", "11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222", "complete-key");
-  await client.uncompleteTask("token", "33333333-3333-4333-8333-333333333333", "44444444-4444-4444-8444-444444444444", "uncomplete-key");
+  await client.updateShoppingItemsStatus("token", "11111111-1111-4111-8111-111111111111", {
+    itemIds: ["22222222-2222-4222-8222-222222222222"],
+    status: "Completed",
+    idempotencyKey: "complete-key",
+  });
+  await client.updateTasksStatus("token", "33333333-3333-4333-8333-333333333333", {
+    taskIds: ["44444444-4444-4444-8444-444444444444"],
+    status: "Pending",
+    idempotencyKey: "uncomplete-key",
+  });
 
   assert.deepEqual(requests.map((request) => [request.method, request.url, request.key]), [
-    ["POST", "https://api.convy.app/api/v1/lists/11111111-1111-4111-8111-111111111111/items/", "stable-key"],
-    ["POST", "https://api.convy.app/api/v1/lists/11111111-1111-4111-8111-111111111111/items/22222222-2222-4222-8222-222222222222/complete", "complete-key"],
-    ["POST", "https://api.convy.app/api/v1/lists/33333333-3333-4333-8333-333333333333/tasks/44444444-4444-4444-8444-444444444444/uncomplete", "uncomplete-key"],
+    ["POST", "https://api.convy.app/api/v1/lists/11111111-1111-4111-8111-111111111111/items/smart-batch", "stable-key"],
+    ["POST", "https://api.convy.app/api/v1/lists/11111111-1111-4111-8111-111111111111/items/status-batch", "complete-key"],
+    ["POST", "https://api.convy.app/api/v1/lists/33333333-3333-4333-8333-333333333333/tasks/status-batch", "uncomplete-key"],
   ]);
   assert.match(requests[0]?.body ?? "", /"title":"Milk"/);
   assert.doesNotMatch(requests[0]?.body ?? "", /idempotencyKey/);

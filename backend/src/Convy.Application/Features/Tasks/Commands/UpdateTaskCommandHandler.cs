@@ -1,5 +1,6 @@
 using Convy.Application.Common.Interfaces;
 using Convy.Application.Common.Models;
+using Convy.Application.Common.Services;
 using Convy.Application.Features.Tasks.DTOs;
 using Convy.Domain.Repositories;
 using Convy.Domain.ValueObjects;
@@ -16,6 +17,7 @@ public class UpdateTaskCommandHandler : IRequestHandler<UpdateTaskCommand, Resul
     private readonly ICurrentUserService _currentUser;
     private readonly IHouseholdNotificationService _notifications;
     private readonly IActivityLogger _activityLogger;
+    private readonly IUserFacingTextNormalizer _textNormalizer;
 
     public UpdateTaskCommandHandler(
         ITaskItemRepository taskRepository,
@@ -24,7 +26,8 @@ public class UpdateTaskCommandHandler : IRequestHandler<UpdateTaskCommand, Resul
         IUserRepository userRepository,
         ICurrentUserService currentUser,
         IHouseholdNotificationService notifications,
-        IActivityLogger activityLogger)
+        IActivityLogger activityLogger,
+        IUserFacingTextNormalizer? textNormalizer = null)
     {
         _taskRepository = taskRepository;
         _listRepository = listRepository;
@@ -33,6 +36,7 @@ public class UpdateTaskCommandHandler : IRequestHandler<UpdateTaskCommand, Resul
         _currentUser = currentUser;
         _notifications = notifications;
         _activityLogger = activityLogger;
+        _textNormalizer = textNormalizer ?? new UserFacingTextNormalizer();
     }
 
     public async Task<Result> Handle(UpdateTaskCommand request, CancellationToken cancellationToken)
@@ -50,7 +54,9 @@ public class UpdateTaskCommandHandler : IRequestHandler<UpdateTaskCommand, Resul
             return Result.Failure(access.Error!);
 
         var task = access.Value!.Task;
-        task.Update(request.Title, request.Note);
+        var title = _textNormalizer.NormalizeTitle(request.Title);
+        var normalizedTitle = _textNormalizer.NormalizeForComparison(title);
+        task.Update(title, normalizedTitle, request.Note);
 
         await _taskRepository.SaveChangesAsync(cancellationToken);
 

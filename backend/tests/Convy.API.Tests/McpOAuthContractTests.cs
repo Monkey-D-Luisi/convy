@@ -80,8 +80,10 @@ public class McpOAuthContractTests
         ReadEndpointFile("TaskEndpoints.cs").Should().Contain("McpScopes.TasksWrite");
         ReadEndpointFile("ItemEndpoints.cs").Should().Contain("McpWriteIdempotencyService");
         ReadEndpointFile("TaskEndpoints.cs").Should().Contain("McpWriteIdempotencyService");
-        ReadEndpointFile("ItemEndpoints.cs").Should().Contain("CreateItemWithMcpIdempotencyAsync");
-        ReadEndpointFile("TaskEndpoints.cs").Should().Contain("CreateTaskWithMcpIdempotencyAsync");
+        ReadEndpointFile("ItemEndpoints.cs").Should().Contain("smart-batch");
+        ReadEndpointFile("ItemEndpoints.cs").Should().Contain("status-batch");
+        ReadEndpointFile("TaskEndpoints.cs").Should().Contain("smart-batch");
+        ReadEndpointFile("TaskEndpoints.cs").Should().Contain("status-batch");
         ReadEndpointFile("UserEndpoints.cs").Should().Contain("FirebaseOnly");
     }
 

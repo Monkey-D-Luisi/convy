@@ -19,6 +19,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -149,6 +150,32 @@ builder.Services.AddAuthorization(options =>
 });
 builder.Services.AddScoped<IAuthorizationHandler, AdminEmailAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, McpScopeAuthorizationHandler>();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("mcp-write", context =>
+        RateLimitPartition.GetFixedWindowLimiter(GetUserOrIpPartition(context), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(10),
+            QueueLimit = 0,
+        }));
+
+    options.AddPolicy("mcp-oauth", context =>
+        RateLimitPartition.GetFixedWindowLimiter(GetIpPartition(context), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 60,
+            Window = TimeSpan.FromMinutes(10),
+            QueueLimit = 0,
+        }));
+
+    options.AddPolicy("mcp-audit", context =>
+        RateLimitPartition.GetFixedWindowLimiter(GetIpPartition(context), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 120,
+            Window = TimeSpan.FromMinutes(10),
+            QueueLimit = 0,
+        }));
+});
 builder.Services.AddHttpClient("mcp-client-metadata");
 builder.Services.AddSingleton<IMcpClientMetadataDnsResolver, DnsMcpClientMetadataResolver>();
 builder.Services.AddScoped<McpClientMetadataValidator>();
@@ -196,6 +223,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.UseMiddleware<UserResolutionMiddleware>();
 
@@ -249,6 +277,15 @@ static bool LooksLikeMcpAccessToken(string authorizationHeader)
         return false;
     }
 }
+
+static string GetUserOrIpPartition(HttpContext context)
+{
+    var subject = context.User.FindFirst("sub")?.Value;
+    return string.IsNullOrWhiteSpace(subject) ? GetIpPartition(context) : $"user:{subject}";
+}
+
+static string GetIpPartition(HttpContext context) =>
+    $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
 
 // Make Program class accessible for WebApplicationFactory in tests
 public partial class Program { }

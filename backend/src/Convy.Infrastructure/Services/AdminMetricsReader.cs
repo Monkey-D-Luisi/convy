@@ -38,17 +38,14 @@ public class AdminMetricsReader : IAdminMetricsReader
     private static readonly McpToolCatalogItemDto[] McpToolCatalog =
     [
         new("convy_get_context", "Get Convy Context", [McpReadOnlyScopes[0]], true, false, true, false),
-        new("convy_get_household_overview", "Get Household Overview", [McpReadOnlyScopes[0], McpReadOnlyScopes[1], McpReadOnlyScopes[4]], true, false, true, false),
-        new("convy_get_lists", "Get Lists", [McpReadOnlyScopes[0], McpReadOnlyScopes[1]], true, false, true, false),
-        new("convy_get_shopping_items", "Get Shopping Items", [McpReadOnlyScopes[2]], true, false, true, false),
-        new("convy_get_tasks", "Get Tasks", [McpReadOnlyScopes[3]], true, false, true, false),
+        new("convy_get_shopping_context", "Get Shopping Context", [McpReadOnlyScopes[0], McpReadOnlyScopes[1]], true, false, true, false),
+        new("convy_get_shopping_list", "Get Shopping List", [McpReadOnlyScopes[2]], true, false, true, false),
+        new("convy_get_task_list", "Get Task List", [McpReadOnlyScopes[3]], true, false, true, false),
         new("convy_get_recent_activity", "Get Recent Activity", [McpReadOnlyScopes[0], McpReadOnlyScopes[4]], true, false, true, false),
-        new("convy_create_shopping_item", "Create Shopping Item", [McpWriteScopes[0]], false, false, true, false),
-        new("convy_complete_shopping_item", "Complete Shopping Item", [McpWriteScopes[0]], false, false, true, false),
-        new("convy_uncomplete_shopping_item", "Uncomplete Shopping Item", [McpWriteScopes[0]], false, false, true, false),
-        new("convy_create_task", "Create Task", [McpWriteScopes[1]], false, false, true, false),
-        new("convy_complete_task", "Complete Task", [McpWriteScopes[1]], false, false, true, false),
-        new("convy_uncomplete_task", "Uncomplete Task", [McpWriteScopes[1]], false, false, true, false),
+        new("convy_add_shopping_items", "Add Shopping Items", [McpWriteScopes[0]], false, false, true, false),
+        new("convy_update_shopping_items_status", "Update Shopping Items Status", [McpWriteScopes[0]], false, false, true, false),
+        new("convy_add_tasks", "Add Tasks", [McpWriteScopes[1]], false, false, true, false),
+        new("convy_update_tasks_status", "Update Tasks Status", [McpWriteScopes[1]], false, false, true, false),
     ];
 
     private readonly ConvyDbContext _context;

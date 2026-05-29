@@ -7,6 +7,7 @@ public class McpToolInvocation : Entity
 {
     public Guid UserId { get; private set; }
     public Guid? HouseholdId { get; private set; }
+    public string? ClientId { get; private set; }
     public string ToolName { get; private set; } = default!;
     public McpToolInvocationStatus Status { get; private set; }
     public long LatencyMs { get; private set; }
@@ -18,6 +19,18 @@ public class McpToolInvocation : Entity
     public McpToolInvocation(
         Guid userId,
         Guid? householdId,
+        string toolName,
+        McpToolInvocationStatus status,
+        long latencyMs,
+        string? errorType)
+        : this(userId, householdId, null, toolName, status, latencyMs, errorType)
+    {
+    }
+
+    public McpToolInvocation(
+        Guid userId,
+        Guid? householdId,
+        string? clientId,
         string toolName,
         McpToolInvocationStatus status,
         long latencyMs,
@@ -34,6 +47,7 @@ public class McpToolInvocation : Entity
 
         UserId = userId;
         HouseholdId = householdId;
+        ClientId = string.IsNullOrWhiteSpace(clientId) ? null : clientId.Trim();
         ToolName = toolName.Trim();
         Status = status;
         LatencyMs = latencyMs;

@@ -10,6 +10,7 @@ export function createApp(config: McpConfig) {
 
   app.disable("x-powered-by");
   app.use(express.json({ limit: "1mb" }));
+  const mcpRateLimit = createFixedWindowRateLimit(120, 10 * 60 * 1000);
 
   app.get("/health", (_req, res) => {
     res.json({ status: "ok" });
@@ -23,8 +24,8 @@ export function createApp(config: McpConfig) {
     res.type("text/plain").send([
       "Convy MCP beta",
       "",
-      "Read tools: convy_get_context, convy_get_household_overview, convy_get_lists, convy_get_shopping_items, convy_get_tasks, convy_get_recent_activity.",
-      "Limited write tools: convy_create_shopping_item, convy_complete_shopping_item, convy_uncomplete_shopping_item, convy_create_task, convy_complete_task, convy_uncomplete_task.",
+      "Read tools: convy_get_context, convy_get_shopping_context, convy_get_shopping_list, convy_get_task_list, convy_get_recent_activity.",
+      "Limited write tools: convy_add_shopping_items, convy_update_shopping_items_status, convy_add_tasks, convy_update_tasks_status.",
       "Scopes: convy.households.read, convy.lists.read, convy.items.read, convy.tasks.read, convy.activity.read, convy.items.write, convy.tasks.write.",
     ].join("\n"));
   };
@@ -50,9 +51,33 @@ export function createApp(config: McpConfig) {
     }
   };
 
-  app.post("/mcp", handleMcpRequest);
+  app.post("/mcp", mcpRateLimit, handleMcpRequest);
 
   return app;
+}
+
+function createFixedWindowRateLimit(limit: number, windowMs: number) {
+  const buckets = new Map<string, { count: number; resetAt: number }>();
+
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const now = Date.now();
+    const key = req.ip ?? req.socket.remoteAddress ?? "unknown";
+    const bucket = buckets.get(key);
+
+    if (!bucket || bucket.resetAt <= now) {
+      buckets.set(key, { count: 1, resetAt: now + windowMs });
+      next();
+      return;
+    }
+
+    if (bucket.count >= limit) {
+      res.status(429).json({ error: "rate_limited" });
+      return;
+    }
+
+    bucket.count += 1;
+    next();
+  };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

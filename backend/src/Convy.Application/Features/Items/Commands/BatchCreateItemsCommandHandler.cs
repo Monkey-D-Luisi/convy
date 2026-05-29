@@ -1,4 +1,5 @@
 using Convy.Application.Common.Interfaces;
+using Convy.Application.Common.Services;
 using Convy.Application.Common.Models;
 using Convy.Application.Features.Items.DTOs;
 using Convy.Domain.Entities;
@@ -17,6 +18,7 @@ public class BatchCreateItemsCommandHandler : IRequestHandler<BatchCreateItemsCo
     private readonly ICurrentUserService _currentUser;
     private readonly IHouseholdNotificationService _notifications;
     private readonly IActivityLogger _activityLogger;
+    private readonly IUserFacingTextNormalizer _textNormalizer;
 
     public BatchCreateItemsCommandHandler(
         IListItemRepository itemRepository,
@@ -25,7 +27,8 @@ public class BatchCreateItemsCommandHandler : IRequestHandler<BatchCreateItemsCo
         IUserRepository userRepository,
         ICurrentUserService currentUser,
         IHouseholdNotificationService notifications,
-        IActivityLogger activityLogger)
+        IActivityLogger activityLogger,
+        IUserFacingTextNormalizer? textNormalizer = null)
     {
         _itemRepository = itemRepository;
         _listRepository = listRepository;
@@ -34,6 +37,7 @@ public class BatchCreateItemsCommandHandler : IRequestHandler<BatchCreateItemsCo
         _currentUser = currentUser;
         _notifications = notifications;
         _activityLogger = activityLogger;
+        _textNormalizer = textNormalizer ?? new UserFacingTextNormalizer();
     }
 
     public async Task<Result<BatchCreateResult>> Handle(BatchCreateItemsCommand request, CancellationToken cancellationToken)
@@ -52,7 +56,9 @@ public class BatchCreateItemsCommandHandler : IRequestHandler<BatchCreateItemsCo
         var items = new List<ListItem>();
         foreach (var dto in request.Items)
         {
-            var item = new ListItem(dto.Title, request.ListId, _currentUser.UserId, dto.Quantity, dto.Unit, dto.Note, request.Source);
+            var title = _textNormalizer.NormalizeTitle(dto.Title);
+            var normalizedTitle = _textNormalizer.NormalizeForComparison(title);
+            var item = new ListItem(title, normalizedTitle, request.ListId, _currentUser.UserId, dto.Quantity, dto.Unit, dto.Note, request.Source);
             await _itemRepository.AddAsync(item, cancellationToken);
             items.Add(item);
         }

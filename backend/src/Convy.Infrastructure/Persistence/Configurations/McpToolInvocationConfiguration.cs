@@ -14,6 +14,7 @@ public class McpToolInvocationConfiguration : IEntityTypeConfiguration<McpToolIn
         builder.Property(invocation => invocation.Id).HasColumnName("id").ValueGeneratedNever();
         builder.Property(invocation => invocation.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(invocation => invocation.HouseholdId).HasColumnName("household_id");
+        builder.Property(invocation => invocation.ClientId).HasColumnName("client_id").HasMaxLength(500);
         builder.Property(invocation => invocation.ToolName).HasColumnName("tool_name").HasMaxLength(100).IsRequired();
         builder.Property(invocation => invocation.Status)
             .HasColumnName("status")
@@ -26,6 +27,7 @@ public class McpToolInvocationConfiguration : IEntityTypeConfiguration<McpToolIn
 
         builder.HasIndex(invocation => invocation.UserId).HasDatabaseName("ix_mcp_tool_invocations_user_id");
         builder.HasIndex(invocation => invocation.HouseholdId).HasDatabaseName("ix_mcp_tool_invocations_household_id");
+        builder.HasIndex(invocation => invocation.ClientId).HasDatabaseName("ix_mcp_tool_invocations_client_id");
         builder.HasIndex(invocation => invocation.ToolName).HasDatabaseName("ix_mcp_tool_invocations_tool_name");
         builder.HasIndex(invocation => invocation.CreatedAt).HasDatabaseName("ix_mcp_tool_invocations_created_at");
     }
