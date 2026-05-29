@@ -20,7 +20,7 @@ curl -fsS https://auth.convyapp.com/.well-known/oauth-authorization-server
 Expected OAuth challenge:
 
 ```bash
-curl -i https://mcp.convyapp.com/mcp
+curl -i -X POST https://mcp.convyapp.com/mcp -H "content-type: application/json" -d "{}"
 ```
 
 Response should be `401` with `WWW-Authenticate` pointing to protected resource metadata.
@@ -126,7 +126,7 @@ Options:
 After disabling, confirm:
 
 ```bash
-curl -i https://mcp.convyapp.com/mcp
+curl -i -X POST https://mcp.convyapp.com/mcp -H "content-type: application/json" -d "{}"
 ```
 
 The endpoint should be unavailable or intentionally blocked.

@@ -245,14 +245,14 @@ function AuthorizeContent() {
           <ul className="mt-3 space-y-2 text-sm leading-6 text-muted">
             <li>View your Convy households and household member names and roles.</li>
             <li>View household lists, shopping items, tasks, and recent activity.</li>
-            <li>ChatGPT can create and complete shopping items and tasks when you approve the action.</li>
+            <li>ChatGPT can create and update shopping items and tasks when you approve the action.</li>
             <li>Write access is limited to the <span className="font-mono">convy.items.write</span> and <span className="font-mono">convy.tasks.write</span> scopes.</li>
           </ul>
         </div>
 
         <div className="mt-4 rounded-md border border-danger/25 bg-danger/5 p-4">
           <p className="text-sm font-semibold text-danger">
-            In beta v1, ChatGPT cannot edit, delete, archive, invite, leave, view admin metrics, access backups, or manage lists.
+            ChatGPT cannot edit, delete, archive, invite, leave, view admin metrics, access backups, modify account settings, or manage lists.
           </p>
         </div>
 
@@ -338,7 +338,7 @@ function parseOAuthRequest(searchParams: URLSearchParams) {
 
   const unsupportedScope = scopes.find((requestedScope) => !supportedScopes.includes(requestedScope));
   if (unsupportedScope) {
-    return invalidRequest(`Unsupported beta scope: ${unsupportedScope}`);
+    return invalidRequest(`Unsupported Convy scope: ${unsupportedScope}`);
   }
 
   return {

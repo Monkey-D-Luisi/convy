@@ -1,12 +1,12 @@
 # Convy
 
-Convy is a household coordination app for shared shopping lists, tasks, activity, voice-assisted item capture, realtime updates, push notifications, and a private beta ChatGPT MCP integration.
+Convy is a household coordination app for shared shopping lists, tasks, activity, voice-assisted item capture, realtime updates, push notifications, and a controlled-release ChatGPT MCP integration.
 
 The repository is a monorepo. The mobile app is Android-first, the backend is ASP.NET Core, the admin/auth/MCP surfaces are separate web services, and the active hosted path is a Hetzner VPS behind Caddy.
 
 ## Current Status
 
-- Active beta/staging domain: `convyapp.com`
+- Active controlled-release/staging domain: `convyapp.com`
 - API host: `api.convyapp.com`
 - Admin dashboard: `admin.convyapp.com`
 - OAuth consent app: `auth.convyapp.com`
@@ -146,4 +146,4 @@ Kotlin source namespaces are internal implementation details. The Play Store pac
 
 ## License And Distribution
 
-Convy is a private beta project. Do not distribute binaries, credentials, datasets, or hosted access outside the approved beta/testing scope.
+Convy is available in controlled release. Do not distribute binaries, credentials, datasets, or hosted access outside the approved testing scope.

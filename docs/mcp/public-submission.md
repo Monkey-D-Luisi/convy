@@ -22,8 +22,9 @@ Convy MCP cannot be used outside Developer Mode until the ChatGPT app is submitt
 Prepare:
 
 - App name: `Convy`
+- Subtitle: `Shared household lists and tasks`
 - Category: productivity
-- Description: Convy lets households use ChatGPT to inspect household context, shopping lists, tasks, and recent activity, with limited confirmed actions to add shopping items or tasks and mark existing items or tasks completed or pending.
+- Description: Convy helps households manage shared shopping lists and tasks directly from ChatGPT. Users can inspect household context, view shopping and task lists, add multiple shopping items, create tasks, and mark existing items or tasks as completed or pending. All write actions are limited to the user's private Convy household data and require confirmation.
 - Logo and screenshots from ChatGPT web/mobile test runs.
 - Demo account using email/password unless reviewer guidance explicitly accepts Google Sign-In.
 - Demo data:
@@ -63,6 +64,7 @@ Prepare:
 - MCP endpoint must be publicly reachable.
 - Legal docs must disclose ChatGPT MCP data access and revocation.
 - Public site and legal pages must be reachable.
+- React Apps SDK widget must render through `ui://widget/convy-summary-v1.html`.
 - Dashboard/admin-only features must not be exposed through MCP.
 - Offsite encrypted backups are not yet implemented; avoid presenting them as current.
 

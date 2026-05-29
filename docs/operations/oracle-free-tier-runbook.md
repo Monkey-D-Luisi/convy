@@ -1,6 +1,6 @@
 # Oracle Always Free Fallback Runbook
 
-OCI is a fallback/reference target, not the active beta/staging deployment. The active path is Hetzner VPS.
+OCI is a fallback/reference target, not the active controlled-release/staging deployment. The active path is Hetzner VPS.
 
 Use this runbook only when intentionally testing or reviving the OCI path. Do not document OCI as production unless Compose, Caddy, auth, MCP, dashboard, legal, public site, backups, and deploy scripts have been validated for parity.
 

@@ -5,21 +5,30 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/server.ts",
-    "build": "tsc",
+    "build": "npm run build:widget && tsc",
+    "build:widget": "vite build --config widget/vite.config.ts",
     "start": "node dist/server.js",
     "lint": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/ext-apps": "1.7.2",
     "@modelcontextprotocol/sdk": "1.29.0",
     "express": "5.2.1",
     "jose": "6.2.3",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
     "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/express": "5.0.6",
     "@types/node": "25.9.1",
+    "@types/react": "19.2.15",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
     "tsx": "4.22.3",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "vite": "8.0.14",
+    "vite-plugin-singlefile": "2.3.3"
   }
 }

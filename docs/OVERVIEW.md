@@ -1,11 +1,11 @@
 # Convy Overview
 
-Convy helps households coordinate recurring home work with low friction. It focuses on shared lists, task lists, realtime collaboration, voice-assisted item capture, push notifications, and a private beta ChatGPT MCP connector.
+Convy helps households coordinate recurring home work with low friction. It focuses on shared lists, task lists, realtime collaboration, voice-assisted item capture, push notifications, and a controlled-release ChatGPT MCP connector.
 
 ## Users
 
 - Household members who need shared shopping lists and tasks.
-- The project maintainer, who operates the beta environment and dashboard.
+- The project maintainer, who operates the controlled-release environment and dashboard.
 - Technical reviewers who need to understand architecture, security, deployment, and operations.
 - AI coding agents that need stable project context without reading the whole repository.
 
@@ -33,11 +33,11 @@ Convy helps households coordinate recurring home work with low friction. It focu
 - Push: Firebase Cloud Messaging device registration and notification preferences.
 - Dashboard: operational health, usage, OpenAI, MCP, backups, and system status.
 - Backups: local PostgreSQL custom-format dumps, checksum metadata, catalog verification, and scheduled restore verification on the VPS.
-- ChatGPT MCP beta: scoped read tools and limited idempotent item/task write tools through OAuth.
+- ChatGPT MCP: scoped read tools and limited idempotent item/task write tools through OAuth.
 
 ## Environment State
 
-The active hosted beta path is Hetzner VPS plus Docker Compose and Caddy. OCI files remain as fallback/reference material unless explicitly updated for parity. Legacy `nip.io` hosts stay configured for installed staging Android builds; new staging Android builds default to `api.convyapp.com`.
+The active hosted controlled-release path is Hetzner VPS plus Docker Compose and Caddy. OCI files remain as fallback/reference material unless explicitly updated for parity. Legacy `nip.io` hosts stay configured for installed staging Android builds; new staging Android builds default to `api.convyapp.com`.
 
 Deep references:
 

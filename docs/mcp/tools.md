@@ -18,6 +18,8 @@ Tool responses return concise `structuredContent` with:
 
 The text response is a short summary only. Consumers should use structured content.
 
+All tools reference the shared Apps SDK widget resource `ui://widget/convy-summary-v1.html`. Read tools are visible to both the model and the widget so the widget can refresh read-only context. Write tools are model-only and are not callable from the widget.
+
 ## Read Tools
 
 | Tool | Scopes | Input | API path used | Output | Expected errors |

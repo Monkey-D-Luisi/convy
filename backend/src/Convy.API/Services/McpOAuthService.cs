@@ -167,7 +167,7 @@ public class McpOAuthService
     }
 
     public bool IsExpectedResource(string resource) =>
-        string.Equals(resource, _configuration["McpAuth:Audience"] ?? "https://mcp.convy.app", StringComparison.Ordinal);
+        string.Equals(resource, _configuration["McpAuth:Audience"] ?? "https://mcp.convyapp.com", StringComparison.Ordinal);
 
     public static string HashToken(string token)
     {

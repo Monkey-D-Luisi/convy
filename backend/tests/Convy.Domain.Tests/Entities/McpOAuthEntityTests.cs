@@ -17,7 +17,7 @@ public class McpOAuthEntityTests
             userId,
             "https://chat.openai.com/mcp/client.json",
             "https://chat.openai.com/callback",
-            "https://mcp.convy.app",
+            "https://mcp.convyapp.com",
             "convy.households.read convy.lists.read",
             "pkce-challenge",
             "S256",
@@ -42,7 +42,7 @@ public class McpOAuthEntityTests
             Guid.NewGuid(),
             "https://chat.openai.com/mcp/client.json",
             "https://chat.openai.com/callback",
-            "https://mcp.convy.app",
+            "https://mcp.convyapp.com",
             "convy.households.read",
             "pkce-challenge",
             "S256",
@@ -58,7 +58,7 @@ public class McpOAuthEntityTests
             "refresh-hash",
             Guid.NewGuid(),
             "https://chat.openai.com/mcp/client.json",
-            "https://mcp.convy.app",
+            "https://mcp.convyapp.com",
             "convy.households.read",
             DateTime.UtcNow.AddDays(30));
 

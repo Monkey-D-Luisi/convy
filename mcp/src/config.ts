@@ -12,8 +12,8 @@ export type McpConfig = {
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): McpConfig {
-  const mcpPublicUrl = env.MCP_PUBLIC_URL ?? "https://mcp.convy.app";
-  const authPublicUrl = env.AUTH_PUBLIC_URL ?? "https://auth.convy.app";
+  const mcpPublicUrl = env.MCP_PUBLIC_URL ?? "https://mcp.convyapp.com";
+  const authPublicUrl = env.AUTH_PUBLIC_URL ?? "https://auth.convyapp.com";
   const auditApiKey = env.CONVY_MCP_AUDIT_API_KEY;
   if (env.NODE_ENV === "production" && !auditApiKey) {
     throw new Error("CONVY_MCP_AUDIT_API_KEY is required in production.");

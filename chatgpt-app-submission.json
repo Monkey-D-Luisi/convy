@@ -3,8 +3,8 @@
   "schema_version": 1,
   "app_info": {
     "display_name": "Convy",
-    "subtitle": "Lists and tasks",
-    "description": "Convy helps households use ChatGPT to inspect household context, shopping lists, tasks, and recent activity, with limited confirmed actions to add shopping items or tasks and mark existing items or tasks completed or pending.",
+    "subtitle": "Shared household lists and tasks",
+    "description": "Convy helps households manage shared shopping lists and tasks directly from ChatGPT. Users can inspect household context, view shopping and task lists, add multiple shopping items, create tasks, and mark existing items or tasks as completed or pending. All write actions are limited to the user's private Convy household data and require confirmation.",
     "category": "PRODUCTIVITY"
   },
   "tools": {
@@ -152,8 +152,16 @@
       "expected_output_url": null
     },
     {
+      "description": "Inspect completed shopping items.",
+      "user_prompt": "Show completed items in my grocery list.",
+      "file_attachment_urls": null,
+      "tools_triggered": "convy_get_shopping_list",
+      "expected_output": "Returns completed shopping items from the requested list when completed items are included.",
+      "expected_output_url": null
+    },
+    {
       "description": "Add multiple shopping items after confirmation.",
-      "user_prompt": "Añade leche, pan y huevos a mi lista de la compra.",
+      "user_prompt": "Add milk, bread, and eggs to my grocery list.",
       "file_attachment_urls": null,
       "tools_triggered": "convy_add_shopping_items",
       "expected_output": "Requests confirmation, then adds the requested items in one batch and reports created, reused, or uncompleted items.",
@@ -168,11 +176,35 @@
       "expected_output_url": null
     },
     {
-      "description": "Create and complete tasks after confirmation.",
-      "user_prompt": "Create tasks to clean the kitchen and take out trash, then mark take out trash done.",
+      "description": "Show current tasks.",
+      "user_prompt": "Show my Convy tasks.",
       "file_attachment_urls": null,
-      "tools_triggered": "convy_add_tasks, convy_update_tasks_status",
-      "expected_output": "Requests confirmation for writes and updates only the private Convy task list.",
+      "tools_triggered": "convy_get_task_list",
+      "expected_output": "Returns tasks from the selected task list and includes pending tasks by default.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Create multiple tasks after confirmation.",
+      "user_prompt": "Create tasks to clean the kitchen and take out trash.",
+      "file_attachment_urls": null,
+      "tools_triggered": "convy_add_tasks",
+      "expected_output": "Requests confirmation, then creates the requested private Convy tasks in one batch.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Complete a task after confirmation.",
+      "user_prompt": "Mark the trash task as complete.",
+      "file_attachment_urls": null,
+      "tools_triggered": "convy_update_tasks_status",
+      "expected_output": "Requests confirmation, then marks only the selected existing task completed.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Show recent household activity.",
+      "user_prompt": "Show recent Convy activity.",
+      "file_attachment_urls": null,
+      "tools_triggered": "convy_get_recent_activity",
+      "expected_output": "Returns recent read-only activity for the selected household.",
       "expected_output_url": null
     }
   ],
@@ -207,6 +239,22 @@
       "file_attachment_urls": null,
       "tools_triggered": null,
       "expected_output": "The app should not invoke tools because admin metrics and backups are not available through MCP.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not modify account settings.",
+      "user_prompt": "Change my Convy account email.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The app should not invoke tools because account management is not available through MCP.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not archive lists.",
+      "user_prompt": "Archive all my old shopping lists.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The app should not invoke tools because list archive operations are not exposed.",
       "expected_output_url": null
     }
   ]

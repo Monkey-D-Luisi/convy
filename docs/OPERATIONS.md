@@ -1,6 +1,6 @@
 # Operations
 
-This page is the operational index for the Convy beta/staging environment.
+This page is the operational index for the Convy controlled-release/staging environment.
 
 ## Runbooks
 
@@ -99,4 +99,4 @@ Common rotations:
 
 ## Monitoring Gaps
 
-The current beta relies on health endpoints, dashboard views, logs, and scheduled backup verification. External alerting and encrypted offsite backups are required before broader public onboarding.
+The current controlled release relies on health endpoints, dashboard views, logs, and scheduled backup verification. External alerting and encrypted offsite backups are required before broader public onboarding.

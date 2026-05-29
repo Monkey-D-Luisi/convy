@@ -1,6 +1,6 @@
 # Deployment
 
-Convy deploys the active beta/staging environment to a Hetzner VPS. OCI infrastructure remains a fallback/reference path unless explicitly updated to match VPS services.
+Convy deploys the active controlled-release/staging environment to a Hetzner VPS. OCI infrastructure remains a fallback/reference path unless explicitly updated to match VPS services.
 
 ## Branches And CI
 

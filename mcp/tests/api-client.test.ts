@@ -5,7 +5,7 @@ import { ConvyApiClient } from "../src/convy-api-client.js";
 test("Convy API client calls expected read-only endpoints", async () => {
   const urls: string[] = [];
   const client = new ConvyApiClient({
-    baseUrl: "https://api.convy.app",
+    baseUrl: "https://api.convyapp.com",
     fetchImpl: async (url) => {
       urls.push(String(url));
       return new Response("[]", { status: 200, headers: { "content-type": "application/json" } });
@@ -19,18 +19,18 @@ test("Convy API client calls expected read-only endpoints", async () => {
   await client.getRecentActivity("token", "44444444-4444-4444-8444-444444444444", 10);
 
   assert.deepEqual(urls, [
-    "https://api.convy.app/api/v1/households/",
-    "https://api.convy.app/api/v1/households/11111111-1111-4111-8111-111111111111/lists/?includeArchived=false",
-    "https://api.convy.app/api/v1/lists/22222222-2222-4222-8222-222222222222/items/?status=Pending",
-    "https://api.convy.app/api/v1/lists/33333333-3333-4333-8333-333333333333/tasks/?status=Completed",
-    "https://api.convy.app/api/v1/households/44444444-4444-4444-8444-444444444444/activity/?limit=10",
+    "https://api.convyapp.com/api/v1/households/",
+    "https://api.convyapp.com/api/v1/households/11111111-1111-4111-8111-111111111111/lists/?includeArchived=false",
+    "https://api.convyapp.com/api/v1/lists/22222222-2222-4222-8222-222222222222/items/?status=Pending",
+    "https://api.convyapp.com/api/v1/lists/33333333-3333-4333-8333-333333333333/tasks/?status=Completed",
+    "https://api.convyapp.com/api/v1/households/44444444-4444-4444-8444-444444444444/activity/?limit=10",
   ]);
 });
 
 test("audit logging does not send prompts or full arguments", async () => {
   let body: Record<string, unknown> | undefined;
   const client = new ConvyApiClient({
-    baseUrl: "https://api.convy.app",
+    baseUrl: "https://api.convyapp.com",
     auditApiKey: "audit-secret",
     fetchImpl: async (_url, init) => {
       body = JSON.parse(String(init?.body)) as Record<string, unknown>;
@@ -61,7 +61,7 @@ test("audit logging does not send prompts or full arguments", async () => {
 test("Convy API client sends smart write calls with idempotency keys", async () => {
   const requests: Array<{ url: string; method?: string; key?: string; body?: string }> = [];
   const client = new ConvyApiClient({
-    baseUrl: "https://api.convy.app",
+    baseUrl: "https://api.convyapp.com",
     fetchImpl: async (url, init) => {
       requests.push({
         url: String(url),
@@ -94,9 +94,9 @@ test("Convy API client sends smart write calls with idempotency keys", async () 
   });
 
   assert.deepEqual(requests.map((request) => [request.method, request.url, request.key]), [
-    ["POST", "https://api.convy.app/api/v1/lists/11111111-1111-4111-8111-111111111111/items/smart-batch", "stable-key"],
-    ["POST", "https://api.convy.app/api/v1/lists/11111111-1111-4111-8111-111111111111/items/status-batch", "complete-key"],
-    ["POST", "https://api.convy.app/api/v1/lists/33333333-3333-4333-8333-333333333333/tasks/status-batch", "uncomplete-key"],
+    ["POST", "https://api.convyapp.com/api/v1/lists/11111111-1111-4111-8111-111111111111/items/smart-batch", "stable-key"],
+    ["POST", "https://api.convyapp.com/api/v1/lists/11111111-1111-4111-8111-111111111111/items/status-batch", "complete-key"],
+    ["POST", "https://api.convyapp.com/api/v1/lists/33333333-3333-4333-8333-333333333333/tasks/status-batch", "uncomplete-key"],
   ]);
   assert.match(requests[0]?.body ?? "", /"title":"Milk"/);
   assert.doesNotMatch(requests[0]?.body ?? "", /idempotencyKey/);

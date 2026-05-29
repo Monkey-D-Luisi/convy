@@ -11,11 +11,11 @@ test("MCP endpoint returns OAuth challenge when token is missing", async () => {
   const { publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
   const app = createApp({
     port: 0,
-    apiBaseUrl: "https://api.convy.app",
-    mcpPublicUrl: "https://mcp.convy.app",
-    authPublicUrl: "https://auth.convy.app",
-    jwtIssuer: "https://auth.convy.app",
-    jwtAudience: "https://mcp.convy.app",
+    apiBaseUrl: "https://api.convyapp.com",
+    mcpPublicUrl: "https://mcp.convyapp.com",
+    authPublicUrl: "https://auth.convyapp.com",
+    jwtIssuer: "https://auth.convyapp.com",
+    jwtAudience: "https://mcp.convyapp.com",
     jwtPublicKeyPem: await exportSPKI(publicKey),
   });
   const server = app.listen(0);
@@ -25,7 +25,7 @@ test("MCP endpoint returns OAuth challenge when token is missing", async () => {
     const response = await fetch(`http://127.0.0.1:${port}/mcp`, { method: "POST" });
 
     assert.equal(response.status, 401);
-    assert.match(response.headers.get("www-authenticate") ?? "", /resource_metadata="https:\/\/mcp\.convy\.app\/\.well-known\/oauth-protected-resource"/);
+    assert.match(response.headers.get("www-authenticate") ?? "", /resource_metadata="https:\/\/mcp\.convyapp\.com\/\.well-known\/oauth-protected-resource"/);
   } finally {
     server.close();
   }
@@ -39,17 +39,17 @@ test("MCP endpoint rejects tokens missing Convy scopes", async () => {
     scope: "profile",
   })
     .setProtectedHeader({ alg: "RS256" })
-    .setIssuer("https://auth.convy.app")
-    .setAudience("https://mcp.convy.app")
+    .setIssuer("https://auth.convyapp.com")
+    .setAudience("https://mcp.convyapp.com")
     .setExpirationTime("5m")
     .sign(privateKey);
   const app = createApp({
     port: 0,
-    apiBaseUrl: "https://api.convy.app",
-    mcpPublicUrl: "https://mcp.convy.app",
-    authPublicUrl: "https://auth.convy.app",
-    jwtIssuer: "https://auth.convy.app",
-    jwtAudience: "https://mcp.convy.app",
+    apiBaseUrl: "https://api.convyapp.com",
+    mcpPublicUrl: "https://mcp.convyapp.com",
+    authPublicUrl: "https://auth.convyapp.com",
+    jwtIssuer: "https://auth.convyapp.com",
+    jwtAudience: "https://mcp.convyapp.com",
     jwtPublicKeyPem: await exportSPKI(publicKey),
   });
   const server = app.listen(0);
@@ -76,17 +76,17 @@ test("MCP endpoint accepts tokens with any supported Convy scope", async () => {
     scope: supportedScopes.at(-1),
   })
     .setProtectedHeader({ alg: "RS256" })
-    .setIssuer("https://auth.convy.app")
-    .setAudience("https://mcp.convy.app")
+    .setIssuer("https://auth.convyapp.com")
+    .setAudience("https://mcp.convyapp.com")
     .setExpirationTime("5m")
     .sign(privateKey);
   const app = createApp({
     port: 0,
-    apiBaseUrl: "https://api.convy.app",
-    mcpPublicUrl: "https://mcp.convy.app",
-    authPublicUrl: "https://auth.convy.app",
-    jwtIssuer: "https://auth.convy.app",
-    jwtAudience: "https://mcp.convy.app",
+    apiBaseUrl: "https://api.convyapp.com",
+    mcpPublicUrl: "https://mcp.convyapp.com",
+    authPublicUrl: "https://auth.convyapp.com",
+    jwtIssuer: "https://auth.convyapp.com",
+    jwtAudience: "https://mcp.convyapp.com",
     jwtPublicKeyPem: await exportSPKI(publicKey),
   });
   const server = app.listen(0);
@@ -116,17 +116,17 @@ test("MCP root endpoint is not a transport alias", async () => {
     scope: supportedScopes.join(" "),
   })
     .setProtectedHeader({ alg: "RS256" })
-    .setIssuer("https://auth.convy.app")
-    .setAudience("https://mcp.convy.app")
+    .setIssuer("https://auth.convyapp.com")
+    .setAudience("https://mcp.convyapp.com")
     .setExpirationTime("5m")
     .sign(privateKey);
   const app = createApp({
     port: 0,
-    apiBaseUrl: "https://api.convy.app",
-    mcpPublicUrl: "https://mcp.convy.app",
-    authPublicUrl: "https://auth.convy.app",
-    jwtIssuer: "https://auth.convy.app",
-    jwtAudience: "https://mcp.convy.app",
+    apiBaseUrl: "https://api.convyapp.com",
+    mcpPublicUrl: "https://mcp.convyapp.com",
+    authPublicUrl: "https://auth.convyapp.com",
+    jwtIssuer: "https://auth.convyapp.com",
+    jwtAudience: "https://mcp.convyapp.com",
     jwtPublicKeyPem: await exportSPKI(publicKey),
   });
   const server = app.listen(0);
@@ -155,7 +155,7 @@ test("production MCP config requires an audit API key", async () => {
   assert.throws(
     () => loadConfig({
       NODE_ENV: "production",
-      CONVY_API_BASE_URL: "https://api.convy.app",
+      CONVY_API_BASE_URL: "https://api.convyapp.com",
       MCP_JWT_PUBLIC_KEY: publicKey.export({ type: "spki", format: "pem" }).toString(),
     } as NodeJS.ProcessEnv),
     /CONVY_MCP_AUDIT_API_KEY is required/,

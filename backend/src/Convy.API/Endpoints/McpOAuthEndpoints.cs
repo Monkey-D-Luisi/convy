@@ -117,8 +117,8 @@ public static class McpOAuthEndpoints
 
     private static Dictionary<string, object?> CreateProtectedResourceMetadata(IConfiguration configuration)
     {
-        var resource = configuration["McpAuth:Audience"] ?? "https://mcp.convy.app";
-        var issuer = configuration["McpAuth:Issuer"] ?? "https://auth.convy.app";
+        var resource = configuration["McpAuth:Audience"] ?? "https://mcp.convyapp.com";
+        var issuer = configuration["McpAuth:Issuer"] ?? "https://auth.convyapp.com";
 
         return new Dictionary<string, object?>
         {
@@ -132,7 +132,7 @@ public static class McpOAuthEndpoints
 
     private static Dictionary<string, object?> CreateAuthorizationServerMetadata(IConfiguration configuration)
     {
-        var issuer = configuration["McpAuth:Issuer"] ?? "https://auth.convy.app";
+        var issuer = configuration["McpAuth:Issuer"] ?? "https://auth.convyapp.com";
         var authorizationEndpoint = configuration["McpAuth:AuthorizationEndpoint"] ?? $"{issuer.TrimEnd('/')}/oauth/authorize";
 
         return new Dictionary<string, object?>
