@@ -140,7 +140,7 @@ public class McpClientMetadataValidator
                 || address.IsIPv6SiteLocal
                 || address.IsIPv6UniqueLocal
                 || address.IsIPv6Multicast
-                || address.ToString().StartsWith("2001:db8:", StringComparison.OrdinalIgnoreCase);
+                || bytes[0] == 0x20 && bytes[1] == 0x01 && bytes[2] == 0x0d && bytes[3] == 0xb8;
         }
 
         return true;

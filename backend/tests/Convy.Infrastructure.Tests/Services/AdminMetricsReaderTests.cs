@@ -172,6 +172,18 @@ public class AdminMetricsReaderTests
         serialized.Should().NotContain(userId.ToString());
     }
 
+    [Fact]
+    public void GetMcpOverviewAsync_ShouldAggregateOAuthMetricsInProjectedQueries()
+    {
+        var source = File.ReadAllText(Path.Combine(FindRepoRoot(), "backend", "src", "Convy.Infrastructure", "Services", "AdminMetricsReader.cs"));
+
+        source.Should().Contain("var consentMetrics = await _context.McpOAuthConsents");
+        source.Should().Contain("var refreshTokenMetrics = await _context.McpOAuthRefreshTokens");
+        source.Should().Contain(".GroupBy(_ => 1)");
+        source.Should().NotContain("var activeConsents = await _context.McpOAuthConsents.AsNoTracking().CountAsync");
+        source.Should().NotContain("var latestRefreshTokenRevokedAt = await _context.McpOAuthRefreshTokens.AsNoTracking().MaxAsync");
+    }
+
     private static ConvyDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ConvyDbContext>()
@@ -197,6 +209,23 @@ public class AdminMetricsReaderTests
         return httpClientFactory is null
             ? new AdminMetricsReader(context, configuration)
             : new AdminMetricsReader(context, configuration, httpClientFactory);
+    }
+
+    private static string FindRepoRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+
+        while (directory is not null)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "backend", "src", "Convy.Infrastructure", "Services", "AdminMetricsReader.cs")))
+            {
+                return directory.FullName;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new InvalidOperationException("Repository root could not be found.");
     }
 
     private static ActivityLog CreateLog(Guid householdId, Guid entityId, ActivityActionType action, Guid userId, DateTime createdAt)

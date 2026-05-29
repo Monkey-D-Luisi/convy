@@ -74,6 +74,33 @@ public class McpClientMetadataValidatorTests
     }
 
     [Fact]
+    public async Task ValidateAsync_WithIpv6DocumentationResolvedHost_ReturnsInvalid()
+    {
+        using var httpClient = CreateHttpClient("{}");
+        var validator = new McpClientMetadataValidator(
+            new StaticHttpClientFactory(httpClient),
+            NullLogger<McpClientMetadataValidator>.Instance,
+            new StaticDnsResolver(IPAddress.Parse("2001:0db8:0000:0000:0000:0000:0000:0001")));
+
+        var result = await validator.ValidateAsync(
+            "https://metadata.example.com/client.json",
+            "https://chat.openai.com/aip/callback",
+            CancellationToken.None);
+
+        result.IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void PrivateAddressCheck_ShouldNotUseIpv6StringPrefixMatching()
+    {
+        var source = File.ReadAllText(Path.Combine(FindRepoRoot(), "backend", "src", "Convy.API", "Services", "McpClientMetadataValidator.cs"));
+
+        source.Should().NotContain("ToString().StartsWith(\"2001:db8:");
+        source.Should().Contain("bytes[0] == 0x20");
+        source.Should().Contain("bytes[3] == 0xb8");
+    }
+
+    [Fact]
     public void Program_ShouldDisableAutomaticRedirectsForMcpClientMetadataFetches()
     {
         var source = File.ReadAllText(Path.Combine(FindRepoRoot(), "backend", "src", "Convy.API", "Program.cs"));

@@ -1,6 +1,7 @@
 using Convy.Application.Common.Models;
 using Convy.Application.Features.Devices.Commands;
 using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Convy.API.Endpoints;
 
@@ -19,7 +20,7 @@ public static class DeviceEndpoints
             return result.IsSuccess ? Results.Ok() : MapError(result.Error!);
         });
 
-        group.MapDelete("/", async (UnregisterDeviceRequest request, IMediator mediator) =>
+        group.MapDelete("/", async ([FromBody] UnregisterDeviceRequest request, IMediator mediator) =>
         {
             var command = new UnregisterDeviceCommand(request.Token);
             var result = await mediator.Send(command);
