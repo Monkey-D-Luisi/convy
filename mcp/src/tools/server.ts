@@ -72,6 +72,8 @@ const toolStatusText: Record<string, { invoking: string; invoked: string }> = {
   },
 };
 
+let cachedWidgetHtml: string | null = null;
+
 export function createConvyMcpServer(
   config: Pick<McpConfig, "apiBaseUrl" | "auditApiKey">,
   auth: McpAuthContext,
@@ -215,6 +217,10 @@ function registerTool(
 }
 
 function readWidgetHtml() {
+  if (cachedWidgetHtml !== null) {
+    return cachedWidgetHtml;
+  }
+
   const currentDir = dirname(fileURLToPath(import.meta.url));
   const candidates = [
     resolve(currentDir, "../../widget/convy-summary-v1.html"),
@@ -223,14 +229,16 @@ function readWidgetHtml() {
   ];
   const existing = candidates.find((candidate) => existsSync(candidate));
   if (existing) {
-    return readFileSync(existing, "utf8");
+    cachedWidgetHtml = readFileSync(existing, "utf8");
+    return cachedWidgetHtml;
   }
 
-  return [
+  cachedWidgetHtml = [
     '<div id="root">',
     "Convy widget bundle is not available. Run npm run build:widget before deployment.",
     "</div>",
   ].join("");
+  return cachedWidgetHtml;
 }
 
 async function recordAudit(
