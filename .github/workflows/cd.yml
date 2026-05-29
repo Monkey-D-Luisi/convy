@@ -7,7 +7,8 @@ on:
     types: [completed]
 
 env:
-  DEPLOY_USER: ${{ vars.STAGING_DEPLOY_USER || 'root' }}
+  DEPLOY_USER: ${{ vars.STAGING_DEPLOY_USER || 'convy-deploy' }}
+  BOOTSTRAP_DEPLOY_USER: ${{ vars.STAGING_BOOTSTRAP_DEPLOY_USER || 'root' }}
   DEPLOY_SCRIPT: ${{ vars.STAGING_DEPLOY_SCRIPT || 'ops/vps/deploy-release.sh' }}
 
 jobs:
@@ -31,7 +32,37 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/convy_deploy
           chmod 600 ~/.ssh/convy_deploy
+          ssh-keygen -y -f ~/.ssh/convy_deploy > ~/.ssh/convy_deploy.pub
           ssh-keyscan -H "${DEPLOY_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Ensure non-root deploy user
+        if: ${{ vars.STAGING_DEPLOY_USER == '' }}
+        env:
+          DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
+        run: |
+          deploy_public_key_b64="$(base64 -w0 ~/.ssh/convy_deploy.pub)"
+          ssh -i ~/.ssh/convy_deploy "${BOOTSTRAP_DEPLOY_USER}@${DEPLOY_HOST}" \
+            "DEPLOY_USER='${DEPLOY_USER}' DEPLOY_PUBLIC_KEY_B64='${deploy_public_key_b64}' bash -s" <<'EOF'
+          set -euo pipefail
+          if [ "$(id -u)" -ne 0 ]; then
+            echo "Bootstrap deploy user must have root privileges." >&2
+            exit 1
+          fi
+          if ! id -u "${DEPLOY_USER}" >/dev/null 2>&1; then
+            useradd --create-home --shell /bin/bash "${DEPLOY_USER}"
+          fi
+          install -d -m 700 -o "${DEPLOY_USER}" -g "${DEPLOY_USER}" "/home/${DEPLOY_USER}/.ssh"
+          printf '%s' "${DEPLOY_PUBLIC_KEY_B64}" | base64 -d > "/home/${DEPLOY_USER}/.ssh/authorized_keys.tmp"
+          touch "/home/${DEPLOY_USER}/.ssh/authorized_keys"
+          if ! grep -qxF "$(cat "/home/${DEPLOY_USER}/.ssh/authorized_keys.tmp")" "/home/${DEPLOY_USER}/.ssh/authorized_keys"; then
+            cat "/home/${DEPLOY_USER}/.ssh/authorized_keys.tmp" >> "/home/${DEPLOY_USER}/.ssh/authorized_keys"
+          fi
+          rm -f "/home/${DEPLOY_USER}/.ssh/authorized_keys.tmp"
+          chown "${DEPLOY_USER}:${DEPLOY_USER}" "/home/${DEPLOY_USER}/.ssh/authorized_keys"
+          chmod 600 "/home/${DEPLOY_USER}/.ssh/authorized_keys"
+          printf '%s\n' "${DEPLOY_USER} ALL=(root) NOPASSWD: /usr/bin/mkdir, /usr/bin/tar, /usr/bin/find, /usr/bin/bash" > "/etc/sudoers.d/${DEPLOY_USER}"
+          chmod 440 "/etc/sudoers.d/${DEPLOY_USER}"
+          EOF
 
       - name: Package release
         run: |
@@ -87,5 +118,5 @@ jobs:
 
       - name: External health check
         env:
-          PUBLIC_HOSTNAME: ${{ secrets.STAGING_PUBLIC_HOSTNAME }}
-        run: curl -fsS --retry 10 --retry-delay 5 "https://${PUBLIC_HOSTNAME}/health"
+          API_HOSTNAME: ${{ secrets.STAGING_API_HOSTNAME }}
+        run: curl -fsS --retry 10 --retry-delay 5 "https://${API_HOSTNAME}/health/ready"

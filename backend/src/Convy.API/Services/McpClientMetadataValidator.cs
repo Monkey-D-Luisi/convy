@@ -108,22 +108,39 @@ public class McpClientMetadataValidator
 
     private static bool IsPrivateOrLocalAddress(IPAddress address)
     {
+        if (address.IsIPv4MappedToIPv6)
+            address = address.MapToIPv4();
+
         if (IPAddress.IsLoopback(address))
             return true;
 
         var bytes = address.GetAddressBytes();
         if (address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
         {
-            return bytes[0] == 10
+            return bytes[0] == 0
+                || bytes[0] == 10
                 || bytes[0] == 127
+                || bytes[0] == 100 && bytes[1] >= 64 && bytes[1] <= 127
                 || bytes[0] == 169 && bytes[1] == 254
                 || bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31
-                || bytes[0] == 192 && bytes[1] == 168;
+                || bytes[0] == 192 && bytes[1] == 0 && bytes[2] == 0
+                || bytes[0] == 192 && bytes[1] == 0 && bytes[2] == 2
+                || bytes[0] == 192 && bytes[1] == 168
+                || bytes[0] == 198 && (bytes[1] == 18 || bytes[1] == 19)
+                || bytes[0] == 198 && bytes[1] == 51 && bytes[2] == 100
+                || bytes[0] == 203 && bytes[1] == 0 && bytes[2] == 113
+                || bytes[0] >= 224;
         }
 
         if (address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
         {
-            return address.IsIPv6LinkLocal || address.IsIPv6SiteLocal || address.IsIPv6UniqueLocal;
+            return address.Equals(IPAddress.IPv6None)
+                || address.Equals(IPAddress.IPv6Any)
+                || address.IsIPv6LinkLocal
+                || address.IsIPv6SiteLocal
+                || address.IsIPv6UniqueLocal
+                || address.IsIPv6Multicast
+                || address.ToString().StartsWith("2001:db8:", StringComparison.OrdinalIgnoreCase);
         }
 
         return true;

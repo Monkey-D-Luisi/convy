@@ -19,6 +19,13 @@ public static class DeviceEndpoints
             return result.IsSuccess ? Results.Ok() : MapError(result.Error!);
         });
 
+        group.MapDelete("/", async (UnregisterDeviceRequest request, IMediator mediator) =>
+        {
+            var command = new UnregisterDeviceCommand(request.Token);
+            var result = await mediator.Send(command);
+            return result.IsSuccess ? Results.NoContent() : MapError(result.Error!);
+        });
+
         group.MapDelete("/{token}", async (string token, IMediator mediator) =>
         {
             var command = new UnregisterDeviceCommand(token);
@@ -36,3 +43,4 @@ public static class DeviceEndpoints
 }
 
 public record RegisterDeviceRequest(string Token, string Platform, string? Locale = null);
+public record UnregisterDeviceRequest(string Token);

@@ -4,6 +4,7 @@ import com.convy.shared.data.remote.dto.ListItemDto
 import com.convy.shared.data.remote.dto.TaskItemDto
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.*
+import kotlin.coroutines.cancellation.CancellationException
 
 sealed interface HouseholdEvent {
     data class ItemCreated(val item: ListItemDto) : HouseholdEvent
@@ -84,6 +85,8 @@ internal fun parseHouseholdEvent(json: Json, message: SignalRMessage): Household
             }
             else -> null
         }
+    } catch (e: CancellationException) {
+        throw e
     } catch (_: Exception) {
         null
     }

@@ -123,6 +123,26 @@ public class McpOAuthContractTests
     }
 
     [Fact]
+    public void McpOAuthService_ShouldUseSerializableTransactionsForTokenRedemption()
+    {
+        var source = ReadApiFile(Path.Combine("Services", "McpOAuthService.cs"));
+
+        source.Should().Contain("BeginTransactionAsync(System.Data.IsolationLevel.Serializable");
+        source.Should().Contain("RedeemAuthorizationCodeAsync");
+        source.Should().Contain("RedeemRefreshTokenAsync");
+        source.Should().Contain("CommitAsync(cancellationToken)");
+    }
+
+    [Fact]
+    public void McpWriteIdempotencyService_ShouldReserveAndExecuteInsideSerializableTransaction()
+    {
+        var source = ReadApiFile(Path.Combine("Services", "McpWriteIdempotencyService.cs"));
+
+        source.Should().Contain("BeginTransactionAsync(System.Data.IsolationLevel.Serializable");
+        source.Should().Contain("await transaction.CommitAsync(cancellationToken)");
+    }
+
+    [Fact]
     public void AdminAuthorization_ShouldRejectMcpTokensExplicitly()
     {
         var source = ReadApiFile(Path.Combine("Authorization", "AdminEmailRequirement.cs"));

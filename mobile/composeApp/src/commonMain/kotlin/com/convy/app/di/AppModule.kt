@@ -10,6 +10,7 @@ import com.convy.app.ui.screens.listdetail.ListDetailStore
 import com.convy.app.ui.screens.lists.HouseholdListsStore
 import com.convy.app.ui.screens.members.MembersStore
 import com.convy.app.ui.screens.settings.SettingsStore
+import com.convy.app.ui.screens.startup.StartupStore
 import com.convy.app.ui.screens.task.TaskFormStore
 import org.koin.dsl.module
 
@@ -17,6 +18,7 @@ val appModule = module {
     single { AppNavigator() }
 
     factory { AuthStore(get(), get(), get(), get(), get()) }
+    factory { StartupStore(get(), get(), get(), get(), get()) }
     factory { HouseholdSetupStore(get(), get(), get()) }
 
     factory { (householdId: String) ->

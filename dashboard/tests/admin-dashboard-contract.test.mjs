@@ -13,7 +13,9 @@ describe("admin API proxy contract", () => {
   it("forwards admin paths, search params, Firebase token, and response metadata", async () => {
     const source = await readDashboardFile("app", "api", "admin", "[...path]", "route.ts");
 
-    assert.match(source, /new URL\(`\/api\/v1\/admin\/\$\{path\.join\("\/"\)\}`,\s*apiBaseUrl\)/);
+    assert.match(source, /buildAdminApiTarget/);
+    assert.match(source, /encodeURIComponent/);
+    assert.match(source, /startsWith\("\/api\/v1\/admin\/"\)/);
     assert.match(source, /target\.search = request\.nextUrl\.search/);
     assert.match(source, /authorization:\s*`Bearer \$\{firebaseToken\}`/);
     assert.match(source, /cache:\s*"no-store"/);
@@ -22,6 +24,27 @@ describe("admin API proxy contract", () => {
     assert.match(source, /headers\.set\("content-disposition"/);
     assert.match(source, /headers\.set\("content-length"/);
     assert.match(source, /status:\s*response\.status/);
+  });
+
+  it("rejects path traversal and encoded separators before proxying", async () => {
+    const source = await readDashboardFile("app", "api", "admin", "[...path]", "route.ts");
+
+    assert.match(source, /rejectUnsafeAdminPathSegment/);
+    assert.match(source, /decodeURIComponent/);
+    assert.match(source, /decoded === "\."/);
+    assert.match(source, /decoded === "\.\."/);
+    assert.match(source, /includes\("\\\\"\)/);
+    assert.match(source, /includes\("\/"\)/);
+    assert.match(source, /return new Response\(null,\s*\{\s*status:\s*400\s*\}\)/s);
+  });
+});
+
+describe("admin auth security contract", () => {
+  it("uses non-persistent Firebase admin auth sessions", async () => {
+    const source = await readDashboardFile("lib", "firebase.ts");
+
+    assert.match(source, /inMemoryPersistence/);
+    assert.match(source, /setPersistence\(auth,\s*inMemoryPersistence\)/);
   });
 });
 
@@ -55,6 +78,15 @@ describe("admin view UX contract", () => {
     assert.match(source, /cache:\s*"no-store"/);
     assert.match(source, /refresh:\s*\(\) => setReloadIndex/);
     assert.match(source, /\[path,\s*reloadIndex,\s*token\]/);
+  });
+
+  it("loads charting code outside the initial admin view bundle", async () => {
+    const source = await readDashboardFile("components", "admin-views.tsx");
+    const charts = await readDashboardFile("components", "admin-charts.tsx");
+
+    assert.match(source, /dynamic\(\(\) => import\("@\/components\/admin-charts"\)/);
+    assert.doesNotMatch(source, /from "recharts"/);
+    assert.match(charts, /from "recharts"/);
   });
 });
 

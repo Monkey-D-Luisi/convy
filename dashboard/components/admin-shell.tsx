@@ -74,7 +74,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           return;
         }
 
-        const nextAuth = getFirebaseAuth(config);
+        const nextAuth = await getFirebaseAuth(config);
         setDashboardAuth(nextAuth);
         unsubscribe = onAuthStateChanged(nextAuth, async (nextUser) => {
           if (cancelled) {

@@ -44,6 +44,9 @@ public class McpWriteIdempotencyService
         var now = DateTime.UtcNow;
         var keyHash = Hash(idempotencyKey);
         var requestHash = Hash(JsonSerializer.Serialize(new { actionName, requestFingerprint }, JsonOptions));
+        await using var transaction = _context.Database.IsRelational()
+            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
+            : null;
         var existing = await _context.McpIdempotencyRecords
             .AsNoTracking()
             .FirstOrDefaultAsync(record =>
@@ -73,6 +76,8 @@ public class McpWriteIdempotencyService
             now,
             now.AddHours(24)));
         await _context.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+            await transaction.CommitAsync(cancellationToken);
 
         return snapshot;
     }

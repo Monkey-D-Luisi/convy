@@ -1,23 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { ReactNode, useEffect, useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { useAdminToken } from "@/components/admin-shell";
 import type { BackupRun, McpOverview, OpenAiMetrics, Overview, SystemHealth, UsageMetrics, VoiceMetrics } from "@/lib/types";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
-const compactFormatter = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 const dateFormatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+
+const DailyUsageChart = dynamic(() => import("@/components/admin-charts").then((module) => module.DailyUsageChart), { loading: ChartFallback, ssr: false });
+const CompletionSourceChart = dynamic(() => import("@/components/admin-charts").then((module) => module.CompletionSourceChart), { loading: ChartFallback, ssr: false });
+const AiCallsChart = dynamic(() => import("@/components/admin-charts").then((module) => module.AiCallsChart), { loading: ChartFallback, ssr: false });
+const VoiceActivityChart = dynamic(() => import("@/components/admin-charts").then((module) => module.VoiceActivityChart), { loading: ChartFallback, ssr: false });
+const DailyMcpCallsChart = dynamic(() => import("@/components/admin-charts").then((module) => module.DailyMcpCallsChart), { loading: ChartFallback, ssr: false });
 
 function useAdminResource<T>(path: string) {
   const token = useAdminToken();
@@ -224,6 +219,10 @@ function StatusPill({ ok, label }: { ok: boolean; label: string }) {
   );
 }
 
+function ChartFallback() {
+  return <div className="flex h-full items-center justify-center text-sm text-muted">Loading chart</div>;
+}
+
 function ChartPanel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
@@ -358,31 +357,10 @@ export function UsageView() {
         <MetricCard label="Tasks deleted" value={sum(data.days, "tasksDeleted")} />
       </div>
       <ChartPanel title="Daily Usage">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data.days}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tickFormatter={(value: string) => dateFormatter.format(new Date(value))} />
-            <YAxis tickFormatter={(value: number) => compactFormatter.format(value)} />
-            <Tooltip />
-            <Bar dataKey="itemsCreated" fill="#0b7a5f" name="Items created" />
-            <Bar dataKey="itemsCompleted" fill="#246b8f" name="Items completed" />
-            <Bar dataKey="itemsUncompleted" fill="#7c3aed" name="Items reopened" />
-            <Bar dataKey="itemsDeleted" fill="#b91c1c" name="Items deleted" />
-            <Bar dataKey="tasksCompleted" fill="#b57b11" name="Tasks completed" />
-          </BarChart>
-        </ResponsiveContainer>
+        <DailyUsageChart days={data.days} />
       </ChartPanel>
       <ChartPanel title="Completion Source">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data.days}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tickFormatter={(value: string) => dateFormatter.format(new Date(value))} />
-            <YAxis tickFormatter={(value: number) => compactFormatter.format(value)} />
-            <Tooltip />
-            <Bar dataKey="itemCompletionsCreatedSameDay" fill="#0b7a5f" name="Created same day" />
-            <Bar dataKey="itemCompletionsFromBacklog" fill="#246b8f" name="From backlog" />
-          </BarChart>
-        </ResponsiveContainer>
+        <CompletionSourceChart days={data.days} />
       </ChartPanel>
     </div>
   );
@@ -448,16 +426,7 @@ export function OpenAiView() {
         </div>
       </section>
       <ChartPanel title="AI Calls">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data.days}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tickFormatter={(value: string) => dateFormatter.format(new Date(value))} />
-            <YAxis tickFormatter={(value: number) => compactFormatter.format(value)} />
-            <Tooltip />
-            <Line type="monotone" dataKey="requests" stroke="#0b7a5f" strokeWidth={2} name="Requests" />
-            <Line type="monotone" dataKey="failures" stroke="#b91c1c" strokeWidth={2} name="Failures" />
-          </LineChart>
-        </ResponsiveContainer>
+        <AiCallsChart days={data.days} />
       </ChartPanel>
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-ink">Voice Funnel</h2>
@@ -474,17 +443,7 @@ export function OpenAiView() {
         </div>
       </section>
       <ChartPanel title="Voice Activity">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={voiceData.days}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tickFormatter={(value: string) => dateFormatter.format(new Date(value))} />
-            <YAxis tickFormatter={(value: number) => compactFormatter.format(value)} />
-            <Tooltip />
-            <Line type="monotone" dataKey="requests" stroke="#0b7a5f" strokeWidth={2} name="Requests" />
-            <Line type="monotone" dataKey="voiceItemsCreated" stroke="#246b8f" strokeWidth={2} name="Items created" />
-            <Line type="monotone" dataKey="failures" stroke="#b91c1c" strokeWidth={2} name="Failures" />
-          </LineChart>
-        </ResponsiveContainer>
+        <VoiceActivityChart days={voiceData.days} />
       </ChartPanel>
       {data.operations.length === 0 ? (
         <EmptyState title="No AI operation rows" description="No OpenAI usage was recorded in this range. Metrics above will update after the first tracked request." />
@@ -595,16 +554,7 @@ export function McpView() {
       </section>
 
       <ChartPanel title="Daily MCP Calls">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={overview.days}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tickFormatter={(value: string) => dateFormatter.format(new Date(value))} />
-            <YAxis tickFormatter={(value: number) => compactFormatter.format(value)} />
-            <Tooltip />
-            <Bar dataKey="successes" fill="#0b7a5f" name="Successes" />
-            <Bar dataKey="failures" fill="#b91c1c" name="Failures" />
-          </BarChart>
-        </ResponsiveContainer>
+        <DailyMcpCallsChart days={overview.days} />
       </ChartPanel>
 
       {overview.tools.length === 0 ? (

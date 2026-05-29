@@ -6,5 +6,5 @@ server_type = "cx23"
 image       = "ubuntu-24.04"
 location    = "fsn1"
 
-# Keep the default if GitHub Actions will deploy by SSH.
-allowed_ssh_cidr = "0.0.0.0/0"
+# Use a trusted administrator IP or VPN CIDR. Do not expose SSH to 0.0.0.0/0.
+allowed_ssh_cidr = "203.0.113.10/32"

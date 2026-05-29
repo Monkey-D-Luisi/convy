@@ -3,9 +3,10 @@ set -euo pipefail
 
 APP_ROOT="${APP_ROOT:-/opt/convy}"
 DATA_DEVICE="${DATA_DEVICE:-}"
+ALLOW_FORMAT_DATA_DEVICE="${ALLOW_FORMAT_DATA_DEVICE:-false}"
 
 if [ "$(id -u)" -ne 0 ]; then
-  exec sudo --preserve-env=APP_ROOT,DATA_DEVICE "$0" "$@"
+  exec sudo --preserve-env=APP_ROOT,DATA_DEVICE,ALLOW_FORMAT_DATA_DEVICE "$0" "$@"
 fi
 
 if ! command -v docker >/dev/null 2>&1; then
@@ -24,8 +25,21 @@ if [ -n "$DATA_DEVICE" ]; then
     echo "Data device $DATA_DEVICE was not found." >&2
     exit 1
   fi
+  if findmnt --source "$DATA_DEVICE" >/dev/null 2>&1 || findmnt "$DATA_DEVICE" >/dev/null 2>&1; then
+    echo "Data device $DATA_DEVICE is already mounted; refusing to format or remount it." >&2
+    exit 1
+  fi
+  if [ "$(lsblk -n -o TYPE "$DATA_DEVICE" | sed -n '2p')" = "part" ]; then
+    echo "Data device $DATA_DEVICE has child partitions; refusing to format it automatically." >&2
+    exit 1
+  fi
 
   if ! blkid "$DATA_DEVICE" >/dev/null 2>&1; then
+    if [ "$ALLOW_FORMAT_DATA_DEVICE" != "true" ]; then
+      lsblk -o NAME,SIZE,MODEL,TYPE "$DATA_DEVICE" >&2 || true
+      echo "Refusing to format $DATA_DEVICE without ALLOW_FORMAT_DATA_DEVICE=true." >&2
+      exit 1
+    fi
     mkfs.ext4 -F "$DATA_DEVICE"
   fi
 

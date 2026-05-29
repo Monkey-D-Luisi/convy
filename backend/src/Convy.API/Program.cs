@@ -176,7 +176,11 @@ builder.Services.AddRateLimiter(options =>
             QueueLimit = 0,
         }));
 });
-builder.Services.AddHttpClient("mcp-client-metadata");
+builder.Services.AddHttpClient("mcp-client-metadata")
+    .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+    {
+        AllowAutoRedirect = false,
+    });
 builder.Services.AddSingleton<IMcpClientMetadataDnsResolver, DnsMcpClientMetadataResolver>();
 builder.Services.AddScoped<McpClientMetadataValidator>();
 builder.Services.AddScoped<McpOAuthService>();

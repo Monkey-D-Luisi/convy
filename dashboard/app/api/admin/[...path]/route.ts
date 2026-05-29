@@ -5,7 +5,11 @@ const firebaseTokenHeader = "x-firebase-id-token";
 
 export async function GET(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
-  const target = new URL(`/api/v1/admin/${path.join("/")}`, apiBaseUrl);
+  const target = buildAdminApiTarget(path);
+  if (!target) {
+    return new Response(null, { status: 400 });
+  }
+
   target.search = request.nextUrl.search;
 
   const firebaseToken = request.headers.get(firebaseTokenHeader);
@@ -30,4 +34,29 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pat
     status: response.status,
     headers,
   });
+}
+
+function buildAdminApiTarget(path: string[]) {
+  if (path.some(rejectUnsafeAdminPathSegment)) {
+    return null;
+  }
+
+  const encodedPath = path.map((segment) => encodeURIComponent(segment)).join("/");
+  const target = new URL(`/api/v1/admin/${encodedPath}`, apiBaseUrl);
+  return target.pathname.startsWith("/api/v1/admin/") ? target : null;
+}
+
+function rejectUnsafeAdminPathSegment(segment: string) {
+  let decoded = segment;
+  try {
+    decoded = decodeURIComponent(segment);
+  } catch {
+    return true;
+  }
+
+  return decoded === "."
+    || decoded === ".."
+    || decoded.includes("/")
+    || decoded.includes("\\")
+    || /[\u0000-\u001f\u007f]/.test(decoded);
 }

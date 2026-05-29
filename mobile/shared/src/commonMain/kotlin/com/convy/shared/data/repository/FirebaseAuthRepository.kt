@@ -7,6 +7,7 @@ import com.convy.shared.platform.GoogleSignInHelper
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.GoogleAuthProvider
 import dev.gitlive.firebase.auth.auth
+import kotlin.coroutines.cancellation.CancellationException
 
 class FirebaseAuthRepository(
     private val googleSignInHelper: GoogleSignInHelper,
@@ -19,6 +20,8 @@ class FirebaseAuthRepository(
             val result = auth.signInWithEmailAndPassword(email, password)
             val firebaseUser = result.user ?: return Result.failure(Exception("Sign in failed"))
             Result.success(firebaseUser.toUser())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -30,6 +33,8 @@ class FirebaseAuthRepository(
             val firebaseUser = result.user ?: return Result.failure(Exception("Sign up failed"))
             firebaseUser.updateProfile(displayName = displayName)
             Result.success(firebaseUser.toUser(displayName))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -42,6 +47,8 @@ class FirebaseAuthRepository(
             val result = auth.signInWithCredential(credential)
             val firebaseUser = result.user ?: return Result.failure(Exception("Google sign-in failed"))
             Result.success(firebaseUser.toUser())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }

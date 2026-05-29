@@ -53,9 +53,13 @@ variable "fault_domain" {
 }
 
 variable "allowed_ssh_cidr" {
-  description = "CIDR allowed to reach SSH. Keep key-only SSH enabled on the host."
+  description = "CIDR allowed to reach SSH. Set this to a trusted administrator IP or VPN range; do not use 0.0.0.0/0."
   type        = string
-  default     = "0.0.0.0/0"
+
+  validation {
+    condition     = var.allowed_ssh_cidr != "0.0.0.0/0"
+    error_message = "allowed_ssh_cidr must not expose SSH to the entire internet."
+  }
 }
 
 variable "instance_ocpus" {

@@ -4,6 +4,7 @@ import com.convy.shared.data.remote.ConvyApi
 import com.convy.shared.data.remote.toDomain
 import com.convy.shared.domain.model.ActivityLogEntry
 import com.convy.shared.domain.repository.ActivityRepository
+import kotlin.coroutines.cancellation.CancellationException
 
 class ActivityRepositoryImpl(
     private val api: ConvyApi
@@ -13,6 +14,8 @@ class ActivityRepositoryImpl(
         return try {
             val dtos = api.getHouseholdActivity(householdId, limit, before)
             Result.success(dtos.map { it.toDomain() })
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -22,6 +25,8 @@ class ActivityRepositoryImpl(
         return try {
             val dtos = api.getItemHistory(itemId)
             Result.success(dtos.map { it.toDomain() })
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }

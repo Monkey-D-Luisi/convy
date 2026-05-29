@@ -1,8 +1,10 @@
 name: convy
 
 x-convy-env-file: &convy-env-file
-  - ${CONVY_ENV_FILE:-/opt/convy/shared/api.env}
-  - ${CONVY_RELEASE_ENV_FILE:-/opt/convy/shared/release.env}
+  - path: ${CONVY_ENV_FILE:-/opt/convy/shared/api.env}
+    required: false
+  - path: ${CONVY_RELEASE_ENV_FILE:-/opt/convy/shared/release.env}
+    required: false
 
 services:
   db:

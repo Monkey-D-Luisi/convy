@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 
 class SyncManager(
     private val queue: OfflineActionQueue,
@@ -79,6 +80,8 @@ class SyncManager(
                     true
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {
             false
         }

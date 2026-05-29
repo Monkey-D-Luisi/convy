@@ -298,14 +298,17 @@ public class AdminMetricsReader : IAdminMetricsReader
             .AsNoTracking()
             .Where(invocation => invocation.CreatedAt >= start && invocation.CreatedAt < end)
             .ToListAsync(cancellationToken);
-        var consents = await _context.McpOAuthConsents
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-        var refreshTokens = await _context.McpOAuthRefreshTokens
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
         var runtime = await GetMcpRuntimeAsync(cancellationToken);
         var usage = CreateMcpUsage(invocations);
+        var activeConsents = await _context.McpOAuthConsents.AsNoTracking().CountAsync(consent => consent.RevokedAt == null, cancellationToken);
+        var revokedConsents = await _context.McpOAuthConsents.AsNoTracking().CountAsync(consent => consent.RevokedAt != null, cancellationToken);
+        var activeRefreshTokens = await _context.McpOAuthRefreshTokens.AsNoTracking().CountAsync(token => token.RevokedAt == null && token.ExpiresAt > now, cancellationToken);
+        var revokedRefreshTokens = await _context.McpOAuthRefreshTokens.AsNoTracking().CountAsync(token => token.RevokedAt != null, cancellationToken);
+        var refreshTokensExpiring7d = await _context.McpOAuthRefreshTokens.AsNoTracking().CountAsync(token => token.RevokedAt == null && token.ExpiresAt <= expiringSoon && token.ExpiresAt > now, cancellationToken);
+        var latestConsentCreatedAt = await _context.McpOAuthConsents.AsNoTracking().MaxAsync(consent => (DateTime?)consent.CreatedAt, cancellationToken);
+        var latestRefreshTokenUsedAt = await _context.McpOAuthRefreshTokens.AsNoTracking().MaxAsync(token => token.LastUsedAt, cancellationToken);
+        var latestConsentRevokedAt = await _context.McpOAuthConsents.AsNoTracking().MaxAsync(consent => consent.RevokedAt, cancellationToken);
+        var latestRefreshTokenRevokedAt = await _context.McpOAuthRefreshTokens.AsNoTracking().MaxAsync(token => token.RevokedAt, cancellationToken);
 
         var daily = days.Select(day =>
         {
@@ -349,17 +352,14 @@ public class AdminMetricsReader : IAdminMetricsReader
             .ToList();
 
         var oauth = new AdminMcpOAuthMetricsDto(
-            consents.Count(consent => consent.RevokedAt is null),
-            consents.Count(consent => consent.RevokedAt is not null),
-            refreshTokens.Count(token => token.RevokedAt is null && !token.IsExpired(now)),
-            refreshTokens.Count(token => token.RevokedAt is not null),
-            refreshTokens.Count(token => token.RevokedAt is null && token.ExpiresAt <= expiringSoon && !token.IsExpired(now)),
-            consents.Max(consent => (DateTime?)consent.CreatedAt),
-            refreshTokens.Max(token => token.LastUsedAt),
-            consents.Select(consent => consent.RevokedAt)
-                .Concat(refreshTokens.Select(token => token.RevokedAt))
-                .Where(value => value is not null)
-                .Max());
+            activeConsents,
+            revokedConsents,
+            activeRefreshTokens,
+            revokedRefreshTokens,
+            refreshTokensExpiring7d,
+            latestConsentCreatedAt,
+            latestRefreshTokenUsedAt,
+            new[] { latestConsentRevokedAt, latestRefreshTokenRevokedAt }.Max());
 
         return new AdminMcpOverviewDto(
             from,

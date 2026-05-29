@@ -66,6 +66,9 @@ public class McpOAuthService
         string codeVerifier,
         CancellationToken cancellationToken)
     {
+        await using var transaction = _context.Database.IsRelational()
+            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
+            : null;
         var codeHash = HashToken(code);
         var record = await _context.McpOAuthAuthorizationCodes
             .FirstOrDefaultAsync(item => item.CodeHash == codeHash, cancellationToken);
@@ -94,6 +97,8 @@ public class McpOAuthService
             DateTime.UtcNow.AddDays(_configuration.GetValue("McpAuth:RefreshTokenDays", 30))));
 
         await _context.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+            await transaction.CommitAsync(cancellationToken);
 
         return CreateTokenResult(record.UserId, record.ClientId, record.Scopes, refreshToken);
     }
@@ -104,6 +109,9 @@ public class McpOAuthService
         string resource,
         CancellationToken cancellationToken)
     {
+        await using var transaction = _context.Database.IsRelational()
+            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
+            : null;
         var tokenHash = HashToken(refreshToken);
         var record = await _context.McpOAuthRefreshTokens
             .FirstOrDefaultAsync(item => item.TokenHash == tokenHash, cancellationToken);
@@ -131,6 +139,8 @@ public class McpOAuthService
             DateTime.UtcNow.AddDays(_configuration.GetValue("McpAuth:RefreshTokenDays", 30))));
 
         await _context.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+            await transaction.CommitAsync(cancellationToken);
 
         return CreateTokenResult(record.UserId, record.ClientId, record.Scopes, replacementRefreshToken);
     }

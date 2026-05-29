@@ -94,6 +94,11 @@ data class RegisterDeviceRequest(
 )
 
 @Serializable
+data class UnregisterDeviceRequest(
+    @SerialName("token") val token: String,
+)
+
+@Serializable
 data class UpdateNotificationPreferencesRequest(
     @SerialName("itemsAdded") val itemsAdded: Boolean,
     @SerialName("tasksAdded") val tasksAdded: Boolean,
