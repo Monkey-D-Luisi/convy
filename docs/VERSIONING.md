@@ -45,6 +45,7 @@
 | 20 | 0.1.17 | 2026-05-23 | Multi-household management and lower voice action UX |
 | 21 | 0.1.18 | 2026-05-29 | Master audit hardening and staging validation build |
 | 22 | 0.1.19 | 2026-05-29 | Mobile app and landing redesign |
+| 23 | 0.1.20 | 2026-05-29 | Post-redesign release artifact build |
 
 ## Release Procedure
 
