@@ -126,11 +126,17 @@ public class McpOAuthContractTests
     public void McpOAuthService_ShouldUseSerializableTransactionsForTokenRedemption()
     {
         var source = ReadApiFile(Path.Combine("Services", "McpOAuthService.cs"));
+        var infrastructure = File.ReadAllText(Path.Combine(FindRepoRoot(), "backend", "src", "Convy.Infrastructure", "DependencyInjection.cs"));
 
         source.Should().Contain("BeginTransactionAsync(System.Data.IsolationLevel.Serializable");
         source.Should().Contain("RedeemAuthorizationCodeAsync");
         source.Should().Contain("RedeemRefreshTokenAsync");
         source.Should().Contain("CommitAsync(cancellationToken)");
+        source.Should().Contain("CreateExecutionStrategy()");
+        source.Should().Contain("ExecuteAsync(async () =>");
+        infrastructure.Should().Contain("EnableRetryOnFailure");
+        infrastructure.Should().Contain("\"40001\"");
+        infrastructure.Should().Contain("\"40P01\"");
     }
 
     [Fact]
@@ -140,6 +146,8 @@ public class McpOAuthContractTests
 
         source.Should().Contain("BeginTransactionAsync(System.Data.IsolationLevel.Serializable");
         source.Should().Contain("await transaction.CommitAsync(cancellationToken)");
+        source.Should().Contain("CreateExecutionStrategy()");
+        source.Should().Contain("ExecuteAsync(async () =>");
     }
 
     [Fact]

@@ -18,7 +18,12 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<ConvyDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+            options.UseNpgsql(
+                configuration.GetConnectionString("DefaultConnection"),
+                npgsql => npgsql.EnableRetryOnFailure(
+                    maxRetryCount: 3,
+                    maxRetryDelay: TimeSpan.FromSeconds(2),
+                    errorCodesToAdd: ["40001", "40P01"])));
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IHouseholdRepository, HouseholdRepository>();

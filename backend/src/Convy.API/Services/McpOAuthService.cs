@@ -66,41 +66,45 @@ public class McpOAuthService
         string codeVerifier,
         CancellationToken cancellationToken)
     {
-        await using var transaction = _context.Database.IsRelational()
-            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
-            : null;
-        var codeHash = HashToken(code);
-        var record = await _context.McpOAuthAuthorizationCodes
-            .FirstOrDefaultAsync(item => item.CodeHash == codeHash, cancellationToken);
-
-        if (record is null)
-            return McpTokenEndpointResult.Invalid("invalid_grant");
-        if (record.UsedAt.HasValue || record.IsExpired(DateTime.UtcNow))
-            return McpTokenEndpointResult.Invalid("invalid_grant");
-        if (!string.Equals(record.ClientId, clientId, StringComparison.Ordinal)
-            || !string.Equals(record.RedirectUri, redirectUri, StringComparison.Ordinal)
-            || !string.Equals(record.Resource, resource, StringComparison.Ordinal))
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
         {
-            return McpTokenEndpointResult.Invalid("invalid_grant");
-        }
-        if (!VerifyPkce(codeVerifier, record.CodeChallenge))
-            return McpTokenEndpointResult.Invalid("invalid_grant");
+            await using var transaction = _context.Database.IsRelational()
+                ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
+                : null;
+            var codeHash = HashToken(code);
+            var record = await _context.McpOAuthAuthorizationCodes
+                .FirstOrDefaultAsync(item => item.CodeHash == codeHash, cancellationToken);
 
-        record.MarkUsed(DateTime.UtcNow);
-        var refreshToken = CreateOpaqueToken();
-        _context.McpOAuthRefreshTokens.Add(new McpOAuthRefreshToken(
-            HashToken(refreshToken),
-            record.UserId,
-            record.ClientId,
-            record.Resource,
-            record.Scopes,
-            DateTime.UtcNow.AddDays(_configuration.GetValue("McpAuth:RefreshTokenDays", 30))));
+            if (record is null)
+                return McpTokenEndpointResult.Invalid("invalid_grant");
+            if (record.UsedAt.HasValue || record.IsExpired(DateTime.UtcNow))
+                return McpTokenEndpointResult.Invalid("invalid_grant");
+            if (!string.Equals(record.ClientId, clientId, StringComparison.Ordinal)
+                || !string.Equals(record.RedirectUri, redirectUri, StringComparison.Ordinal)
+                || !string.Equals(record.Resource, resource, StringComparison.Ordinal))
+            {
+                return McpTokenEndpointResult.Invalid("invalid_grant");
+            }
+            if (!VerifyPkce(codeVerifier, record.CodeChallenge))
+                return McpTokenEndpointResult.Invalid("invalid_grant");
 
-        await _context.SaveChangesAsync(cancellationToken);
-        if (transaction is not null)
-            await transaction.CommitAsync(cancellationToken);
+            record.MarkUsed(DateTime.UtcNow);
+            var refreshToken = CreateOpaqueToken();
+            _context.McpOAuthRefreshTokens.Add(new McpOAuthRefreshToken(
+                HashToken(refreshToken),
+                record.UserId,
+                record.ClientId,
+                record.Resource,
+                record.Scopes,
+                DateTime.UtcNow.AddDays(_configuration.GetValue("McpAuth:RefreshTokenDays", 30))));
 
-        return CreateTokenResult(record.UserId, record.ClientId, record.Scopes, refreshToken);
+            await _context.SaveChangesAsync(cancellationToken);
+            if (transaction is not null)
+                await transaction.CommitAsync(cancellationToken);
+
+            return CreateTokenResult(record.UserId, record.ClientId, record.Scopes, refreshToken);
+        });
     }
 
     public async Task<McpTokenEndpointResult> RedeemRefreshTokenAsync(
@@ -109,40 +113,44 @@ public class McpOAuthService
         string resource,
         CancellationToken cancellationToken)
     {
-        await using var transaction = _context.Database.IsRelational()
-            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
-            : null;
-        var tokenHash = HashToken(refreshToken);
-        var record = await _context.McpOAuthRefreshTokens
-            .FirstOrDefaultAsync(item => item.TokenHash == tokenHash, cancellationToken);
-
-        if (record is null
-            || record.RevokedAt.HasValue
-            || record.IsExpired(DateTime.UtcNow)
-            || !string.Equals(record.ClientId, clientId, StringComparison.Ordinal)
-            || !string.Equals(record.Resource, resource, StringComparison.Ordinal))
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
         {
-            return McpTokenEndpointResult.Invalid("invalid_grant");
-        }
+            await using var transaction = _context.Database.IsRelational()
+                ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
+                : null;
+            var tokenHash = HashToken(refreshToken);
+            var record = await _context.McpOAuthRefreshTokens
+                .FirstOrDefaultAsync(item => item.TokenHash == tokenHash, cancellationToken);
 
-        var replacementRefreshToken = CreateOpaqueToken();
-        var replacementHash = HashToken(replacementRefreshToken);
-        record.MarkUsed(DateTime.UtcNow);
-        record.RotateTo(replacementHash, DateTime.UtcNow);
+            if (record is null
+                || record.RevokedAt.HasValue
+                || record.IsExpired(DateTime.UtcNow)
+                || !string.Equals(record.ClientId, clientId, StringComparison.Ordinal)
+                || !string.Equals(record.Resource, resource, StringComparison.Ordinal))
+            {
+                return McpTokenEndpointResult.Invalid("invalid_grant");
+            }
 
-        _context.McpOAuthRefreshTokens.Add(new McpOAuthRefreshToken(
-            replacementHash,
-            record.UserId,
-            record.ClientId,
-            record.Resource,
-            record.Scopes,
-            DateTime.UtcNow.AddDays(_configuration.GetValue("McpAuth:RefreshTokenDays", 30))));
+            var replacementRefreshToken = CreateOpaqueToken();
+            var replacementHash = HashToken(replacementRefreshToken);
+            record.MarkUsed(DateTime.UtcNow);
+            record.RotateTo(replacementHash, DateTime.UtcNow);
 
-        await _context.SaveChangesAsync(cancellationToken);
-        if (transaction is not null)
-            await transaction.CommitAsync(cancellationToken);
+            _context.McpOAuthRefreshTokens.Add(new McpOAuthRefreshToken(
+                replacementHash,
+                record.UserId,
+                record.ClientId,
+                record.Resource,
+                record.Scopes,
+                DateTime.UtcNow.AddDays(_configuration.GetValue("McpAuth:RefreshTokenDays", 30))));
 
-        return CreateTokenResult(record.UserId, record.ClientId, record.Scopes, replacementRefreshToken);
+            await _context.SaveChangesAsync(cancellationToken);
+            if (transaction is not null)
+                await transaction.CommitAsync(cancellationToken);
+
+            return CreateTokenResult(record.UserId, record.ClientId, record.Scopes, replacementRefreshToken);
+        });
     }
 
     public async Task RevokeRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken)

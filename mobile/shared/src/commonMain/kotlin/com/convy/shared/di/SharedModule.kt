@@ -8,6 +8,7 @@ import com.convy.shared.data.remote.DeviceTokenManager
 import com.convy.shared.data.remote.HouseholdRealtimeService
 import com.convy.shared.data.remote.SignalRClient
 import com.convy.shared.data.remote.TokenProvider
+import com.convy.shared.data.remote.toApiResponseException
 import com.convy.shared.data.repository.*
 import com.convy.shared.domain.repository.*
 import com.convy.shared.platform.FileStorage
@@ -36,10 +37,11 @@ val networkModule = module {
     single {
         val tokenProvider = get<TokenProvider>()
         val apiConfig = get<ApiConfig>()
+        val json = get<Json>()
         val urlProtocol = if (apiConfig.protocol == "https") URLProtocol.HTTPS else URLProtocol.HTTP
         HttpClient {
             install(ContentNegotiation) {
-                json(get<Json>())
+                json(json)
             }
             install(HttpTimeout) {
                 connectTimeoutMillis = 10_000
@@ -65,7 +67,7 @@ val networkModule = module {
             HttpResponseValidator {
                 validateResponse { response ->
                     if (!response.status.isSuccess()) {
-                        throw ResponseException(response, "Convy request failed with HTTP ${response.status.value}.")
+                        throw response.toApiResponseException(json)
                     }
                 }
             }

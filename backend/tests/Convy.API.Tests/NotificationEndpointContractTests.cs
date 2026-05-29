@@ -23,6 +23,16 @@ public class NotificationEndpointContractTests
         source.Should().Contain("request.Locale");
     }
 
+    [Fact]
+    public void DeviceEndpoints_UnregisterBodyDelete_ShouldBindRequestFromBody()
+    {
+        var source = File.ReadAllText(Path.Combine(FindRepoRoot(), "backend", "src", "Convy.API", "Endpoints", "DeviceEndpoints.cs"));
+
+        source.Should().Contain("using Microsoft.AspNetCore.Mvc;");
+        source.Should().Contain("async ([FromBody] UnregisterDeviceRequest request, IMediator mediator)");
+        source.Should().Contain("MapDelete(\"/{token}\"");
+    }
+
     private static string FindRepoRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
