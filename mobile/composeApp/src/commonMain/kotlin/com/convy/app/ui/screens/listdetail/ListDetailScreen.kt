@@ -78,6 +78,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.convy.app.generated.resources.*
+import com.convy.app.platform.PlatformBackHandler
 import com.convy.app.ui.components.ConvyAvatar
 import com.convy.app.ui.components.ConvyBackground
 import com.convy.app.ui.components.ConvyPanel
@@ -113,6 +114,10 @@ fun ListDetailScreen(
 
     DisposableEffect(store) {
         onDispose { store.close() }
+    }
+
+    PlatformBackHandler(enabled = !state.showVoiceSheet) {
+        store.processIntent(ListDetailIntent.NavigateBack)
     }
 
     LaunchedEffect(permissionState.isGranted) {
@@ -627,8 +632,9 @@ private fun DismissibleEntry(
     SwipeToDismissBox(
         state = dismissState,
         backgroundContent = {
+            val showDeleteAffordance = shouldShowDeleteSwipeAffordance(dismissState.targetValue)
             val color by animateColorAsState(
-                if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
+                if (showDeleteAffordance) {
                     MaterialTheme.colorScheme.errorContainer
                 } else {
                     Color.Transparent
@@ -641,17 +647,22 @@ private fun DismissibleEntry(
                     .padding(horizontal = 20.dp),
                 contentAlignment = Alignment.CenterEnd,
             ) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = stringResource(Res.string.delete),
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                )
+                if (showDeleteAffordance) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = stringResource(Res.string.delete),
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
             }
         },
         enableDismissFromStartToEnd = false,
         content = { content() },
     )
 }
+
+internal fun shouldShowDeleteSwipeAffordance(targetValue: SwipeToDismissBoxValue): Boolean =
+    targetValue == SwipeToDismissBoxValue.EndToStart
 
 @Composable
 private fun ListEntryCard(

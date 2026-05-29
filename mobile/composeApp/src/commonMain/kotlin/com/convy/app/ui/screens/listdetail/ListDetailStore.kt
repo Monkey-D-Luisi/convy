@@ -89,9 +89,7 @@ class ListDetailStore(
             is ListDetailIntent.ToggleCompletedVisibility -> _state.update {
                 it.copy(showCompleted = !it.showCompleted)
             }
-            is ListDetailIntent.NavigateBack -> scope.launch {
-                _sideEffects.emit(ListDetailSideEffect.NavigateBack)
-            }
+            is ListDetailIntent.NavigateBack -> navigateBack()
             is ListDetailIntent.DeleteItem -> deleteItem(intent.itemId)
             is ListDetailIntent.UndoOperation -> undoOperation(intent.operationId)
             is ListDetailIntent.RedoOperation -> redoOperation(intent.operationId)
@@ -283,12 +281,41 @@ class ListDetailStore(
     private fun commitPendingDelete(operationId: Long) {
         val operation = operations.remove(operationId) as? EntryOperation.PendingDelete ?: return
         scope.launch {
-            deleteRemote(operation.entry.id).onFailure { error ->
-                restoreEntry(operation.entry, operation.wasCompleted)
-                _sideEffects.emit(repositoryError(error.message, deleteFailureResource()))
+            commitPendingDelete(operation)
+        }
+    }
+
+    private fun navigateBack() {
+        scope.launch {
+            if (commitPendingDeletes()) {
+                _sideEffects.emit(ListDetailSideEffect.NavigateBack)
             }
         }
     }
+
+    private suspend fun commitPendingDeletes(): Boolean {
+        val pendingDeletes = operations.values.filterIsInstance<EntryOperation.PendingDelete>()
+        if (pendingDeletes.isEmpty()) {
+            return true
+        }
+
+        var allCommitted = true
+        pendingDeletes.forEach { operation ->
+            operations.remove(operation.id)
+            allCommitted = commitPendingDelete(operation) && allCommitted
+        }
+        return allCommitted
+    }
+
+    private suspend fun commitPendingDelete(operation: EntryOperation.PendingDelete): Boolean =
+        deleteRemote(operation.entry.id).fold(
+            onSuccess = { true },
+            onFailure = { error ->
+                restoreEntry(operation.entry, operation.wasCompleted)
+                _sideEffects.emit(repositoryError(error.message, deleteFailureResource()))
+                false
+            },
+        )
 
     private suspend fun applyOptimisticCompletionState(itemId: String, completed: Boolean, animateCompletion: Boolean) {
         val currentUserName = authRepository.getCurrentUser()?.displayName

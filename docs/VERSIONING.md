@@ -46,6 +46,7 @@
 | 21 | 0.1.18 | 2026-05-29 | Master audit hardening and staging validation build |
 | 22 | 0.1.19 | 2026-05-29 | Mobile app and landing redesign |
 | 23 | 0.1.20 | 2026-05-29 | Post-redesign release artifact build |
+| 24 | 0.1.21 | 2026-05-29 | Landing copy and list detail bug fixes |
 
 ## Release Procedure
 
