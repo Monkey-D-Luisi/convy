@@ -27,3 +27,5 @@ sudo /opt/convy/current/ops/vps/backups/restore-postgres.sh /opt/convy/backups/p
 ```
 
 The weekly `convy-restore-verify.timer` performs a real restore into a temporary database and drops it after a basic query succeeds.
+
+Canonical documentation: [docs/operations/backup-restore-runbook.md](../../../docs/operations/backup-restore-runbook.md).

@@ -1,10 +1,10 @@
 # Convy MCP Domain Cutover
 
-This checklist moves staging from the temporary `178.105.70.69.nip.io` hosts to the `convyapp.com` public hostnames.
+This checklist covers public hostname cutover from temporary `nip.io` hosts to `convyapp.com` hosts.
 
 ## DNS
 
-Create A records pointing to `178.105.70.69`:
+Create A records pointing to the staging VPS IP:
 
 - `convyapp.com`
 - `www.convyapp.com`
@@ -14,10 +14,11 @@ Create A records pointing to `178.105.70.69`:
 - `mcp.convyapp.com`
 - `legal.convyapp.com`
 
-Verify locally:
+Verify:
 
 ```powershell
 Resolve-DnsName convyapp.com
+Resolve-DnsName www.convyapp.com
 Resolve-DnsName api.convyapp.com
 Resolve-DnsName admin.convyapp.com
 Resolve-DnsName auth.convyapp.com
@@ -25,27 +26,23 @@ Resolve-DnsName mcp.convyapp.com
 Resolve-DnsName legal.convyapp.com
 ```
 
-Each hostname must resolve to `178.105.70.69` before the VPS cutover can finish cleanly.
-
-Keep the temporary `nip.io` hosts configured in Caddy during the cutover so previously installed Android staging builds continue to reach the API at `https://178.105.70.69.nip.io`. New Android staging builds default to `https://api.convyapp.com`.
+Keep legacy `nip.io` hosts configured during cutover so installed staging Android builds can still reach the API.
 
 ## Firebase
 
-Add these authorized domains in Firebase Authentication:
+Add authorized domains:
 
 - `admin.convyapp.com`
 - `auth.convyapp.com`
 
-Keep Google Sign-In enabled for the project. The MCP authorization app supports both email/password and Google Sign-In, so users who registered with Google in the mobile app can authorize ChatGPT without creating a password.
-
-Keep the Firebase project auth domain as `convy-6520d.firebaseapp.com`.
+Keep the Firebase project auth domain as `convy-6520d.firebaseapp.com`. Keep Google Sign-In enabled for users who registered with Google in the mobile app.
 
 ## VPS Secrets
 
 Push hostnames after DNS is visible:
 
 ```powershell
-$ip = "178.105.70.69"
+$ip = "<staging-vps-ip>"
 .\ops\vps\push-secrets.ps1 `
   -HostName $ip `
   -ConvyHostname "convyapp.com" `
@@ -56,17 +53,9 @@ $ip = "178.105.70.69"
   -ConvyLegalHostname "legal.convyapp.com"
 ```
 
-The script also writes these temporary fallback hosts unless they are explicitly overridden:
-
-- `CONVY_LEGACY_API_HOSTNAME=178.105.70.69.nip.io`
-- `CONVY_LEGACY_ADMIN_HOSTNAME=admin.178.105.70.69.nip.io`
-- `CONVY_LEGACY_AUTH_HOSTNAME=auth.178.105.70.69.nip.io`
-- `CONVY_LEGACY_MCP_HOSTNAME=mcp.178.105.70.69.nip.io`
-- `CONVY_LEGACY_LEGAL_HOSTNAME=legal.178.105.70.69.nip.io`
+The script writes public and legacy hostname variables into `/opt/convy/shared/api.env`.
 
 ## Deploy And Smoke Test
-
-Deploy the current release, then verify:
 
 ```powershell
 curl.exe -fsS https://convyapp.com
@@ -81,14 +70,34 @@ curl.exe -I https://admin.convyapp.com
 curl.exe -fsS https://178.105.70.69.nip.io/health/ready
 ```
 
-The admin response should be a Basic Auth challenge before Firebase login.
+Expected:
+
+- Public landing page loads.
+- Legal pages load.
+- API, auth, and MCP health endpoints pass.
+- MCP metadata and authorization metadata are reachable.
+- Admin host returns a Basic Auth challenge before Firebase login.
+- Legacy API health works until old staging builds are no longer relevant.
 
 ## ChatGPT Reconnect
 
-After the domain health checks pass, recreate the ChatGPT Developer Mode connector with:
+After health checks pass, recreate the ChatGPT Developer Mode connector with:
 
 ```text
 https://mcp.convyapp.com/mcp
 ```
 
-Authorize through `https://auth.convyapp.com`, then verify households, lists, shopping items, tasks, recent activity, and revocation.
+Authorize through `https://auth.convyapp.com`, then verify households, shopping context, shopping items, tasks, recent activity, write tools, audit records, and revocation.
+
+## Documentation Updates
+
+When domains change, update:
+
+- `README.md`
+- `docs/DEPLOYMENT.md`
+- `docs/OPERATIONS.md`
+- `docs/mcp/*`
+- `docs/operations/*`
+- `legal/*`
+- `public-site/index.html`
+- Firebase authorized domain notes

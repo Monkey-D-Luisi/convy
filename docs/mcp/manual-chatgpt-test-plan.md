@@ -1,52 +1,98 @@
 # Manual ChatGPT MCP Test Plan
 
-Run this against staging before private beta access.
+Run this plan against staging before granting private beta access or submitting for public review.
 
 ## Setup
 
-1. Deploy the release with `auth`, `mcp`, and API services.
-2. Verify:
-   - `https://api.convyapp.com/health/ready`
-   - `https://auth.convyapp.com/health`
-   - `https://mcp.convyapp.com/health`
-3. Confirm metadata:
-   - `https://auth.convyapp.com/.well-known/oauth-authorization-server`
-   - `https://mcp.convyapp.com/.well-known/oauth-protected-resource`
-4. Confirm `scopes_supported` contains the five read scopes plus `convy.items.write` and `convy.tasks.write`, and does not contain list, household, admin, backup, invite, or delete scopes.
+1. Deploy a release that includes API, auth, MCP, dashboard, Caddy, public, and legal services.
+2. Verify health:
 
-## ChatGPT Developer Mode
+```bash
+curl -fsS https://api.convyapp.com/health/ready
+curl -fsS https://auth.convyapp.com/health
+curl -fsS https://mcp.convyapp.com/health
+```
 
-1. Add the MCP server URL `https://mcp.convyapp.com/mcp`.
+3. Verify metadata:
+
+```bash
+curl -fsS https://mcp.convyapp.com/.well-known/oauth-protected-resource
+curl -fsS https://auth.convyapp.com/.well-known/oauth-authorization-server
+```
+
+4. Confirm `scopes_supported` includes only:
+
+- `convy.households.read`
+- `convy.lists.read`
+- `convy.items.read`
+- `convy.tasks.read`
+- `convy.activity.read`
+- `convy.items.write`
+- `convy.tasks.write`
+
+It must not advertise admin, backup, delete, invite, household-management, or list-management scopes.
+
+## Positive ChatGPT Flow
+
+1. In ChatGPT Developer Mode, add MCP server URL `https://mcp.convyapp.com/mcp`.
 2. Confirm ChatGPT receives a 401 challenge with protected resource metadata.
 3. Start OAuth authorization.
-4. Sign in with Firebase at `auth.convyapp.com`.
-5. Confirm the consent page says ChatGPT can add shopping items/tasks and mark existing shopping items/tasks completed or pending, and cannot edit, delete, archive, invite, leave, view admin metrics, access backups, or manage lists.
-6. Approve the requested scopes.
-7. Query household context, shopping context, one shopping list, one task list, and recent activity.
-8. Ask ChatGPT: `Añade leche, pan y huevos a la compra.` Confirm it uses one `convy_add_shopping_items` call.
-9. Ask ChatGPT to add an already pending item. Confirm the API returns `reused` and does not duplicate it.
-10. Complete an item in Convy, then ask ChatGPT to add it again. Confirm the API returns it to pending and reports `uncompleted`.
-11. Ask ChatGPT to add one task and then mark it completed through the task status-batch tool.
-12. Revoke access through ChatGPT.
-13. Confirm refresh no longer works and ChatGPT loses access.
+4. Sign in at `https://auth.convyapp.com`.
+5. Confirm consent text says ChatGPT can read Convy data and perform limited item/task writes.
+6. Confirm consent text says ChatGPT cannot edit, delete, archive, invite, leave, manage lists, view admin metrics, or access backups.
+7. Approve requested scopes.
+8. Ask ChatGPT to show Convy households.
+9. Ask ChatGPT to show shopping context.
+10. Ask ChatGPT to show one shopping list, including completed items.
+11. Ask ChatGPT to show one task list, including completed tasks.
+12. Ask ChatGPT to show recent household activity.
+13. Ask: `Anade leche, pan y huevos a la compra.` Confirm one `convy_add_shopping_items` call.
+14. Ask ChatGPT to add an already pending item. Confirm the API reports reuse and no duplicate item appears in the app.
+15. Complete an item in Convy, then ask ChatGPT to add it again. Confirm the API returns it to pending and reports that state.
+16. Ask ChatGPT to create one task.
+17. Ask ChatGPT to mark that task completed through the task status-batch tool.
+18. Ask ChatGPT to mark the task pending again.
+19. Revoke access through ChatGPT.
+20. Confirm refresh no longer works and ChatGPT loses access.
 
 ## Google Sign-In Check
 
-Use Chrome or Edge for Google Sign-In validation because the Codex in-app browser blocks popups.
+Use Chrome or Edge because embedded/in-app browsers may block popups.
 
 1. Open ChatGPT Developer Mode in Chrome or Edge.
 2. Start OAuth against `https://mcp.convyapp.com/mcp`.
 3. Click "Sign in with Google" on `https://auth.convyapp.com`.
-4. If the browser blocks the login, allow popups for `auth.convyapp.com` and `accounts.google.com`.
-5. Confirm the consent page returns to ChatGPT after approval.
+4. Allow popups for `auth.convyapp.com` and `accounts.google.com` if required.
+5. Confirm approval returns to ChatGPT.
 
 ## Negative Checks
 
-- A token without any supported Convy scope returns 403 from MCP.
-- A read-only token cannot invoke smart-batch or status-batch write tools.
-- A direct API write call without `Idempotency-Key` returns 400 for MCP tokens.
+- Missing token returns 401 with `WWW-Authenticate`.
+- Invalid token returns 401.
+- Token without supported Convy scopes returns 403 from MCP.
+- Read-only token cannot invoke write tools.
+- Direct API MCP write without `Idempotency-Key` returns 400.
 - Reusing the same idempotency key with a different request returns 409.
-- Missing or invalid token returns 401 with `WWW-Authenticate`.
-- Direct MCP token calls to single create, single complete/uncomplete, PUT, DELETE, archive, invite, leave, admin, backup, and device endpoints fail.
+- Direct MCP token calls to single create/complete/uncomplete, PUT, DELETE, archive, invite, leave, admin, backup, and device endpoints fail.
 - User A cannot read User B household, list, item, task, or activity.
 - Multi-household users receive `selectionRequired=true` when no household is selected.
+
+## Audit Checks
+
+In the dashboard or database, confirm MCP tool invocations record:
+
+- user ID
+- optional household ID
+- optional OAuth client ID
+- tool name
+- status
+- latency
+- error type for failures
+
+Confirm they do not record:
+
+- ChatGPT prompts
+- full tool arguments
+- access tokens
+- refresh tokens
+- raw idempotency keys

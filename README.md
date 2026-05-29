@@ -1,125 +1,149 @@
 # Convy
 
-> Coordinate your home in seconds, with minimal friction.
+Convy is a household coordination app for shared shopping lists, tasks, activity, voice-assisted item capture, realtime updates, push notifications, and a private beta ChatGPT MCP integration.
 
-**Convy** is a shared mobile app for households: fast lists, tasks, and errands with real-time sync.
+The repository is a monorepo. The mobile app is Android-first, the backend is ASP.NET Core, the admin/auth/MCP surfaces are separate web services, and the active hosted path is a Hetzner VPS behind Caddy.
+
+## Current Status
+
+- Active beta/staging domain: `convyapp.com`
+- API host: `api.convyapp.com`
+- Admin dashboard: `admin.convyapp.com`
+- OAuth consent app: `auth.convyapp.com`
+- ChatGPT MCP service: `mcp.convyapp.com`
+- Legal host: `legal.convyapp.com`
+- Legacy `178.105.70.69.nip.io` hosts remain configured for already installed staging Android builds.
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | ASP.NET Core 10, PostgreSQL, SignalR |
-| Mobile | Kotlin Multiplatform + Compose Multiplatform (Android first) |
-| Auth | Firebase Auth (token validation on backend) |
-| Architecture | Clean Architecture + CQRS (backend), MVI (mobile) |
-| Infrastructure | Docker Compose (local), GitHub Actions (CI) |
+| Area | Technology |
+| --- | --- |
+| Backend | ASP.NET Core 10, Clean Architecture, CQRS, MediatR, FluentValidation |
+| Database | PostgreSQL 16, EF Core 10, Npgsql |
+| Mobile | Kotlin Multiplatform, Compose Multiplatform, Android first |
+| Auth | Firebase Auth for app/dashboard users, Convy OAuth broker for ChatGPT MCP |
+| Realtime and push | SignalR, Firebase Cloud Messaging |
+| AI | OpenAI voice transcription/parsing with operational metrics |
+| Dashboard | Next.js 16, React 19, Firebase login, backend admin APIs |
+| OAuth app | Next.js 16 authorization and consent UI for ChatGPT MCP |
+| MCP | Node.js, TypeScript, Express, MCP SDK, Zod, JOSE |
+| Hosting | Docker Compose, Caddy, Hetzner VPS; OCI files are fallback/reference |
+| CI/CD | GitHub Actions for backend, dashboard, auth, MCP, infra, and staging deploy |
 
 ## Repository Structure
 
-```
+```text
 convy/
-|-- .github/              # Copilot governance, prompts, hooks, and GitHub Actions
-|-- .claude/              # Claude Code governance and MCP configuration
-|-- .agents/              # Codex agent workflow skills
-|-- backend/              # ASP.NET Core solution (Clean Architecture)
-|   |-- src/
-|   |   |-- Convy.Domain/
-|   |   |-- Convy.Application/
-|   |   |-- Convy.Infrastructure/
-|   |   `-- Convy.API/
-|   `-- tests/
-|-- mobile/               # Kotlin Multiplatform + Compose Multiplatform
-|   |-- androidApp/       # Android application entry point and flavors
-|   |-- composeApp/       # Shared Compose UI
-|   `-- shared/           # Shared domain, data, networking, and DI
-|-- docker/               # Local, staging, and provider-specific Docker Compose files
-|-- docs/                 # Product, architecture, testing, and governance docs
-|-- AGENTS.md             # Cross-editor workspace instructions
-`-- CLAUDE.md             # Claude Code project instructions
+|-- backend/       ASP.NET Core solution: Domain, Application, Infrastructure, API, tests
+|-- mobile/        Kotlin Multiplatform app and Android package
+|-- dashboard/     Next.js admin dashboard for health, usage, MCP, backups, and system views
+|-- auth/          Next.js OAuth authorization and Firebase consent app for ChatGPT MCP
+|-- mcp/           ChatGPT MCP resource server and Convy API tool adapter
+|-- public-site/   Static public landing page served at convyapp.com
+|-- legal/         Static privacy and terms pages served at legal.convyapp.com
+|-- docker/        Local, VPS, and OCI Compose/Caddy files
+|-- ops/           VPS, OCI, deployment, secret push, and backup scripts
+|-- infra/         Terraform roots for Hetzner, OCI, and legacy inactive GCP
+|-- docs/          Product, architecture, development, testing, deployment, operations docs
+|-- AGENTS.md      Cross-editor agent governance
+`-- CLAUDE.md      Claude Code project instructions
 ```
 
-## Getting Started
+## Quick Start
 
-### Prerequisites
+Prerequisites:
 
 - .NET 10 SDK
+- Node.js 22
 - JDK 17+
-- Android SDK (API 34+)
-- Docker & Docker Compose
-- Firebase project (for auth)
-
-### Local Development
+- Android SDK API 35
+- Docker and Docker Compose
+- Firebase project/configuration for authenticated flows
 
 ```bash
-# Start local PostgreSQL
+# PostgreSQL for local backend development
 cd docker
 docker compose up -d db
 cd ..
 
 # Backend
-cd backend
-dotnet restore Convy.slnx
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<local PostgreSQL connection string>"
-dotnet build Convy.slnx
-dotnet run --project src/Convy.API --launch-profile http
+dotnet restore backend/Convy.slnx
+dotnet build backend/Convy.slnx
+dotnet run --project backend/src/Convy.API --launch-profile http
 
-# Mobile (Android)
+# Dashboard
+cd dashboard
+npm ci
+npm run dev
+
+# Auth app
+cd ../auth
+npm ci
+npm run dev
+
+# MCP service
+cd ../mcp
+npm ci
+npm run dev
+
+# Android app and shared tests
 cd ../mobile
-./gradlew :shared:testDebugUnitTest
-./gradlew :composeApp:testDebugUnitTest
-./gradlew :androidApp:assembleLocalDebug
+./gradlew :shared:testDebugUnitTest :composeApp:testDebugUnitTest :androidApp:assembleLocalDebug
 ```
 
-## Governance for AI-Assisted Development
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for environment variables, user-secrets, service ports, and troubleshooting.
 
-This repo is structured for governed AI-assisted development: agents can accelerate delivery while explicit rules keep the codebase clean, testable, and aligned with SOLID principles.
+## Core Commands
 
-### How It Works
+```bash
+dotnet restore backend/Convy.slnx
+dotnet build backend/Convy.slnx --no-restore -c Release
+dotnet test backend/Convy.slnx --no-build -c Release --verbosity normal
 
-| Primitive | Purpose |
-|-----------|---------|
-| `AGENTS.md` / `CLAUDE.md` | Global coding standards, always loaded |
-| `.github/instructions/` | Auto-loaded rules per file type / layer |
-| `.github/agents/` | Specialized AI personas (backend-dev, mobile-dev, reviewer, etc.) |
-| `.github/skills/` | Step-by-step workflows (create feature, add screen, run review, etc.) |
-| `.claude/skills/` | Claude Code copy of workflow skills |
-| `.agents/skills/` | Codex copy of workflow skills |
-| `.github/prompts/` | One-shot task templates (`/new-feature`, `/fix-bug`, etc.) |
-| `.github/hooks/` | Deterministic guardrails (layer dependency validation) |
+cd dashboard && npm ci && npm test && npm run lint && npm run build
+cd ../auth && npm ci && npm test && npm run lint && npm run build
+cd ../mcp && npm ci && npm test && npm run lint && npm run build
 
-### Quick Usage
+cd ../mobile
+./gradlew :shared:testDebugUnitTest :composeApp:testDebugUnitTest :androidApp:assembleLocalDebug
 
-**Create a backend feature:**
-```
-Using the backend-feature skill, add household invitation support with code generation and expiration.
+cd ../docker
+docker compose -f docker-compose.yml config --quiet
+docker compose -f docker-compose.vps.yml config --quiet
+docker compose -f docker-compose.oci.yml config --quiet
 ```
 
-**Design a screen via Stitch:**
-```
-Using the design-screen skill, design a list detail screen with pending items, a FAB, and a collapsed completed section.
+## Android Package Identity
+
+Do not change the published Android application ID.
+
+```text
+android namespace = com.convy
+android applicationId = com.monkeydluisi.convy
 ```
 
-**Review code quality:**
-```
-Using the code-review skill, review the latest changes in Convy.Application for SOLID and architecture issues.
-```
-
-See [docs/USAGE.md](docs/USAGE.md) for the full guide with examples.
+Kotlin source namespaces are internal implementation details. The Play Store package identity remains `com.monkeydluisi.convy`.
 
 ## Documentation
 
-- [MVP Specification](docs/mvp-spec.md) — Full product spec
-- [Architecture](docs/ARCHITECTURE.md) — System design and decisions
-- [Testing Strategy](docs/TESTING.md) — Test conventions and commands
-- [MCP Setup](docs/MCP-SETUP.md) — AI tooling configuration
-- [ADRs](docs/adr/) — Architecture Decision Records
+- [Overview](docs/OVERVIEW.md) - product, modules, users, and current capabilities
+- [Architecture](docs/ARCHITECTURE.md) - system structure, data model, flows, and boundaries
+- [Development](docs/DEVELOPMENT.md) - local setup, environment variables, and troubleshooting
+- [Testing](docs/TESTING.md) - unit, integration, E2E, CI, infra, and smoke checks
+- [Deployment](docs/DEPLOYMENT.md) - branches, staging deploy, Android versioning, rollback
+- [Operations](docs/OPERATIONS.md) - health checks, backups, logs, Caddy, DNS, MCP operations
+- [Security](docs/SECURITY.md) - auth, authorization, MCP OAuth/JWT, audit, secrets, backups
+- [ChatGPT MCP](docs/mcp/README.md) - Convy MCP integration for ChatGPT
+- [AI Tooling](docs/ai-tooling/mcp-setup.md) - MCP servers used by development agents
+- [ADRs](docs/adr/) - architecture decisions
+- [Versioning](docs/VERSIONING.md) - Android version history and release rules
 
 ## Git Workflow
 
-- **Branch naming:** `feature/xxx`, `fix/xxx`, `chore/xxx`
-- **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`)
-- **PRs:** Feature branches → `main` via pull request
+- Branch naming: `feature/<short-description>`, `fix/<short-description>`, or `chore/<short-description>`
+- Commits: Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`)
+- Pull requests target `master`. CI is configured for both `master` and `main` while repository defaults are normalized.
 
-## License
+## License And Distribution
 
-Private — Not for distribution.
+Convy is a private beta project. Do not distribute binaries, credentials, datasets, or hosted access outside the approved beta/testing scope.

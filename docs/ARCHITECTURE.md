@@ -1,90 +1,249 @@
-# Convy — Architecture
+# Convy Architecture
 
-## Overview
+Convy is a monorepo with separate runtime services for user-facing mobile features, admin operations, ChatGPT MCP OAuth, and public/legal pages.
 
-Convy is a shared household coordination app. The architecture follows a monorepo approach with clear boundaries between backend and mobile.
-
-```
-convy/
-|-- backend/          ASP.NET Core 10 - Clean Architecture (Onion)
-|-- mobile/           Kotlin Multiplatform + Compose Multiplatform - MVI
-|-- docker/           Docker Compose files for local and hosted environments
-|-- docs/             Product, architecture, testing, and governance docs
-|-- .github/          Copilot governance, prompts, hooks, and GitHub Actions
-|-- .claude/          Claude Code governance and MCP configuration
-`-- .agents/          Codex workflow skills
-```
-
-## Backend - Clean Architecture
-
-```
-Convy.API              -> Presentation layer (Minimal API endpoints, middleware, SignalR hubs)
-  depends on
-Convy.Application      -> Use cases (commands, queries, handlers via MediatR)
-  depends on
-Convy.Domain           -> Core entities, value objects, repository interfaces
-  implemented by
-Convy.Infrastructure   -> EF Core, Firebase Admin, OpenAI, push notifications, external services
+```text
+Users
+  |-- Android app -> api.convyapp.com -> ASP.NET Core API -> PostgreSQL
+  |                                      |-- SignalR
+  |                                      |-- Firebase Admin / FCM
+  |                                      `-- OpenAI voice parsing
+  |
+  |-- Admin browser -> admin.convyapp.com -> Next.js dashboard -> API admin endpoints
+  |
+  `-- ChatGPT -> mcp.convyapp.com -> MCP service -> API MCP-scoped endpoints
+                         |
+                         `-- auth.convyapp.com -> OAuth consent app -> API OAuth broker
 ```
 
-### Key Patterns
+## Monorepo Layout
 
-| Pattern | Implementation |
-|---------|---------------|
-| CQRS | MediatR (Commands/Queries with separate handlers) |
-| Validation | FluentValidation pipeline behavior |
-| ORM | Entity Framework Core 10 + Npgsql (PostgreSQL) |
-| Auth | Firebase Auth (JWT validation) |
-| Real-time | SignalR |
-| Error Handling | Result pattern (no exceptions for domain flow) |
-
-### Dependency Rules
-
-- **Domain** has ZERO external dependencies
-- **Application** depends only on Domain
-- **Infrastructure** implements interfaces from Domain/Application
-- **API** wires everything via DI
-
-## Mobile - MVI with KMP
-
-```
-androidApp/       -> Android entry point, flavors, Firebase integration, platform services
-composeApp/       -> Compose Multiplatform UI (screens, components, theme, navigation)
-shared/           -> Shared domain models, repositories, networking, offline sync, DI
+```text
+backend/       ASP.NET Core API, Clean Architecture, EF Core, tests
+mobile/        Kotlin Multiplatform and Android app
+dashboard/     Next.js admin dashboard
+auth/          Next.js OAuth consent app for ChatGPT MCP
+mcp/           Node/TypeScript MCP service
+docker/        Compose and Caddy runtime definitions
+ops/           Deploy, secret push, backup, restore scripts
+infra/         Terraform roots for Hetzner, OCI, and legacy inactive GCP
+legal/         Static privacy and terms pages
+public-site/   Static public landing page
+docs/          Project documentation
 ```
 
-### MVI Flow
+## Backend
 
+The backend follows Clean Architecture with CQRS:
+
+```text
+Convy.API -> Convy.Infrastructure -> Convy.Application -> Convy.Domain
 ```
-User -> Intent -> Store -> State -> Composable
-                  |
-                  `-> SideEffect -> One-shot navigation or snackbar
+
+- `Convy.Domain`: entities, value objects, invariants; zero external dependencies.
+- `Convy.Application`: MediatR commands/queries, handlers, DTOs, validators, application interfaces.
+- `Convy.Infrastructure`: EF Core, PostgreSQL, Firebase Admin, OpenAI, push notifications, metrics readers, repository implementations.
+- `Convy.API`: Minimal API endpoints, auth policies, health checks, OAuth broker, admin endpoints, SignalR wiring.
+
+Key backend patterns:
+
+- CQRS through MediatR.
+- FluentValidation pipeline behavior.
+- Result pattern for expected application failures.
+- EF Core Fluent API configuration only.
+- Firebase bearer authentication for app/dashboard users.
+- MCP bearer authentication for ChatGPT MCP access tokens.
+
+## Mobile
+
+The mobile app uses Kotlin Multiplatform and Compose Multiplatform with MVI:
+
+```text
+Intent -> Store -> State -> Composable UI
+             |
+             `-> SideEffect
 ```
 
-### Key Libraries
+Main modules:
 
-| Purpose | Library |
-|---------|---------|
-| HTTP | Ktor Client |
-| DI | Koin |
-| Serialization | kotlinx.serialization |
-| Async | kotlinx.coroutines |
+- `androidApp`: Android entry point, package identity, Firebase/FCM integration, build flavors.
+- `composeApp`: shared Compose UI, screens, navigation, theme.
+- `shared`: data repositories, Ktor API client, DTOs, domain models, DI, sync helpers.
+
+Android identity:
+
+```text
+namespace = com.convy
+applicationId = com.monkeydluisi.convy
+```
+
+## Dashboard
+
+The dashboard is a Next.js app served at `admin.convyapp.com`.
+
+Security layers:
+
+1. Caddy Basic Auth.
+2. Firebase login in the dashboard.
+3. Backend `AdminOnly` policy with email allowlist.
+
+Dashboard views cover:
+
+- overview health
+- usage metrics
+- OpenAI metrics
+- ChatGPT MCP metrics
+- backup runs and downloads
+- system health
+
+Dashboard API routes proxy authenticated requests to backend `/api/v1/admin/*` endpoints.
+
+## Auth App
+
+The auth app is a Next.js app served at `auth.convyapp.com`. It hosts the user-facing OAuth authorization and consent experience for ChatGPT MCP.
+
+Flow:
+
+1. ChatGPT starts OAuth authorization.
+2. User signs in with Firebase email/password or Google Sign-In.
+3. User reviews requested Convy scopes.
+4. Auth app posts Firebase ID token and OAuth request details to the backend approval endpoint.
+5. Backend validates client metadata, redirect URI, resource, scopes, and PKCE requirements.
+6. Backend issues an authorization code redirect to ChatGPT.
+
+## ChatGPT MCP Service
+
+The MCP service is a Node/TypeScript resource server served at `mcp.convyapp.com`.
+
+Responsibilities:
+
+- Publish protected resource metadata.
+- Return OAuth challenges for missing/invalid authorization.
+- Validate RS256 MCP access tokens.
+- Register static MCP tools with strict Zod schemas.
+- Call Convy API endpoints with MCP access tokens.
+- Send compact MCP audit records to the API.
+
+The MCP service never reads PostgreSQL directly.
+
+## OAuth And Token Flow
+
+```text
+ChatGPT
+  -> mcp.convyapp.com/mcp
+  <- 401 with protected resource metadata
+  -> auth.convyapp.com/oauth/authorize
+  -> Firebase login + consent
+  -> API /api/v1/mcp/oauth/authorize/approve
+  <- authorization code redirect
+  -> auth.convyapp.com/oauth/token
+  <- RS256 access token + refresh token
+  -> mcp.convyapp.com/mcp with bearer token
+```
+
+Access tokens include MCP-specific claims such as `token_use=mcp_access`, `auth_source=mcp`, `client_id`, `sub`, and `scope`.
+
+## Infrastructure And Routing
+
+The active beta/staging environment runs on Hetzner:
+
+```text
+Caddy
+  |-- convyapp.com -> /srv/public
+  |-- legal.convyapp.com -> /srv/legal
+  |-- api.convyapp.com -> api:8080
+  |-- admin.convyapp.com -> dashboard:3000
+  |-- auth.convyapp.com -> auth:3000 plus OAuth API routes to api:8080
+  `-- mcp.convyapp.com -> mcp:3001
+```
+
+OCI and legacy GCP infrastructure are reference/fallback roots and should not be documented as active production unless the deployment target changes.
 
 ## Database
 
-- PostgreSQL 16 (via Docker)
-- Naming: `snake_case` for tables and columns
-- Fluent API only (no data annotations)
-- Migrations via EF Core CLI
-- Current core tables include `users`, `households`, `household_memberships`, `household_lists`, `list_items`, `task_items`, `invites`, `activity_logs`, `device_tokens`, and `notification_preferences`
+Current EF Core `DbSet` tables:
 
-## Authentication Flow
+| Entity | Table purpose |
+| --- | --- |
+| `users` | Convy users mapped to Firebase identities. |
+| `households` | Household containers. |
+| `household_memberships` | User membership and roles per household. |
+| `invites` | Household invitation codes and status. |
+| `household_lists` | Shopping/task lists. |
+| `list_items` | Shopping list items, completion, recurrence, normalized titles, creation source. |
+| `task_items` | Task list items, completion, normalized titles. |
+| `activity_logs` | Household activity feed. |
+| `device_tokens` | FCM device registrations. |
+| `notification_preferences` | User notification settings. |
+| `voice_parse_events` | Redacted voice parsing operational metrics. |
+| `ai_usage_events` | AI usage, cost, latency, and token metrics. |
+| `backup_runs` | Backup metadata, verification state, checksums, and durations. |
+| `mcp_oauth_authorization_codes` | Hashed OAuth authorization codes. |
+| `mcp_oauth_refresh_tokens` | Hashed/rotated OAuth refresh tokens. |
+| `mcp_oauth_consents` | User/client/resource/scope consent records. |
+| `mcp_tool_invocations` | MCP audit records with redacted tool invocation metadata. |
+| `mcp_idempotency_records` | Hashed MCP write idempotency records. |
 
-1. Mobile authenticates with Firebase Auth and receives a JWT
-2. Mobile sends JWT in `Authorization: Bearer <token>` header
-3. Backend validates JWT with Firebase Admin SDK
-4. Backend extracts `firebase_uid` from claims
+## Runtime Flows
 
-## ADRs
+### Firebase app auth
 
-See [docs/adr/](adr/) for Architecture Decision Records.
+1. Mobile signs in with Firebase.
+2. Mobile sends bearer token to API.
+3. API validates with Firebase Admin.
+4. API maps Firebase UID to Convy user and enforces membership.
+
+### Realtime
+
+1. Mobile connects to SignalR after authentication.
+2. API joins the client to household-scoped groups.
+3. Backend handlers publish events after relevant list/task/item changes.
+4. Other connected household clients refresh or update state.
+
+### Push notifications
+
+1. Mobile registers FCM device token.
+2. API stores token and notification preferences.
+3. Backend events enqueue/send notifications through Firebase Cloud Messaging.
+
+### Voice parsing
+
+1. Mobile sends voice input to API.
+2. API sends audio/content to OpenAI for transcription and parsing.
+3. API returns parsed items for user confirmation.
+4. API stores redacted voice and AI usage metrics.
+
+### MCP tools
+
+1. ChatGPT invokes a static Convy MCP tool.
+2. MCP validates access token and tool scopes.
+3. MCP calls API with the same bearer token.
+4. API enforces membership and MCP scope policies.
+5. MCP returns concise structured content and writes audit metadata.
+
+### Backups
+
+1. Systemd timer runs VPS backup script.
+2. Script creates PostgreSQL custom-format dump.
+3. Script records checksum, size, duration, and verification status.
+4. Weekly restore verification restores the latest dump into a temporary database.
+5. Dashboard can download registered successful dumps through admin-only API.
+
+## Dependency Rules
+
+- Domain has no external dependencies.
+- Application depends only on Domain.
+- Infrastructure depends on Application and Domain.
+- API depends on all backend layers for composition.
+- Dashboard/auth/MCP call the API; they do not access PostgreSQL directly.
+- MCP tokens must not satisfy `AdminOnly`.
+
+## Security Boundaries
+
+- Firebase Auth protects user and admin identity.
+- Caddy Basic Auth adds a first gate for dashboard access.
+- Backend email allowlist gates admin APIs.
+- MCP OAuth grants only explicit Convy scopes.
+- MCP writes are idempotent and limited to item/task creation and status changes.
+- Backups are admin-only and resolved under the configured backup root.
+- Legal and public pages are static and served by Caddy.

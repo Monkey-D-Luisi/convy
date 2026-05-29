@@ -1,16 +1,15 @@
 # ChatGPT Public App Submission Prep
 
-Convy MCP cannot be used without Developer Mode until the ChatGPT app is submitted, reviewed, approved, and published by OpenAI.
+Convy MCP cannot be used outside Developer Mode until the ChatGPT app is submitted, reviewed, approved, and published by OpenAI.
 
-## OpenAI Account Requirements
+## Account Requirements
 
-- Submit from an OpenAI Platform project with global data residency.
-- Complete publisher identity verification in the OpenAI Dashboard.
-- Ensure the submitting user can create and submit Apps SDK apps.
+- Submit from an OpenAI Platform project that can submit ChatGPT apps.
+- Complete publisher identity verification.
+- Use production-like public URLs and legal pages.
+- Have a stable demo account and sample Convy data.
 
 ## Production-Like URLs
-
-Use the `convyapp.com` cutover URLs:
 
 - MCP URL: `https://mcp.convyapp.com/mcp`
 - Auth URL: `https://auth.convyapp.com`
@@ -23,38 +22,52 @@ Use the `convyapp.com` cutover URLs:
 Prepare:
 
 - App name: `Convy`
-- Description: access Convy household context, shopping lists, tasks, and recent activity from ChatGPT, with limited creation and completion actions for shopping items and tasks.
-- Logo and screenshots from ChatGPT web and mobile test runs.
-- Demo account with no MFA, no SMS, no email challenge, and sample data:
+- Category: productivity
+- Description: Convy lets households use ChatGPT to inspect household context, shopping lists, tasks, and recent activity, with limited confirmed actions to add shopping items or tasks and mark existing items or tasks completed or pending.
+- Logo and screenshots from ChatGPT web/mobile test runs.
+- Demo account using email/password unless reviewer guidance explicitly accepts Google Sign-In.
+- Demo data:
   - one household
   - one shopping list with pending and completed items
   - one task list with pending and completed tasks
   - recent activity
-- Demo login should use email/password for review unless OpenAI explicitly accepts a Google test account. Google Sign-In can stay enabled for real users, but review credentials should avoid extra Google account challenges.
-- Test prompts and expected results:
-  - "Show my Convy households."
-  - "Show my shopping lists."
-  - "Show pending items in my shopping list."
-  - "Show my tasks."
-  - "Show recent household activity."
-  - "Add milk to my shopping list."
-  - "Mark milk as complete."
-  - "Create a task to clean the kitchen."
-  - "Mark the kitchen task as complete."
-  - "After revocation, confirm Convy data is unavailable."
 
-## Review Risks To Check Before Submission
+## Tool Review Checklist
 
-- MCP endpoint must be reachable from outside the company network.
-- OAuth demo login must succeed without additional configuration.
-- The app must return only data disclosed in the privacy policy.
-- Tool outputs must be relevant, concise, and free of unnecessary personal identifiers.
-- Metadata must advertise only the five read scopes plus `convy.items.write` and `convy.tasks.write`.
-- Write tool annotations must be non-destructive, closed-world, and idempotent.
-- Write tools must require ChatGPT confirmation and API idempotency.
+- Tools advertise correct annotations.
+- Write tools are non-destructive, idempotent, and closed-world.
+- Tool outputs are relevant, concise, and structured.
+- Tool outputs do not include secrets, tokens, admin metrics, backups, or unnecessary personal identifiers.
+- Write tools require user confirmation in ChatGPT.
+- API enforces idempotency for MCP writes.
+- Metadata advertises only the five read scopes plus `convy.items.write` and `convy.tasks.write`.
+
+## Test Prompts
+
+- "Show my Convy households."
+- "Show my shopping lists."
+- "Show pending items in my shopping list."
+- "Show completed items in my shopping list."
+- "Show my tasks."
+- "Show recent household activity."
+- "Add milk to my shopping list."
+- "Mark milk as complete."
+- "Create a task to clean the kitchen."
+- "Mark the kitchen task as complete."
+- "After revocation, confirm Convy data is unavailable."
+
+## Review Risks
+
+- OAuth demo login must succeed without MFA, SMS, or external account challenge.
+- Firebase authorized domains must include `auth.convyapp.com`.
+- MCP endpoint must be publicly reachable.
+- Legal docs must disclose ChatGPT MCP data access and revocation.
+- Public site and legal pages must be reachable.
+- Dashboard/admin-only features must not be exposed through MCP.
+- Offsite encrypted backups are not yet implemented; avoid presenting them as current.
 
 ## References
 
-- Connect from ChatGPT: https://developers.openai.com/apps-sdk/deploy/connect-chatgpt
-- Submit your app: https://developers.openai.com/apps-sdk/deploy/submission
-- App submission guidelines: https://developers.openai.com/apps-sdk/app-submission-guidelines
+- Connect from ChatGPT: `https://developers.openai.com/apps-sdk/deploy/connect-chatgpt`
+- Submit your app: `https://developers.openai.com/apps-sdk/deploy/submission`
+- App submission guidelines: `https://developers.openai.com/apps-sdk/app-submission-guidelines`

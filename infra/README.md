@@ -1,9 +1,26 @@
 # Infrastructure
 
-Infrastructure is split by cloud provider:
+Infrastructure is split by provider. Each provider directory is an independent Terraform root.
 
-- `gcp/`: Legacy inactive Google Cloud Terraform stack for Cloud Run, Cloud SQL, Artifact Registry, Secret Manager, and networking. It is not part of the active staging deployment.
-- `oci/`: Oracle Cloud Infrastructure Always Free Terraform stack for a possible future production target.
-- `hetzner/`: Hetzner Cloud Terraform stack for the active staging VPS.
+| Directory | Status | Purpose |
+| --- | --- | --- |
+| `hetzner/` | Active beta/staging | Hetzner Cloud VPS used by the current Docker Compose deployment. |
+| `oci/` | Fallback/reference | Oracle Cloud Infrastructure Always Free experiment/fallback path. |
+| `gcp/` | Legacy inactive | Previous Google Cloud stack kept for reference and migration history. |
 
-Each provider directory is an independent Terraform root. Run `terraform init`, `terraform plan`, and `terraform apply` from the provider directory you intend to manage.
+Run Terraform from the provider directory you intend to manage.
+
+```bash
+cd infra/hetzner
+terraform init
+terraform plan
+```
+
+Do not run `apply` until the provider, cost, region, resource replacement, and deployment target have been reviewed.
+
+Operational docs:
+
+- [Deployment](../docs/DEPLOYMENT.md)
+- [Operations](../docs/OPERATIONS.md)
+- [Hetzner VPS runbook](../docs/operations/hetzner-vps-runbook.md)
+- [Oracle fallback runbook](../docs/operations/oracle-free-tier-runbook.md)

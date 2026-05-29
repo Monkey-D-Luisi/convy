@@ -255,7 +255,9 @@ Prevents the Domain layer from importing Infrastructure namespaces.
 
 ## MCP Servers
 
-MCP (Model Context Protocol) servers extend AI capabilities.
+This section is about AI development MCP tooling used by coding agents. It is separate from the Convy ChatGPT MCP integration documented in [docs/mcp](mcp/README.md).
+
+MCP (Model Context Protocol) servers extend AI development capabilities.
 
 | Server | Purpose | Use Case |
 |--------|---------|----------|
@@ -263,13 +265,14 @@ MCP (Model Context Protocol) servers extend AI capabilities.
 | PostgreSQL | DB interaction | Query, inspect schema |
 | Stitch | UI design | Generate screen mockups |
 | Context7 | Library docs | Look up API references |
+| Maestro | Android E2E automation | Run flows, inspect hierarchy, take screenshots |
 
 ### Configuration
 
 - Copilot: `.vscode/settings.json` → `mcp.servers`
 - Claude: `.claude/settings.json` → `mcpServers`
 
-See [docs/MCP-SETUP.md](MCP-SETUP.md) for server-specific setup instructions.
+See [docs/ai-tooling/mcp-setup.md](ai-tooling/mcp-setup.md) for server-specific setup instructions. The legacy [docs/MCP-SETUP.md](MCP-SETUP.md) file is only a compatibility stub.
 
 ---
 

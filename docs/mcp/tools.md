@@ -1,20 +1,65 @@
 # MCP Tools
 
-All tools use strict Zod input schemas and call the Convy API. The MCP service never queries PostgreSQL directly.
+All tools are registered statically in `mcp/src/tools/definitions.ts`. Inputs use strict Zod schemas. The MCP service calls the Convy API and never connects directly to PostgreSQL.
 
-| Tool | Required scopes | Purpose |
-| --- | --- | --- |
-| `convy_get_context` | `convy.households.read` | Returns households visible to the connected user and whether household selection is required. |
-| `convy_get_shopping_context` | `convy.households.read`, `convy.lists.read` | Returns active shopping lists for the selected or only household. |
-| `convy_get_shopping_list` | `convy.items.read` | Returns pending shopping items and optionally completed items for one shopping list. |
-| `convy_get_task_list` | `convy.tasks.read` | Returns pending tasks and optionally completed tasks for one task list. |
-| `convy_get_recent_activity` | `convy.households.read`, `convy.activity.read` | Returns recent household activity. |
-| `convy_add_shopping_items` | `convy.items.write` | Adds one or more shopping items through the API smart-batch endpoint. |
-| `convy_update_shopping_items_status` | `convy.items.write` | Marks existing shopping items `Completed` or `Pending` through the API status-batch endpoint. |
-| `convy_add_tasks` | `convy.tasks.write` | Adds one or more tasks through the API smart-batch endpoint. |
-| `convy_update_tasks_status` | `convy.tasks.write` | Marks existing tasks `Completed` or `Pending` through the API status-batch endpoint. |
+Tool responses return concise `structuredContent` with:
 
-## Selection
+```json
+{
+  "data": {},
+  "meta": {
+    "source": "convy_api",
+    "householdId": null,
+    "truncated": false,
+    "selectionRequired": false
+  }
+}
+```
+
+The text response is a short summary only. Consumers should use structured content.
+
+## Read Tools
+
+| Tool | Scopes | Input | API path used | Output | Expected errors |
+| --- | --- | --- | --- | --- | --- |
+| `convy_get_context` | `convy.households.read` | `{}` | `GET /api/v1/households` | Household count, default household ID when exactly one exists, compact household choices. | `401`, `403`, API connectivity failures. |
+| `convy_get_shopping_context` | `convy.households.read`, `convy.lists.read` | optional `householdId` UUID | `GET /api/v1/households`, `GET /api/v1/households/{householdId}/lists` | Active shopping lists for the selected household and selection hints. | `401`, `403`, `404`, selection required. |
+| `convy_get_shopping_list` | `convy.items.read` | `listId` UUID, optional `includeCompleted`, optional `limit` 1-100 | `GET /api/v1/lists/{listId}/items?status=Pending`, optionally `status=Completed` | Pending items and optionally completed items, compacted and truncated by limit. | `401`, `403`, `404`, validation errors. |
+| `convy_get_task_list` | `convy.tasks.read` | `listId` UUID, optional `includeCompleted`, optional `limit` 1-100 | `GET /api/v1/lists/{listId}/tasks?status=Pending`, optionally `status=Completed` | Pending tasks and optionally completed tasks, compacted and truncated by limit. | `401`, `403`, `404`, validation errors. |
+| `convy_get_recent_activity` | `convy.households.read`, `convy.activity.read` | optional `householdId` UUID, optional `limit` 1-50 | `GET /api/v1/households/{householdId}/activity` | Recent household activity with compact entity/action metadata. | `401`, `403`, `404`, selection required. |
+
+Read annotations:
+
+```json
+{
+  "readOnlyHint": true,
+  "destructiveHint": false,
+  "idempotentHint": true,
+  "openWorldHint": false
+}
+```
+
+## Write Tools
+
+| Tool | Scopes | Input | API path used | Output | Idempotency | Expected errors |
+| --- | --- | --- | --- | --- | --- | --- |
+| `convy_add_shopping_items` | `convy.items.write` | `listId`, `items[]` with `title`, optional integer `quantity`, optional `unit`, optional `note`, optional `idempotencyKey` | `POST /api/v1/lists/{listId}/items/smart-batch` | Created, reused, uncompleted, duplicate, and warning summaries from the API. | MCP sends/generates an idempotency key. API stores hashed key and request hash. | `400`, `401`, `403`, `404`, `409`, API errors. |
+| `convy_update_shopping_items_status` | `convy.items.write` | `listId`, `itemIds[]`, `status` of `Pending` or `Completed`, optional `idempotencyKey` | `POST /api/v1/lists/{listId}/items/status-batch` | Updated item status summary. | MCP sends/generates an idempotency key. | `400`, `401`, `403`, `404`, `409`, API errors. |
+| `convy_add_tasks` | `convy.tasks.write` | `listId`, `tasks[]` with `title`, optional `note`, optional `idempotencyKey` | `POST /api/v1/lists/{listId}/tasks/smart-batch` | Created, reused, uncompleted, duplicate, and warning summaries from the API. | MCP sends/generates an idempotency key. | `400`, `401`, `403`, `404`, `409`, API errors. |
+| `convy_update_tasks_status` | `convy.tasks.write` | `listId`, `taskIds[]`, `status` of `Pending` or `Completed`, optional `idempotencyKey` | `POST /api/v1/lists/{listId}/tasks/status-batch` | Updated task status summary. | MCP sends/generates an idempotency key. | `400`, `401`, `403`, `404`, `409`, API errors. |
+
+Write annotations:
+
+```json
+{
+  "readOnlyHint": false,
+  "destructiveHint": false,
+  "idempotentHint": true,
+  "openWorldHint": false
+}
+```
+
+## Selection Rules
 
 - Tools that operate on a household accept optional `householdId`.
 - If the user has one household, tools can use it implicitly.
@@ -22,20 +67,29 @@ All tools use strict Zod input schemas and call the Convy API. The MCP service n
 - If more than one active shopping list is available, ChatGPT must ask the user which list to use before writing.
 - The API enforces membership on every household, list, item, task, and activity request.
 
-## Smart Writes
+## Smart Write Rules
 
-- Smart batch endpoints normalize visible titles and store `normalized_title`.
-- Exact normalized matches are reused instead of duplicated.
-- Completed matches are returned to pending instead of creating a duplicate.
-- Quantity, unit, or note conflicts are reported as warnings; the API does not update details silently.
-- Duplicate entries inside the same batch create only one record and report later duplicates.
-- MCP may omit `idempotencyKey`; the MCP service generates one and sends it as an API idempotency header.
+Implemented backend behavior:
 
-## Output Policy
+- Titles are trimmed, internal whitespace is collapsed, display capitalization is normalized, and `normalized_title` is stored.
+- Exact normalized pending matches are reused instead of duplicated.
+- Exact normalized completed matches are returned to pending instead of duplicated.
+- Quantity, unit, or note conflicts are reported as warnings and are not silently edited.
+- Duplicate entries inside one batch create one record and report later duplicates.
+- The same pattern exists for shopping items and tasks.
 
-- Outputs are concise JSON in `structuredContent`.
-- Tool result text is only a short summary; consumers should use `structuredContent`.
-- The MCP service does not interpret, rewrite, or prompt over user data.
-- Audit logs contain tool name, user ID, optional household ID, optional OAuth client ID, status, latency, and error type only.
-- Write tools are idempotent, non-destructive, closed-world tools.
-- ChatGPT cannot edit, delete, archive, invite, leave, view admin metrics, access backups, manage lists, or manage household membership through MCP.
+Not implemented unless added in code:
+
+- fuzzy matching
+- translation
+- semantic item merging
+- automatic list selection when multiple lists are plausible
+- destructive cleanup or deletion
+
+## Output And Audit Policy
+
+- Outputs are minimized and structured.
+- Tool definitions do not change based on user data.
+- Item titles, notes, and activity metadata are treated as data, not instructions.
+- Audit logs contain tool name, user ID, optional household ID, optional OAuth client ID, status, latency, and error type.
+- Audit logs do not store prompts or full tool arguments.

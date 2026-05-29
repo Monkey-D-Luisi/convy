@@ -1,195 +1,221 @@
-# Convy — Testing Strategy
+# Testing
+
+This document covers local verification, CI coverage, manual smoke checks, and live MCP validation.
 
 ## Backend
 
-### Test Projects
+Projects:
 
-| Project | Tests | Frameworks |
-|---------|-------|------------|
-| Convy.Domain.Tests | Unit tests for entities, value objects | xUnit, FluentAssertions |
-| Convy.Application.Tests | Unit tests for handlers, validators | xUnit, FluentAssertions, NSubstitute |
-| Convy.Infrastructure.Tests | Integration tests for repositories | xUnit, FluentAssertions, Testcontainers.PostgreSql |
-| Convy.API.Tests | Integration tests for endpoints | xUnit, FluentAssertions, WebApplicationFactory |
+| Project | Focus |
+| --- | --- |
+| `Convy.Domain.Tests` | Entity invariants and value objects. |
+| `Convy.Application.Tests` | CQRS handlers, validators, services, user-facing normalization, smart batch behavior. |
+| `Convy.Infrastructure.Tests` | EF Core repositories, metrics readers, PostgreSQL integration through Testcontainers. |
+| `Convy.API.Tests` | Minimal API contracts, auth/authorization behavior, OAuth/MCP contracts, ops contracts. |
 
-### Running Tests
+Commands:
 
 ```bash
-# All tests
-dotnet test backend/Convy.slnx
-
-# Specific project
-dotnet test backend/tests/Convy.Domain.Tests
-
-# With coverage
-dotnet test backend/Convy.slnx --collect:"XPlat Code Coverage"
+dotnet restore backend/Convy.slnx
+dotnet build backend/Convy.slnx --no-restore -c Release
+dotnet test backend/Convy.slnx --no-build -c Release --verbosity normal
 ```
 
-### Conventions
+Use `ConnectionStrings__DefaultConnection` when a test run needs a specific PostgreSQL endpoint.
 
-- Test class name: `{ClassUnderTest}Tests`
-- Method name: `{Method}_Should{Expected}_When{Condition}`
-- Arrange-Act-Assert pattern
-- One assertion concept per test (multiple FluentAssertions on same object is OK)
-- Use NSubstitute for mocking interfaces
-- Testcontainers for real PostgreSQL in integration tests
+## Dashboard
 
-## Mobile
+The dashboard uses Node's test runner for contract tests and TypeScript for lint/build validation.
 
-### Frameworks
+```bash
+cd dashboard
+npm ci
+npm test
+npm run lint
+npm run build
+```
 
-- `kotlin.test` — assertions
-- `kotlinx.coroutines.test` — coroutine testing
-- Add Turbine only when Flow assertion complexity justifies the dependency.
+Coverage includes:
 
-### Running Tests
+- admin API proxy behavior
+- Firebase token forwarding
+- non-cacheable admin responses
+- overview/usage/OpenAI/MCP/backup/system view contracts
+- typed admin payload shape
+
+## Auth App
+
+```bash
+cd auth
+npm ci
+npm test
+npm run lint
+npm run build
+```
+
+Coverage includes:
+
+- OAuth request validation
+- Firebase config path
+- approval route to backend OAuth endpoint
+- Google Sign-In presence for consent
+- supported scope display and rejection of unsupported scopes
+
+## MCP Service
+
+```bash
+cd mcp
+npm ci
+npm test
+npm run lint
+npm run build
+```
+
+Coverage includes:
+
+- metadata generation
+- bearer token challenges
+- issuer/audience/token-use validation
+- scope enforcement
+- tool definitions and schemas
+- API client behavior and redacted audit logging
+
+## Mobile Unit And Build Checks
 
 ```bash
 cd mobile
 ./gradlew :shared:testDebugUnitTest
 ./gradlew :composeApp:testDebugUnitTest
+./gradlew :androidApp:assembleLocalDebug
 ```
 
-### Conventions
+The local Android flavor points to `http://10.0.2.2:5062`. Staging defaults to `https://api.convyapp.com`.
 
-- Test class name: `{ClassUnderTest}Test`
-- Method name: `` `should do X when Y` ``
-- Use `runTest` for coroutine tests
+## Mobile E2E With Maestro
 
-## E2E Tests (Maestro)
+Prerequisites:
 
-End-to-end UI tests run on an Android emulator using [Maestro](https://maestro.mobile.dev/).
+- Android emulator running and visible in `adb devices`
+- API running locally on port 5062
+- PostgreSQL running through Docker
+- Maestro CLI 2.4.0+
+- App installed with `./gradlew :androidApp:installLocalDebug`
 
-### Prerequisites
-
-| Requirement | How to verify |
-|---|---|
-| Android emulator running | `adb devices` → shows `emulator-5554` |
-| Backend API running on port 5062 | `dotnet run --project backend/src/Convy.API --launch-profile http` |
-| PostgreSQL running via Docker | `cd docker && docker compose up -d db` |
-| Maestro CLI installed | `maestro --version` → 2.4.0+ |
-| App installed on emulator | `cd mobile && ./gradlew :androidApp:installLocalDebug` |
-
-The `local` build flavor points to `http://10.0.2.2:5062` (emulator's alias for host localhost).
-
-### Running E2E Tests
+Run the suite:
 
 ```bash
-# Recommended: use the wrapper script (generates unique emails per run)
 cd mobile
 powershell -File e2e/run-e2e.ps1
+```
 
-# Manual equivalent. Prefer the wrapper script because it reads APP_VERSION from Gradle.
+Manual equivalent:
+
+```bash
 maestro test -e EMAIL="e2e_<timestamp>@test.com" -e JOIN_EMAIL="e2e_join_<timestamp>@test.com" -e APP_VERSION="<current-versionName>" e2e/
 ```
 
-### Suite Structure
+Important conventions:
 
-- **`e2e/config.yaml`** — Suite configuration with `flows: ["*"]` and ordered execution.
-- **`e2e/flow_*.yaml`** — 23 test flows, executed sequentially. Each flow depends on state created by previous flows.
-- **`e2e/pending/`** — Flows for features not yet implemented (excluded from suite).
-- **`e2e/run-e2e.ps1`** — PowerShell wrapper that generates unique timestamped emails.
+- Every flow declares `appId: com.monkeydluisi.convy`.
+- `config.yaml` uses `flows: ["*"]` so `pending/` is excluded.
+- `flowsOrder` entries do not include `.yaml`.
+- Use `id:` selectors from Compose test tags where possible.
+- Completed items are hidden until the completed section is expanded.
 
-### Flow Execution Order
-
-Flows run sequentially and are **stateful** — each builds on the previous:
-
-1. `flow_register` — Creates a user account (clears app state)
-2. `flow_create_household` — Creates "Test Home" household
-3. `flow_create_list` — Creates "Weekly Groceries" shopping list
-4. `flow_create_tasks_list` — Creates "Home Tasks" task list
-5. `flow_rename_list` — Renames list
-6. `flow_archive_list` — Archives list
-7. `flow_add_item` through `flow_filter_items` — Item CRUD, completion, filtering
-8. `flow_shopping_mode` through `flow_sign_in` — Household management, auth flows
-
-### Key Conventions
-
-#### Environment Variables (not output variables)
-
-Maestro output variables (`output.*`) do **not** persist between flows in a suite. Use CLI `-e` flags:
+## Infrastructure Validation
 
 ```bash
-maestro test -e EMAIL="unique@test.com" -e JOIN_EMAIL="join@test.com" -e APP_VERSION="<current-versionName>" e2e/
+docker compose -f docker/docker-compose.yml config --quiet
+docker compose -f docker/docker-compose.vps.yml config --quiet
+docker compose -f docker/docker-compose.oci.yml config --quiet
 ```
 
-Reference in flows as `${EMAIL}`, `${JOIN_EMAIL}`.
+Script validation used by CI:
 
-#### Flow File Format
-
-Every flow must have an `appId` header separated by `---`:
-
-```yaml
-appId: com.monkeydluisi.convy
----
-- launchApp:
-    clearState: false
-- extendedWaitUntil:
-    visible:
-      text: "Test Home"
-    timeout: 15000
-```
-
-#### config.yaml Format
-
-```yaml
-flows:
-  - "*"                    # Scans immediate directory only (excludes pending/)
-executionOrder:
-  continueOnFailure: true
-  flowsOrder:
-    - flow_register        # NO .yaml extension
-    - flow_create_household
-    # ...
-```
-
-- `flows: ["*"]` is required — prevents scanning subdirectories like `pending/`
-- `flowsOrder` entries must **not** have `.yaml` extension
-- Do **not** put `appId` in config.yaml — each flow declares its own
-
-### Compose-Specific Gotchas
-
-#### testTags Require `testTagsAsResourceId`
-
-Compose `testTag("foo")` is **not** exposed as Android `resource-id` by default. The app has a root-level modifier in `App.kt`:
-
-```kotlin
-Box(Modifier.semantics { testTagsAsResourceId = true }) {
-    ConvyTheme { /* ... */ }
+```powershell
+Get-ChildItem ops -Recurse -Filter *.sh | ForEach-Object { bash -n $_.FullName }
+Get-ChildItem ops -Recurse -Filter *.ps1 | ForEach-Object {
+  $errors = $null
+  [System.Management.Automation.PSParser]::Tokenize((Get-Content -Raw $_.FullName), [ref]$errors) | Out-Null
+  if ($errors) { $errors | ForEach-Object { Write-Error "$($_.Message) in $($_.Token.Content)" }; exit 1 }
 }
 ```
 
-Without this, `id: "item-checkbox"` selectors in Maestro won't match anything. New testTags work automatically thanks to this root modifier.
-
-#### Collapsed Completed Section
-
-`ListDetailState.showCompleted` defaults to `false`. Completed items are **not rendered** until the section is expanded:
-
-- Section header "Completed (N)" is visible with an expand IconButton
-- The IconButton has `contentDescription = "Show"` (collapsed) / `"Hide"` (expanded)
-- To interact with completed items: wait for `text: "Show"` → tap `"Show"` → wait for checkbox
-
-#### YAML Escaping — Avoid Parentheses
-
-In YAML double-quoted strings, `\\(` produces a literal backslash `\(`, **not** the text `(`. Never use escaped parentheses to match UI text like "Completed (1)". Use alternative selectors (contentDescription, id, etc.).
-
-### Debugging
+Docker build validation:
 
 ```bash
-# Run a single flow
-maestro test -e EMAIL="test@test.com" e2e/flow_register.yaml
-
-# View UI hierarchy (accessibility tree)
-maestro hierarchy
-
-# Add screenshot to a flow
-- takeScreenshot: debug_screenshot
+docker build -f docker/backend/Dockerfile backend
+docker build -f dashboard/Dockerfile dashboard
+docker build -f auth/Dockerfile auth
+docker build -f mcp/Dockerfile mcp
 ```
 
-### Adding New Flows
+## GitHub Actions CI
 
-1. Create `e2e/flow_<name>.yaml` with `appId` header
-2. Add `flow_<name>` (no extension) to `config.yaml` → `flowsOrder` at the correct position
-3. Consider what state previous flows leave and what state your flow leaves for subsequent flows
-4. Use `extendedWaitUntil` with generous timeouts (10000–15000ms) instead of `assertVisible` for dynamic content
-5. Use `id:` selectors (testTags) over `text:` when text might change or isn't unique
-6. Test the flow individually first, then run the full suite
+CI jobs:
+
+- `backend`: restore, build, test with PostgreSQL service.
+- `dashboard`: install, test, lint, build.
+- `auth`: install, test, lint, build.
+- `mcp`: install, test, lint, build.
+- `infra`: Compose config validation, script syntax validation, Docker builds.
+
+CD runs only after CI completes successfully and performs an external staging health check against `STAGING_API_HOSTNAME` or `STAGING_PUBLIC_HOSTNAME`.
+
+## Staging Smoke Checks
+
+```bash
+curl -fsS https://api.convyapp.com/health
+curl -fsS https://api.convyapp.com/health/ready
+curl -fsS https://auth.convyapp.com/health
+curl -fsS https://mcp.convyapp.com/health
+curl -fsS https://mcp.convyapp.com/.well-known/oauth-protected-resource
+curl -fsS https://auth.convyapp.com/.well-known/oauth-authorization-server
+curl -fsS https://legal.convyapp.com/privacy
+curl -fsS https://legal.convyapp.com/terms
+curl -fsS https://convyapp.com
+curl -I https://admin.convyapp.com
+curl -fsS https://178.105.70.69.nip.io/health/ready
+```
+
+Expected dashboard behavior:
+
+- Caddy prompts for Basic Auth.
+- Firebase login is required after Basic Auth.
+- Backend admin APIs return `401` without a token.
+- Authenticated non-admin users receive `403`.
+
+## Live ChatGPT MCP Manual Tests
+
+Use [manual-chatgpt-test-plan.md](mcp/manual-chatgpt-test-plan.md). Required coverage:
+
+- connect MCP server in ChatGPT Developer Mode
+- complete OAuth authorization
+- query context, shopping lists, task lists, and recent activity
+- add shopping items
+- avoid duplicate pending items
+- return completed items/tasks to pending through smart writes where applicable
+- mark items/tasks completed and pending
+- revoke access
+- confirm audit records are created without prompts/full arguments
+
+## Repository Scans
+
+Run before merging documentation or deployment changes:
+
+```bash
+rg -n "convy\\.app|com\\.combi|com\\.combi\\.app|com\\.convy\\.app" .
+rg -n "main-only PR wording|main as the sole target|default branch is main" README.md docs .github
+rg -n "BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|PRIVATE KEY-----|ghp_[A-Za-z0-9_]+|sk-proj-[A-Za-z0-9_]+|McpAuth__PrivateKeyPemBase64=[A-Za-z0-9+/=]{80,}" .
+```
+
+Review `178.105.70.69.nip.io` hits manually. They are valid only for legacy staging host documentation, examples, and Caddy configuration.
+
+## Markdown Link Validation
+
+Use a local Markdown link checker or a scripted path scan. Internal links should resolve after docs are moved or renamed, especially:
+
+- `docs/MCP-SETUP.md` compatibility stub
+- `docs/ai-tooling/mcp-setup.md`
+- `docs/mcp/smart-tool-behavior.md`
+- `docs/operations/*`
