@@ -63,8 +63,11 @@ public class UncompleteTaskCommandHandler : IRequestHandler<UncompleteTaskComman
 
     private async Task<TaskItemDto> CreateDtoAsync(Domain.Entities.TaskItem task, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetByIdAsync(task.CreatedBy, cancellationToken);
-        var userNames = new Dictionary<Guid, string> { [task.CreatedBy] = user?.DisplayName ?? "Unknown" };
+        var userIds = new[] { task.CreatedBy }
+            .Concat(task.AssignedToUserId.HasValue ? new[] { task.AssignedToUserId.Value } : Array.Empty<Guid>())
+            .Distinct();
+        var users = await _userRepository.GetByIdsAsync(userIds, cancellationToken);
+        var userNames = users.ToDictionary(u => u.Id, u => u.DisplayName);
         return TaskItemMapper.ToDto(task, userNames);
     }
 }

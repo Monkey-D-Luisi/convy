@@ -57,6 +57,7 @@ public static class DependencyInjection
         services.AddHostedService(sp => sp.GetRequiredService<PushNotificationBatcher>());
 
         services.AddHostedService<RecurringItemService>();
+        services.AddHostedService<TaskReminderService>();
         services.AddHostedService<SystemMetricSnapshotHostedService>();
 
         AddOpenAiServices(services, configuration);
@@ -72,6 +73,7 @@ public static class DependencyInjection
         if (string.IsNullOrWhiteSpace(apiKey))
         {
             services.AddScoped<IAiVoiceParsingService, NoOpVoiceParsingService>();
+            services.AddScoped<ITaskVoiceParsingService, NoOpTaskVoiceParsingService>();
             return;
         }
 
@@ -87,6 +89,8 @@ public static class DependencyInjection
         services.AddScoped<IOpenAiVoiceTranscriptionClient, OpenAiVoiceTranscriptionClient>();
         services.AddScoped<IOpenAiResponsesClient, OpenAiResponsesClient>();
         services.AddScoped<IOpenAiVoiceItemParser, OpenAiVoiceItemParser>();
+        services.AddScoped<IOpenAiVoiceTaskParser, OpenAiVoiceTaskParser>();
         services.AddScoped<IAiVoiceParsingService, OpenAiVoiceParsingService>();
+        services.AddScoped<ITaskVoiceParsingService, OpenAiTaskVoiceParsingService>();
     }
 }

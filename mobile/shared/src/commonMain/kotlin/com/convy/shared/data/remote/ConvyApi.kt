@@ -148,6 +148,13 @@ class ConvyApi(private val client: HttpClient) {
         client.post("api/v1/lists/$listId/tasks/$taskId/uncomplete")
     }
 
+    suspend fun batchCreateTasks(listId: String, request: BatchCreateTasksRequest) {
+        client.post("api/v1/lists/$listId/tasks/batch") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+    }
+
     suspend fun batchCreateItems(listId: String, request: BatchCreateItemsRequest): BatchCreateResponse =
         client.post("api/v1/lists/$listId/items/batch") {
             contentType(ContentType.Application.Json)
@@ -199,6 +206,29 @@ class ConvyApi(private val client: HttpClient) {
         client.submitFormWithBinaryData(
             url = "api/v1/lists/$listId/items/parse-voice",
             formData = formData {
+                append("audio", audioData, Headers.build {
+                    append(HttpHeaders.ContentType, "audio/mp4")
+                    append(HttpHeaders.ContentDisposition, "filename=\"recording.m4a\"")
+                })
+            },
+        ) {
+            timeout {
+                requestTimeoutMillis = 90_000
+                socketTimeoutMillis = 90_000
+            }
+        }.body()
+
+    suspend fun parseTaskVoiceAudio(
+        listId: String,
+        audioData: ByteArray,
+        timeZoneId: String,
+        now: String,
+    ): TaskVoiceParseResponseDto =
+        client.submitFormWithBinaryData(
+            url = "api/v1/lists/$listId/tasks/parse-voice",
+            formData = formData {
+                append("timeZoneId", timeZoneId)
+                append("now", now)
                 append("audio", audioData, Headers.build {
                     append(HttpHeaders.ContentType, "audio/mp4")
                     append(HttpHeaders.ContentDisposition, "filename=\"recording.m4a\"")

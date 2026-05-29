@@ -11,6 +11,7 @@ import com.convy.shared.data.remote.SignalRClient
 import com.convy.shared.domain.repository.AuthRepository
 import com.convy.shared.domain.repository.ItemRepository
 import com.convy.shared.domain.repository.TaskRepository
+import com.convy.shared.domain.model.ParsedTask
 import com.convy.shared.platform.AudioRecorder
 import com.convy.shared.platform.NetworkMonitor
 import kotlinx.coroutines.delay
@@ -119,10 +120,19 @@ class ListDetailStore(
                 _sideEffects.emit(resourceError(Res.string.detail_voice_permission_required))
             }
             is ListDetailIntent.DismissVoiceSheet -> _state.update {
-                it.copy(showVoiceSheet = false, parsedVoiceItems = emptyList(), voiceTranscription = "")
+                it.copy(
+                    showVoiceSheet = false,
+                    parsedVoiceItems = emptyList(),
+                    parsedVoiceTasks = emptyList(),
+                    voiceTranscription = "",
+                )
             }
             is ListDetailIntent.ToggleVoiceItem -> _state.update { state ->
-                state.copy(parsedVoiceItems = state.parsedVoiceItems.toggleSelectionAt(intent.index))
+                if (isTaskList) {
+                    state.copy(parsedVoiceTasks = state.parsedVoiceTasks.toggleTaskSelectionAt(intent.index))
+                } else {
+                    state.copy(parsedVoiceItems = state.parsedVoiceItems.toggleSelectionAt(intent.index))
+                }
             }
             is ListDetailIntent.ConfirmVoiceItems -> confirmVoiceItems()
         }
@@ -386,7 +396,6 @@ class ListDetailStore(
         if (isTaskList) taskRepository.delete(listId, itemId) else itemRepository.delete(listId, itemId)
 
     private fun startRecording() {
-        if (isTaskList) return
         try {
             audioRecorder.startRecording()
             recordingStartTime = Clock.System.now().toEpochMilliseconds()
@@ -399,8 +408,6 @@ class ListDetailStore(
     }
 
     private fun stopRecording() {
-        if (isTaskList) return
-
         val elapsed = Clock.System.now().toEpochMilliseconds() - recordingStartTime
         if (elapsed < MIN_RECORDING_DURATION_MS) {
             audioRecorder.stopRecording()
@@ -425,6 +432,42 @@ class ListDetailStore(
         }
 
         scope.launch {
+            if (isTaskList) {
+                taskRepository.parseVoiceAudio(listId, audioData).fold(
+                    onSuccess = { result ->
+                        if (result.transcription.isBlank()) {
+                            _state.update { it.copy(isProcessingVoice = false) }
+                            _sideEffects.emit(resourceError(Res.string.detail_speech_not_recognized))
+                        } else {
+                            _state.update {
+                                it.copy(
+                                    isProcessingVoice = false,
+                                    voiceTranscription = result.transcription,
+                                    parsedVoiceTasks = result.tasks.map { parsed ->
+                                        ParsedVoiceTask(
+                                            title = parsed.title,
+                                            note = parsed.note,
+                                            assignedToUserId = parsed.assignedToUserId,
+                                            dueDate = parsed.dueDate,
+                                            reminderAtUtc = parsed.reminderAtUtc,
+                                            priority = parsed.priority,
+                                            matchedExistingTask = parsed.matchedExistingTask,
+                                        )
+                                    },
+                                    parsedVoiceItems = emptyList(),
+                                    showVoiceSheet = true,
+                                )
+                            }
+                        }
+                    },
+                    onFailure = { error ->
+                        _state.update { it.copy(isProcessingVoice = false) }
+                        _sideEffects.emit(repositoryError(error.message, Res.string.detail_voice_process_failed))
+                    },
+                )
+                return@launch
+            }
+
             itemRepository.parseVoiceAudio(listId, audioData).fold(
                 onSuccess = { result ->
                     if (result.transcription.isBlank()) {
@@ -438,6 +481,7 @@ class ListDetailStore(
                                 parsedVoiceItems = result.items.map { p ->
                                     ParsedVoiceItem(p.title, p.quantity, p.unit, p.matchedExistingItem)
                                 },
+                                parsedVoiceTasks = emptyList(),
                                 showVoiceSheet = true,
                             )
                         }
@@ -452,7 +496,10 @@ class ListDetailStore(
     }
 
     private fun confirmVoiceItems() {
-        if (isTaskList) return
+        if (isTaskList) {
+            confirmVoiceTasks()
+            return
+        }
 
         val selected = _state.value.parsedVoiceItems.filter { it.isSelected }
         if (selected.isEmpty()) {
@@ -471,6 +518,37 @@ class ListDetailStore(
                 },
                 onFailure = { error ->
                     _sideEffects.emit(repositoryError(error.message, Res.string.detail_add_items_failed))
+                },
+            )
+        }
+    }
+
+    private fun confirmVoiceTasks() {
+        val selected = _state.value.parsedVoiceTasks.filter { it.isSelected }
+        if (selected.isEmpty()) {
+            _state.update { it.copy(showVoiceSheet = false, parsedVoiceTasks = emptyList(), voiceTranscription = "") }
+            return
+        }
+
+        scope.launch {
+            val parsedTasks = selected.map {
+                ParsedTask(
+                    title = it.title,
+                    note = it.note,
+                    assignedToUserId = it.assignedToUserId,
+                    dueDate = it.dueDate,
+                    reminderAtUtc = it.reminderAtUtc,
+                    priority = it.priority,
+                    matchedExistingTask = it.matchedExistingTask,
+                )
+            }
+            taskRepository.batchCreate(listId, parsedTasks).fold(
+                onSuccess = {
+                    _state.update { it.copy(showVoiceSheet = false, parsedVoiceTasks = emptyList(), voiceTranscription = "") }
+                    loadItems()
+                },
+                onFailure = { error ->
+                    _sideEffects.emit(repositoryError(error.message, Res.string.detail_add_tasks_failed))
                 },
             )
         }

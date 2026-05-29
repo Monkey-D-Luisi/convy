@@ -33,6 +33,7 @@ public class GetNotificationPreferencesQueryHandler : IRequestHandler<GetNotific
         preferences.TasksAdded,
         preferences.ItemsCompleted,
         preferences.TasksCompleted,
+        preferences.TaskReminders,
         preferences.ItemTaskChanges,
         preferences.ListChanges,
         preferences.MemberChanges);

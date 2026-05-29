@@ -63,7 +63,9 @@ public class CompleteTaskCommandHandler : IRequestHandler<CompleteTaskCommand, R
 
     private async Task<TaskItemDto> CreateDtoAsync(Domain.Entities.TaskItem task, CancellationToken cancellationToken)
     {
-        var userIds = new[] { task.CreatedBy, _currentUser.UserId }.Distinct();
+        var userIds = new[] { task.CreatedBy, _currentUser.UserId }
+            .Concat(task.AssignedToUserId.HasValue ? new[] { task.AssignedToUserId.Value } : Array.Empty<Guid>())
+            .Distinct();
         var users = await _userRepository.GetByIdsAsync(userIds, cancellationToken);
         var userNames = users.ToDictionary(u => u.Id, u => u.DisplayName);
         return TaskItemMapper.ToDto(task, userNames);

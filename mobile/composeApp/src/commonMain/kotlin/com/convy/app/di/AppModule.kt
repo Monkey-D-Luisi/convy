@@ -37,7 +37,7 @@ val appModule = module {
         ItemFormStore(householdId, listId, itemId, get(), get())
     }
     factory { (householdId: String, listId: String, taskId: String?) ->
-        TaskFormStore(householdId, listId, taskId, get())
+        TaskFormStore(householdId, listId, taskId, get(), get())
     }
     factory { (householdId: String) ->
         MembersStore(householdId, get(), get())

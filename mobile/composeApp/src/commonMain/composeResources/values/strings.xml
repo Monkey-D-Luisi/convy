@@ -131,7 +131,7 @@
     <string name="detail_task_completed">Task completed</string>
     <string name="detail_task_pending">Task marked pending</string>
     <string name="detail_task_deleted">Task deleted</string>
-    <string name="detail_voice_permission_required">Microphone permission is required to add items by voice.</string>
+    <string name="detail_voice_permission_required">Microphone permission is required to add entries by voice.</string>
     <string name="detail_recording_too_short">Recording too short. Hold the button longer.</string>
     <string name="detail_recording_failed">Failed to start recording</string>
     <string name="detail_no_audio">No audio recorded</string>
@@ -139,6 +139,7 @@
     <string name="detail_speech_not_recognized">Could not recognize speech. Please try again.</string>
     <string name="detail_voice_process_failed">Failed to process voice input</string>
     <string name="detail_add_items_failed">Failed to add items. Please try again.</string>
+    <string name="detail_add_tasks_failed">Failed to add tasks. Please try again.</string>
 
     <!-- Item Form -->
     <string name="item_edit_title">Edit item</string>
@@ -168,6 +169,16 @@
     <string name="task_title_label">Title *</string>
     <string name="task_note_label">Note</string>
     <string name="task_note_placeholder">Optional note…</string>
+    <string name="task_assignee_label">Responsible</string>
+    <string name="task_assignee_unassigned">Shared</string>
+    <string name="task_due_date_label">Due date</string>
+    <string name="task_due_date_placeholder">YYYY-MM-DD</string>
+    <string name="task_reminder_label">Reminder</string>
+    <string name="task_reminder_placeholder">YYYY-MM-DDTHH:MM:SSZ</string>
+    <string name="task_priority_label">Priority</string>
+    <string name="task_priority_low">Low</string>
+    <string name="task_priority_normal">Normal</string>
+    <string name="task_priority_high">High</string>
     <string name="task_save_changes">Save changes</string>
     <string name="task_add">Add task</string>
     <string name="task_not_found">Task not found</string>
@@ -226,6 +237,7 @@
     <string name="settings_notify_tasks_added">Tasks added</string>
     <string name="settings_notify_items_completed">Shopping items completed</string>
     <string name="settings_notify_tasks_completed">Tasks completed</string>
+    <string name="settings_notify_task_reminders">Task reminders</string>
     <string name="settings_notify_item_task_changes">Item and task edits/removals</string>
     <string name="settings_notify_list_changes">List changes</string>
     <string name="settings_notify_member_changes">Member changes</string>
@@ -235,7 +247,13 @@
     <!-- Voice Input Sheet -->
     <string name="voice_title">Voice Input</string>
     <string name="voice_parsed_items">Parsed items:</string>
+    <string name="voice_parsed_tasks">Parsed tasks:</string>
     <string name="voice_matches">Matches: %1$s</string>
+    <string name="voice_task_matches">Matches task: %1$s</string>
+    <string name="voice_task_assignee">Assigned to %1$s</string>
+    <string name="voice_task_due">Due %1$s</string>
+    <string name="voice_task_reminder">Reminder %1$s</string>
+    <string name="voice_task_note">Note: %1$s</string>
 
     <!-- Item Card -->
     <string name="item_card_completed_by">Completed by %1$s</string>
@@ -254,5 +272,9 @@
     <plurals name="voice_add_items">
         <item quantity="one">Add %1$d item</item>
         <item quantity="other">Add %1$d items</item>
+    </plurals>
+    <plurals name="voice_add_tasks">
+        <item quantity="one">Add %1$d task</item>
+        <item quantity="other">Add %1$d tasks</item>
     </plurals>
 </resources>

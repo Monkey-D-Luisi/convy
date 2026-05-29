@@ -9,6 +9,7 @@ public record UpdateNotificationPreferencesCommand(
     bool TasksAdded,
     bool ItemsCompleted,
     bool TasksCompleted,
+    bool TaskReminders,
     bool ItemTaskChanges,
     bool ListChanges,
     bool MemberChanges) : IRequest<Result<NotificationPreferencesDto>>;

@@ -4,6 +4,7 @@ using Convy.Application.Features.Tasks.Commands;
 using Convy.Application.Features.Tasks.Queries;
 using Convy.API.Authorization;
 using Convy.API.Services;
+using Convy.Domain.ValueObjects;
 using MediatR;
 
 namespace Convy.API.Endpoints;
@@ -36,13 +37,54 @@ public static class TaskEndpoints
         group.MapPost("/", CreateTaskWithMcpIdempotencyAsync)
             .RequireAuthorization("FirebaseOnly");
 
+        group.MapPost("/parse-voice", async (
+            Guid listId,
+            HttpRequest request,
+            IMediator mediator,
+            CancellationToken cancellationToken) =>
+        {
+            var form = await request.ReadFormAsync(cancellationToken);
+            var audio = form.Files["audio"];
+            var timeZoneId = form["timeZoneId"].ToString();
+            if (audio is null)
+                return Results.BadRequest(new Error("Validation", "Audio file is required."));
+            if (string.IsNullOrWhiteSpace(timeZoneId))
+                return Results.BadRequest(new Error("Validation", "Time zone ID is required."));
+            if (!DateTimeOffset.TryParse(form["now"].ToString(), out var now))
+                return Results.BadRequest(new Error("Validation", "Current date and time are required."));
+
+            await using var stream = audio.OpenReadStream();
+            var command = new ParseTaskVoiceAudioCommand(
+                listId,
+                stream,
+                audio.FileName,
+                timeZoneId,
+                now,
+                audio.Length);
+            var result = await mediator.Send(command, cancellationToken);
+
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : MapError(result.Error!);
+        })
+        .DisableAntiforgery()
+        .RequireAuthorization("FirebaseOnly");
+
         group.MapPut("/{taskId:guid}", async (
             Guid listId,
             Guid taskId,
             UpdateTaskRequest request,
             IMediator mediator) =>
         {
-            var command = new UpdateTaskCommand(listId, taskId, request.Title, request.Note);
+            var command = new UpdateTaskCommand(
+                listId,
+                taskId,
+                request.Title,
+                request.Note,
+                request.AssignedToUserId,
+                request.DueDate,
+                request.ReminderAtUtc,
+                request.Priority);
             var result = await mediator.Send(command);
 
             return result.IsSuccess
@@ -69,6 +111,9 @@ public static class TaskEndpoints
             .RequireAuthorization("FirebaseOnly");
 
         group.MapPost("/{taskId:guid}/uncomplete", UncompleteTaskWithMcpIdempotencyAsync)
+            .RequireAuthorization("FirebaseOnly");
+
+        group.MapPost("/batch", BatchCreateTasksWithFirebaseIdempotencyAsync)
             .RequireAuthorization("FirebaseOnly");
 
         group.MapPost("/smart-batch", SmartBatchCreateTasksWithMcpIdempotencyAsync)
@@ -100,13 +145,54 @@ public static class TaskEndpoints
         var snapshot = await idempotency.ExecuteAsync(
             httpContext,
             "firebase_create_task",
-            new { listId, request.Title, request.Note },
+            new
+            {
+                listId,
+                request.Title,
+                request.Note,
+                request.AssignedToUserId,
+                request.DueDate,
+                request.ReminderAtUtc,
+                request.Priority,
+            },
             async () =>
             {
-                var command = new CreateTaskCommand(listId, request.Title, request.Note);
+                var command = new CreateTaskCommand(
+                    listId,
+                    request.Title,
+                    request.Note,
+                    request.AssignedToUserId,
+                    request.DueDate,
+                    request.ReminderAtUtc,
+                    request.Priority);
                 var result = await mediator.Send(command, cancellationToken);
                 return result.IsSuccess
                     ? McpIdempotencySnapshot.Json(StatusCodes.Status201Created, $"/api/v1/lists/{listId}/tasks/{result.Value}", new { id = result.Value })
+                    : ErrorToSnapshot(result.Error!);
+            },
+            cancellationToken);
+
+        return snapshot.ToResult();
+    }
+
+    private static async Task<IResult> BatchCreateTasksWithFirebaseIdempotencyAsync(
+        Guid listId,
+        SmartBatchCreateTasksRequest request,
+        IMediator mediator,
+        McpWriteIdempotencyService idempotency,
+        IUserFacingTextNormalizer textNormalizer,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        var snapshot = await idempotency.ExecuteAsync(
+            httpContext,
+            "firebase_batch_create_tasks",
+            BuildSmartBatchIdempotencyKey(listId, request, textNormalizer),
+            async () =>
+            {
+                var result = await mediator.Send(BuildSmartBatchCommand(listId, request), cancellationToken);
+                return result.IsSuccess
+                    ? McpIdempotencySnapshot.Json(StatusCodes.Status200OK, null, result.Value!)
                     : ErrorToSnapshot(result.Error!);
             },
             cancellationToken);
@@ -172,21 +258,10 @@ public static class TaskEndpoints
         var snapshot = await idempotency.ExecuteAsync(
             httpContext,
             "convy_add_tasks",
-            new
-            {
-                listId,
-                tasks = request.Tasks.Select(task => new
-                {
-                    title = textNormalizer.NormalizeForComparison(textNormalizer.NormalizeTitle(task.Title)),
-                    note = string.IsNullOrWhiteSpace(task.Note) ? null : task.Note.Trim(),
-                }).ToArray()
-            },
+            BuildSmartBatchIdempotencyKey(listId, request, textNormalizer),
             async () =>
             {
-                var command = new SmartBatchCreateTasksCommand(
-                    listId,
-                    request.Tasks.Select(task => new SmartTaskInput(task.Title, task.Note)).ToList());
-                var result = await mediator.Send(command, cancellationToken);
+                var result = await mediator.Send(BuildSmartBatchCommand(listId, request), cancellationToken);
                 return result.IsSuccess
                     ? McpIdempotencySnapshot.Json(StatusCodes.Status200OK, null, result.Value!)
                     : ErrorToSnapshot(result.Error!);
@@ -195,6 +270,35 @@ public static class TaskEndpoints
 
         return snapshot.ToResult();
     }
+
+    private static SmartBatchCreateTasksCommand BuildSmartBatchCommand(Guid listId, SmartBatchCreateTasksRequest request) =>
+        new(
+            listId,
+            request.Tasks.Select(task => new SmartTaskInput(
+                task.Title,
+                task.Note,
+                task.AssignedToUserId,
+                task.DueDate,
+                task.ReminderAtUtc,
+                task.Priority)).ToList());
+
+    private static object BuildSmartBatchIdempotencyKey(
+        Guid listId,
+        SmartBatchCreateTasksRequest request,
+        IUserFacingTextNormalizer textNormalizer) =>
+        new
+        {
+            listId,
+            tasks = request.Tasks.Select(task => new
+            {
+                title = textNormalizer.NormalizeForComparison(textNormalizer.NormalizeTitle(task.Title)),
+                note = string.IsNullOrWhiteSpace(task.Note) ? null : task.Note.Trim(),
+                task.AssignedToUserId,
+                task.DueDate,
+                task.ReminderAtUtc,
+                task.Priority,
+            }).ToArray()
+        };
 
     private static async Task<IResult> UpdateTasksStatusWithMcpIdempotencyAsync(
         Guid listId,
@@ -234,8 +338,27 @@ public static class TaskEndpoints
     };
 }
 
-public record CreateTaskRequest(string Title, string? Note);
-public record UpdateTaskRequest(string Title, string? Note);
+public record CreateTaskRequest(
+    string Title,
+    string? Note,
+    Guid? AssignedToUserId = null,
+    DateOnly? DueDate = null,
+    DateTime? ReminderAtUtc = null,
+    TaskPriority Priority = TaskPriority.Normal);
+
+public record UpdateTaskRequest(
+    string Title,
+    string? Note,
+    Guid? AssignedToUserId = null,
+    DateOnly? DueDate = null,
+    DateTime? ReminderAtUtc = null,
+    TaskPriority Priority = TaskPriority.Normal);
 public record SmartBatchCreateTasksRequest(IReadOnlyList<SmartBatchCreateTaskRequest> Tasks);
-public record SmartBatchCreateTaskRequest(string Title, string? Note);
+public record SmartBatchCreateTaskRequest(
+    string Title,
+    string? Note,
+    Guid? AssignedToUserId = null,
+    DateOnly? DueDate = null,
+    DateTime? ReminderAtUtc = null,
+    TaskPriority Priority = TaskPriority.Normal);
 public record UpdateTasksStatusRequest(IReadOnlyList<Guid> TaskIds, string Status);

@@ -8,7 +8,10 @@ import com.convy.shared.data.remote.TokenProvider
 import com.convy.shared.domain.model.DuplicateCheck
 import com.convy.shared.domain.model.ListItem
 import com.convy.shared.domain.model.ParsedItem
+import com.convy.shared.domain.model.ParsedTask
 import com.convy.shared.domain.model.TaskItem
+import com.convy.shared.domain.model.TaskPriority
+import com.convy.shared.domain.model.TaskVoiceParseResult
 import com.convy.shared.domain.model.User
 import com.convy.shared.domain.model.VoiceParseResult
 import com.convy.shared.domain.repository.AuthRepository
@@ -213,10 +216,27 @@ class ListDetailStoreTest {
         override suspend fun getByList(listId: String, status: String?, createdBy: String?): Result<List<TaskItem>> =
             Result.success(tasks.toList())
 
-        override suspend fun create(listId: String, title: String, note: String?): Result<String> =
+        override suspend fun create(
+            listId: String,
+            title: String,
+            note: String?,
+            assignedToUserId: String?,
+            dueDate: String?,
+            reminderAtUtc: String?,
+            priority: TaskPriority,
+        ): Result<String> =
             error("Not needed in this test")
 
-        override suspend fun update(listId: String, taskId: String, title: String, note: String?): Result<Unit> =
+        override suspend fun update(
+            listId: String,
+            taskId: String,
+            title: String,
+            note: String?,
+            assignedToUserId: String?,
+            dueDate: String?,
+            reminderAtUtc: String?,
+            priority: TaskPriority,
+        ): Result<Unit> =
             error("Not needed in this test")
 
         override suspend fun delete(listId: String, taskId: String): Result<Unit> {
@@ -229,6 +249,12 @@ class ListDetailStoreTest {
             error("Not needed in this test")
 
         override suspend fun uncomplete(listId: String, taskId: String): Result<Unit> =
+            error("Not needed in this test")
+
+        override suspend fun parseVoiceAudio(listId: String, audioData: ByteArray): Result<TaskVoiceParseResult> =
+            error("Not needed in this test")
+
+        override suspend fun batchCreate(listId: String, tasks: List<ParsedTask>): Result<Unit> =
             error("Not needed in this test")
     }
 

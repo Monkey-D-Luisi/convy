@@ -33,6 +33,7 @@ public class NotificationPreferencesHandlerTests
         result.Value.TasksAdded.Should().BeTrue();
         result.Value.ItemsCompleted.Should().BeFalse();
         result.Value.TasksCompleted.Should().BeFalse();
+        result.Value.TaskReminders.Should().BeTrue();
         result.Value.ItemTaskChanges.Should().BeFalse();
         result.Value.ListChanges.Should().BeTrue();
         result.Value.MemberChanges.Should().BeTrue();
@@ -49,6 +50,7 @@ public class NotificationPreferencesHandlerTests
             TasksAdded: true,
             ItemsCompleted: true,
             TasksCompleted: false,
+            TaskReminders: true,
             ItemTaskChanges: true,
             ListChanges: false,
             MemberChanges: true);
@@ -63,6 +65,7 @@ public class NotificationPreferencesHandlerTests
                 preferences.TasksAdded &&
                 preferences.ItemsCompleted &&
                 !preferences.TasksCompleted &&
+                preferences.TaskReminders &&
                 preferences.ItemTaskChanges &&
                 !preferences.ListChanges &&
                 preferences.MemberChanges),
@@ -79,7 +82,7 @@ public class NotificationPreferencesHandlerTests
         var handler = new UpdateNotificationPreferencesCommandHandler(_repository, _currentUser);
 
         var result = await handler.Handle(
-            new UpdateNotificationPreferencesCommand(false, false, true, true, true, false, false),
+            new UpdateNotificationPreferencesCommand(false, false, true, true, false, true, false, false),
             CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -87,6 +90,7 @@ public class NotificationPreferencesHandlerTests
         existing.TasksAdded.Should().BeFalse();
         existing.ItemsCompleted.Should().BeTrue();
         existing.TasksCompleted.Should().BeTrue();
+        existing.TaskReminders.Should().BeFalse();
         existing.ItemTaskChanges.Should().BeTrue();
         existing.ListChanges.Should().BeFalse();
         existing.MemberChanges.Should().BeFalse();

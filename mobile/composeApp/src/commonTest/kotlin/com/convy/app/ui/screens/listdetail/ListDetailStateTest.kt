@@ -2,6 +2,7 @@ package com.convy.app.ui.screens.listdetail
 
 import com.convy.app.generated.resources.*
 import com.convy.app.util.UiText
+import com.convy.shared.domain.model.TaskPriority
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -102,6 +103,35 @@ class ListDetailStateTest {
     }
 
     @Test
+    fun `pending task entries sort by due date then priority before creation timestamp`() {
+        val laterHigh = listEntry(
+            id = "later-high",
+            isCompleted = false,
+            createdAt = "2026-05-29T08:00:00Z",
+            dueDate = "2026-05-31",
+            priority = TaskPriority.High,
+        )
+        val todayNormal = listEntry(
+            id = "today-normal",
+            isCompleted = false,
+            createdAt = "2026-05-29T09:00:00Z",
+            dueDate = "2026-05-30",
+            priority = TaskPriority.Normal,
+        )
+        val todayHigh = listEntry(
+            id = "today-high",
+            isCompleted = false,
+            createdAt = "2026-05-29T07:00:00Z",
+            dueDate = "2026-05-30",
+            priority = TaskPriority.High,
+        )
+
+        val sorted = listOf(laterHigh, todayNormal, todayHigh).sortedByPendingEvent()
+
+        assertEquals(listOf("today-high", "today-normal", "later-high"), sorted.map { it.id })
+    }
+
+    @Test
     fun `metadata kind reflects current entry state`() {
         val added = listEntry(isCompleted = false)
         val returned = listEntry(isCompleted = false, returnedToPendingAt = "2026-04-26T11:00:00Z")
@@ -179,6 +209,8 @@ class ListDetailStateTest {
         createdAt: String = "2026-04-26T09:00:00Z",
         returnedToPendingByName: String? = null,
         returnedToPendingAt: String? = null,
+        dueDate: String? = null,
+        priority: TaskPriority = TaskPriority.Normal,
     ) = ListEntryUi(
         id = id,
         title = "Milk",
@@ -191,5 +223,7 @@ class ListDetailStateTest {
         completedAt = completedAt,
         returnedToPendingByName = returnedToPendingByName,
         returnedToPendingAt = returnedToPendingAt,
+        dueDate = dueDate,
+        priority = priority,
     )
 }

@@ -1,5 +1,11 @@
 package com.convy.shared.domain.model
 
+enum class TaskPriority {
+    Low,
+    Normal,
+    High,
+}
+
 data class TaskItem(
     val id: String,
     val title: String,
@@ -12,4 +18,10 @@ data class TaskItem(
     val completedBy: String?,
     val completedByName: String?,
     val completedAt: String?,
+    val assignedToUserId: String? = null,
+    val assignedToUserName: String? = null,
+    val dueDate: String? = null,
+    val reminderAtUtc: String? = null,
+    val reminderSentAtUtc: String? = null,
+    val priority: TaskPriority = TaskPriority.Normal,
 )

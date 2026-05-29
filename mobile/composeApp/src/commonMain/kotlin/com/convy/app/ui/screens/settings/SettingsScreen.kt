@@ -250,6 +250,14 @@ fun SettingsContent(
                         },
                     )
                     NotificationSwitchRow(
+                        label = stringResource(Res.string.settings_notify_task_reminders),
+                        checked = state.notificationPreferences.taskReminders,
+                        enabled = !state.isSavingNotificationPreferences,
+                        onCheckedChange = {
+                            onIntent(SettingsIntent.ToggleNotificationPreference(NotificationPreferenceKey.TaskReminders, it))
+                        },
+                    )
+                    NotificationSwitchRow(
                         label = stringResource(Res.string.settings_notify_item_task_changes),
                         checked = state.notificationPreferences.itemTaskChanges,
                         enabled = !state.isSavingNotificationPreferences,

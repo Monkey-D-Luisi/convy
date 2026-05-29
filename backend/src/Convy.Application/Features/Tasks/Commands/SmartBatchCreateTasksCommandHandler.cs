@@ -76,6 +76,12 @@ public class SmartBatchCreateTasksCommandHandler : IRequestHandler<SmartBatchCre
                 continue;
             }
 
+            if (input.AssignedToUserId.HasValue && !access.Value!.Household.IsMember(input.AssignedToUserId.Value))
+            {
+                rejected.Add(new SmartRejectedTaskInputDto(input.Title, "assigned_user_not_in_household"));
+                continue;
+            }
+
             if (seenInRequest.TryGetValue(normalizedTitle, out var duplicate))
             {
                 reused.Add(duplicate with { Reason = "duplicate_in_request" });
@@ -113,10 +119,26 @@ public class SmartBatchCreateTasksCommandHandler : IRequestHandler<SmartBatchCre
                 continue;
             }
 
-            var task = new TaskItem(title, normalizedTitle, request.ListId, _currentUser.UserId, input.Note);
+            var task = new TaskItem(
+                title,
+                normalizedTitle,
+                request.ListId,
+                _currentUser.UserId,
+                input.Note,
+                input.AssignedToUserId,
+                input.DueDate,
+                input.ReminderAtUtc,
+                input.Priority);
             await _taskRepository.AddAsync(task, cancellationToken);
             createdEntities.Add(task);
-            var createdDto = new SmartCreatedTaskDto(task.Id, task.Title, task.Note);
+            var createdDto = new SmartCreatedTaskDto(
+                task.Id,
+                task.Title,
+                task.Note,
+                task.AssignedToUserId,
+                task.DueDate,
+                task.ReminderAtUtc,
+                task.Priority);
             created.Add(createdDto);
             seenInRequest[normalizedTitle] = new SmartMatchedTaskDto(task.Id, task.Title, "created_in_request");
         }

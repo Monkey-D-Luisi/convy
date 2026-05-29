@@ -17,6 +17,7 @@ public class NotificationPreferencesTests
         preferences.TasksAdded.Should().BeTrue();
         preferences.ItemsCompleted.Should().BeFalse();
         preferences.TasksCompleted.Should().BeFalse();
+        preferences.TaskReminders.Should().BeTrue();
         preferences.ItemTaskChanges.Should().BeFalse();
         preferences.ListChanges.Should().BeTrue();
         preferences.MemberChanges.Should().BeTrue();
@@ -32,6 +33,7 @@ public class NotificationPreferencesTests
             tasksAdded: false,
             itemsCompleted: true,
             tasksCompleted: true,
+            taskReminders: false,
             itemTaskChanges: true,
             listChanges: false,
             memberChanges: false);
@@ -40,6 +42,7 @@ public class NotificationPreferencesTests
         preferences.TasksAdded.Should().BeFalse();
         preferences.ItemsCompleted.Should().BeTrue();
         preferences.TasksCompleted.Should().BeTrue();
+        preferences.TaskReminders.Should().BeFalse();
         preferences.ItemTaskChanges.Should().BeTrue();
         preferences.ListChanges.Should().BeFalse();
         preferences.MemberChanges.Should().BeFalse();

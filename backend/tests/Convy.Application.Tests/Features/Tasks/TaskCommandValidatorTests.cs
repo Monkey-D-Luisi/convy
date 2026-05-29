@@ -1,4 +1,5 @@
 using Convy.Application.Features.Tasks.Commands;
+using Convy.Domain.ValueObjects;
 using FluentValidation.TestHelper;
 
 namespace Convy.Application.Tests.Features.Tasks;
@@ -27,6 +28,23 @@ public class TaskCommandValidatorTests
         var result = new UpdateTaskCommandValidator().TestValidate(new UpdateTaskCommand(Guid.NewGuid(), Guid.NewGuid(), "", null));
 
         result.ShouldHaveValidationErrorFor(x => x.Title);
+    }
+
+    [Fact]
+    public void Update_WithInvalidPriority_FailsValidation()
+    {
+        var result = new UpdateTaskCommandValidator().TestValidate(
+            new UpdateTaskCommand(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                "Clean kitchen",
+                null,
+                null,
+                null,
+                null,
+                (TaskPriority)99));
+
+        result.ShouldHaveValidationErrorFor(x => x.Priority);
     }
 
     [Fact]

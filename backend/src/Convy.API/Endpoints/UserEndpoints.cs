@@ -58,6 +58,7 @@ public static class UserEndpoints
                 request.TasksAdded,
                 request.ItemsCompleted,
                 request.TasksCompleted,
+                request.TaskReminders,
                 request.ItemTaskChanges,
                 request.ListChanges,
                 request.MemberChanges);
@@ -87,6 +88,7 @@ public record UpdateNotificationPreferencesRequest(
     bool TasksAdded,
     bool ItemsCompleted,
     bool TasksCompleted,
+    bool TaskReminders,
     bool ItemTaskChanges,
     bool ListChanges,
     bool MemberChanges);

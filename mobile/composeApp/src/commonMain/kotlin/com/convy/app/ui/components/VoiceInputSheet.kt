@@ -39,10 +39,17 @@ import androidx.compose.ui.unit.dp
 import com.convy.app.generated.resources.Res
 import com.convy.app.generated.resources.cancel
 import com.convy.app.generated.resources.voice_add_items
+import com.convy.app.generated.resources.voice_add_tasks
 import com.convy.app.generated.resources.voice_matches
 import com.convy.app.generated.resources.voice_parsed_items
+import com.convy.app.generated.resources.voice_parsed_tasks
+import com.convy.app.generated.resources.voice_task_due
+import com.convy.app.generated.resources.voice_task_matches
+import com.convy.app.generated.resources.voice_task_note
+import com.convy.app.generated.resources.voice_task_reminder
 import com.convy.app.generated.resources.voice_title
 import com.convy.app.ui.screens.listdetail.ParsedVoiceItem
+import com.convy.app.ui.screens.listdetail.ParsedVoiceTask
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -51,6 +58,8 @@ import org.jetbrains.compose.resources.stringResource
 fun VoiceInputSheet(
     transcription: String,
     items: List<ParsedVoiceItem>,
+    tasks: List<ParsedVoiceTask> = emptyList(),
+    isTaskMode: Boolean = false,
     onToggleItem: (Int) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
@@ -102,7 +111,7 @@ fun VoiceInputSheet(
             Spacer(modifier = Modifier.height(22.dp))
 
             Text(
-                text = stringResource(Res.string.voice_parsed_items),
+                text = stringResource(if (isTaskMode) Res.string.voice_parsed_tasks else Res.string.voice_parsed_items),
                 style = MaterialTheme.typography.titleMedium,
             )
             Spacer(modifier = Modifier.height(10.dp))
@@ -111,11 +120,20 @@ fun VoiceInputSheet(
                 modifier = Modifier.heightIn(max = 320.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                itemsIndexed(items) { index, item ->
-                    VoiceItemRow(
-                        item = item,
-                        onToggle = { onToggleItem(index) },
-                    )
+                if (isTaskMode) {
+                    itemsIndexed(tasks) { index, task ->
+                        VoiceTaskRow(
+                            task = task,
+                            onToggle = { onToggleItem(index) },
+                        )
+                    }
+                } else {
+                    itemsIndexed(items) { index, item ->
+                        VoiceItemRow(
+                            item = item,
+                            onToggle = { onToggleItem(index) },
+                        )
+                    }
                 }
             }
 
@@ -128,13 +146,75 @@ fun VoiceInputSheet(
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f).height(56.dp),
                 ) { Text(stringResource(Res.string.cancel)) }
-                val selectedCount = items.count { it.isSelected }
+                val selectedCount = if (isTaskMode) tasks.count { it.isSelected } else items.count { it.isSelected }
                 ConvyPrimaryButton(
                     onClick = onConfirm,
-                    enabled = items.any { it.isSelected },
+                    enabled = selectedCount > 0,
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text(pluralStringResource(Res.plurals.voice_add_items, selectedCount, selectedCount))
+                    Text(
+                        pluralStringResource(
+                            if (isTaskMode) Res.plurals.voice_add_tasks else Res.plurals.voice_add_items,
+                            selectedCount,
+                            selectedCount,
+                        ),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun VoiceTaskRow(
+    task: ParsedVoiceTask,
+    onToggle: () -> Unit,
+) {
+    ConvySoftCard(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Checkbox(
+                checked = task.isSelected,
+                onCheckedChange = { onToggle() },
+                colors = CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.primary,
+                ),
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(task.title, style = MaterialTheme.typography.titleMedium)
+                val details = mutableListOf<String>()
+                if (!task.note.isNullOrBlank()) {
+                    details.add(stringResource(Res.string.voice_task_note, task.note))
+                }
+                if (task.dueDate != null) {
+                    details.add(stringResource(Res.string.voice_task_due, task.dueDate))
+                }
+                if (task.reminderAtUtc != null) {
+                    details.add(stringResource(Res.string.voice_task_reminder, task.reminderAtUtc.take(16).replace("T", " ")))
+                }
+                details.add(task.priority.name)
+                if (details.isNotEmpty()) {
+                    Text(
+                        text = details.joinToString(" / "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (task.matchedExistingTask != null) {
+                    Surface(
+                        modifier = Modifier.padding(top = 6.dp),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.voice_task_matches, task.matchedExistingTask),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        )
+                    }
                 }
             }
         }

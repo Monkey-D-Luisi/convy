@@ -1,4 +1,5 @@
 using Convy.Domain.Common;
+using Convy.Domain.ValueObjects;
 
 namespace Convy.Domain.Entities;
 
@@ -9,6 +10,11 @@ public class TaskItem : Entity
     public string? Note { get; private set; }
     public Guid ListId { get; private set; }
     public Guid CreatedBy { get; private set; }
+    public Guid? AssignedToUserId { get; private set; }
+    public DateOnly? DueDate { get; private set; }
+    public DateTime? ReminderAtUtc { get; private set; }
+    public DateTime? ReminderSentAtUtc { get; private set; }
+    public TaskPriority Priority { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public bool IsCompleted { get; private set; }
     public Guid? CompletedBy { get; private set; }
@@ -16,13 +22,30 @@ public class TaskItem : Entity
 
     private TaskItem() { }
 
-    public TaskItem(string title, string normalizedTitle, Guid listId, Guid createdBy, string? note = null)
-        : this(title, listId, createdBy, note)
+    public TaskItem(
+        string title,
+        string normalizedTitle,
+        Guid listId,
+        Guid createdBy,
+        string? note = null,
+        Guid? assignedToUserId = null,
+        DateOnly? dueDate = null,
+        DateTime? reminderAtUtc = null,
+        TaskPriority priority = TaskPriority.Normal)
+        : this(title, listId, createdBy, note, assignedToUserId, dueDate, reminderAtUtc, priority)
     {
         SetNormalizedTitle(normalizedTitle);
     }
 
-    public TaskItem(string title, Guid listId, Guid createdBy, string? note = null)
+    public TaskItem(
+        string title,
+        Guid listId,
+        Guid createdBy,
+        string? note = null,
+        Guid? assignedToUserId = null,
+        DateOnly? dueDate = null,
+        DateTime? reminderAtUtc = null,
+        TaskPriority priority = TaskPriority.Normal)
     {
         if (string.IsNullOrWhiteSpace(title))
             throw new ArgumentException("Task title is required.", nameof(title));
@@ -36,6 +59,11 @@ public class TaskItem : Entity
         Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
         ListId = listId;
         CreatedBy = createdBy;
+        SetAssignment(assignedToUserId);
+        DueDate = dueDate;
+        ReminderAtUtc = NormalizeUtc(reminderAtUtc);
+        ValidatePriority(priority);
+        Priority = priority;
         CreatedAt = DateTime.UtcNow;
         IsCompleted = false;
     }
@@ -45,17 +73,45 @@ public class TaskItem : Entity
         if (string.IsNullOrWhiteSpace(title))
             throw new ArgumentException("Task title is required.", nameof(title));
 
-        Update(title, NormalizeBasicForComparison(title), note);
+        Update(title, NormalizeBasicForComparison(title), note, AssignedToUserId, DueDate, ReminderAtUtc, Priority);
     }
 
-    public void Update(string title, string normalizedTitle, string? note)
+    public void Update(
+        string title,
+        string? note,
+        Guid? assignedToUserId,
+        DateOnly? dueDate,
+        DateTime? reminderAtUtc,
+        TaskPriority priority)
+    {
+        Update(title, NormalizeBasicForComparison(title), note, assignedToUserId, dueDate, reminderAtUtc, priority);
+    }
+
+    public void Update(
+        string title,
+        string normalizedTitle,
+        string? note,
+        Guid? assignedToUserId,
+        DateOnly? dueDate,
+        DateTime? reminderAtUtc,
+        TaskPriority priority)
     {
         if (string.IsNullOrWhiteSpace(title))
             throw new ArgumentException("Task title is required.", nameof(title));
 
+        var normalizedReminder = NormalizeUtc(reminderAtUtc);
+        var reminderChanged = ReminderAtUtc != normalizedReminder;
+
         Title = title.Trim();
         SetNormalizedTitle(normalizedTitle);
         Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
+        SetAssignment(assignedToUserId);
+        DueDate = dueDate;
+        ReminderAtUtc = normalizedReminder;
+        ValidatePriority(priority);
+        Priority = priority;
+        if (reminderChanged)
+            ReminderSentAtUtc = null;
     }
 
     public void Complete(Guid completedBy)
@@ -68,6 +124,11 @@ public class TaskItem : Entity
         IsCompleted = true;
         CompletedBy = completedBy;
         CompletedAt = DateTime.UtcNow;
+    }
+
+    public void MarkReminderSent(DateTime sentAtUtc)
+    {
+        ReminderSentAtUtc = NormalizeUtc(sentAtUtc);
     }
 
     public void Uncomplete()
@@ -86,6 +147,28 @@ public class TaskItem : Entity
             throw new ArgumentException("Normalized task title is required.", nameof(normalizedTitle));
 
         NormalizedTitle = normalizedTitle.Trim();
+    }
+
+    private void SetAssignment(Guid? assignedToUserId)
+    {
+        if (assignedToUserId == Guid.Empty)
+            throw new ArgumentException("Assignee ID must not be empty.", nameof(assignedToUserId));
+
+        AssignedToUserId = assignedToUserId;
+    }
+
+    private static DateTime? NormalizeUtc(DateTime? value) =>
+        value.HasValue ? NormalizeUtc(value.Value) : null;
+
+    private static DateTime NormalizeUtc(DateTime value) =>
+        value.Kind == DateTimeKind.Utc
+            ? value
+            : value.ToUniversalTime();
+
+    private static void ValidatePriority(TaskPriority priority)
+    {
+        if (!Enum.IsDefined(priority))
+            throw new ArgumentOutOfRangeException(nameof(priority), "Invalid task priority.");
     }
 
     private static string NormalizeBasicForComparison(string title) => title.Trim().ToLowerInvariant();

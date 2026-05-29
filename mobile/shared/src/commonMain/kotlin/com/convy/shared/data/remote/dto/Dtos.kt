@@ -17,6 +17,7 @@ data class NotificationPreferencesDto(
     @SerialName("tasksAdded") val tasksAdded: Boolean,
     @SerialName("itemsCompleted") val itemsCompleted: Boolean,
     @SerialName("tasksCompleted") val tasksCompleted: Boolean,
+    @SerialName("taskReminders") val taskReminders: Boolean = true,
     @SerialName("itemTaskChanges") val itemTaskChanges: Boolean,
     @SerialName("listChanges") val listChanges: Boolean,
     @SerialName("memberChanges") val memberChanges: Boolean,
@@ -96,6 +97,12 @@ data class TaskItemDto(
     @SerialName("completedBy") val completedBy: String?,
     @SerialName("completedByName") val completedByName: String?,
     @SerialName("completedAt") val completedAt: String?,
+    @SerialName("assignedToUserId") val assignedToUserId: String? = null,
+    @SerialName("assignedToUserName") val assignedToUserName: String? = null,
+    @SerialName("dueDate") val dueDate: String? = null,
+    @SerialName("reminderAtUtc") val reminderAtUtc: String? = null,
+    @SerialName("reminderSentAtUtc") val reminderSentAtUtc: String? = null,
+    @SerialName("priority") val priority: String = "Normal",
 )
 
 @Serializable
@@ -139,6 +146,23 @@ data class ParsedItemDto(
 data class VoiceParseResponseDto(
     @SerialName("transcription") val transcription: String,
     @SerialName("items") val items: List<ParsedItemDto>,
+)
+
+@Serializable
+data class ParsedTaskDto(
+    @SerialName("title") val title: String,
+    @SerialName("note") val note: String? = null,
+    @SerialName("assignedToUserId") val assignedToUserId: String? = null,
+    @SerialName("dueDate") val dueDate: String? = null,
+    @SerialName("reminderAtUtc") val reminderAtUtc: String? = null,
+    @SerialName("priority") val priority: String = "Normal",
+    @SerialName("matchedExistingTask") val matchedExistingTask: String? = null,
+)
+
+@Serializable
+data class TaskVoiceParseResponseDto(
+    @SerialName("transcription") val transcription: String,
+    @SerialName("tasks") val tasks: List<ParsedTaskDto>,
 )
 
 @Serializable

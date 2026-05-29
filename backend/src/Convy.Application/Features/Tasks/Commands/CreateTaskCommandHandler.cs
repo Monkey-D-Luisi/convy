@@ -52,30 +52,40 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Resul
         if (access.IsFailure)
             return Result<Guid>.Failure(access.Error!);
 
+        if (request.AssignedToUserId.HasValue && !access.Value!.Household.IsMember(request.AssignedToUserId.Value))
+            return Result<Guid>.Failure(Error.Validation("Assigned user must be a member of the household."));
+
         var title = _textNormalizer.NormalizeTitle(request.Title);
         var normalizedTitle = _textNormalizer.NormalizeForComparison(title);
-        var task = new TaskItem(title, normalizedTitle, request.ListId, _currentUser.UserId, request.Note);
+        var task = new TaskItem(
+            title,
+            normalizedTitle,
+            request.ListId,
+            _currentUser.UserId,
+            request.Note,
+            request.AssignedToUserId,
+            request.DueDate,
+            request.ReminderAtUtc,
+            request.Priority);
 
         await _taskRepository.AddAsync(task, cancellationToken);
         await _taskRepository.SaveChangesAsync(cancellationToken);
 
-        var user = await _userRepository.GetByIdAsync(_currentUser.UserId, cancellationToken);
-        var dto = new TaskItemDto(
-            task.Id,
-            task.Title,
-            task.Note,
-            task.ListId,
-            task.CreatedBy,
-            user?.DisplayName ?? "Unknown",
-            task.CreatedAt,
-            task.IsCompleted,
-            task.CompletedBy,
-            null,
-            task.CompletedAt);
+        var dto = await CreateDtoAsync(task, cancellationToken);
 
-        await _notifications.NotifyTaskCreated(access.Value!.List.HouseholdId, dto, cancellationToken);
+        await _notifications.NotifyTaskCreated(access.Value.List.HouseholdId, dto, cancellationToken);
         await _activityLogger.LogAsync(access.Value.List.HouseholdId, ActivityEntityType.Task, task.Id, ActivityActionType.Created, _currentUser.UserId, task.Title, cancellationToken);
 
         return Result<Guid>.Success(task.Id);
+    }
+
+    private async Task<TaskItemDto> CreateDtoAsync(TaskItem task, CancellationToken cancellationToken)
+    {
+        var userIds = new[] { task.CreatedBy }
+            .Concat(task.AssignedToUserId.HasValue ? new[] { task.AssignedToUserId.Value } : Array.Empty<Guid>())
+            .Distinct();
+        var users = await _userRepository.GetByIdsAsync(userIds, cancellationToken);
+        var userNames = users.ToDictionary(u => u.Id, u => u.DisplayName);
+        return TaskItemMapper.ToDto(task, userNames);
     }
 }
