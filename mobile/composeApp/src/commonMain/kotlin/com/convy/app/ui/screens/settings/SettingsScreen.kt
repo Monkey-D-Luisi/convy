@@ -114,7 +114,11 @@ fun SettingsContent(
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    ConvyAvatar(label = state.displayName, size = 64.dp)
+                    ConvyAvatar(
+                        label = state.displayName,
+                        size = 64.dp,
+                        textStyle = MaterialTheme.typography.headlineMedium,
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = state.displayName.ifEmpty { stringResource(Res.string.settings_unknown_name) },
