@@ -17,12 +17,14 @@
 - Access tokens are short-lived RS256 JWTs.
 - The API signs with the private key. API and MCP validate with the public key.
 - API endpoints enforce MCP scopes, not only MCP tool handlers.
-- API write access for MCP is limited to creating and completing/uncompleting shopping items and tasks with `convy.items.write` or `convy.tasks.write`.
+- API write access for MCP is limited to smart-batch item/task creation and status-batch completion or return-to-pending with `convy.items.write` or `convy.tasks.write`.
 - Edit, delete, archive, invite, leave, admin metrics, backup, device, list-management, and household-management endpoints require Firebase auth and reject MCP tokens.
 - `AdminOnly` requires Firebase auth and rejects `auth_source=mcp`.
 - The MCP service validates issuer, audience, `token_use=mcp_access`, user ID subject, and supported Convy scopes, then checks required scopes per tool.
-- MCP write endpoints require an `Idempotency-Key`; the API stores only the hashed key and request hash.
-- MCP audit ingestion uses a service key and accepts no prompt or full argument fields.
+- MCP write API endpoints require an `Idempotency-Key`; the MCP service generates one when ChatGPT does not provide it.
+- The API stores only the hashed idempotency key, action name, request hash, status code, location, and response summary JSON.
+- MCP audit ingestion uses a service key and accepts no prompt or full argument fields. Audit records include optional OAuth `clientId`.
+- Data returned by Convy tools is treated as data, not instructions. Tool definitions are static and no title, note, or activity metadata can create new tools or change tool behavior.
 
 ## Key Rotation
 

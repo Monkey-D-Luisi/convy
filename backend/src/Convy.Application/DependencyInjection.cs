@@ -3,6 +3,8 @@ using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Convy.Application.Common.Behaviors;
+using Convy.Application.Common.Interfaces;
+using Convy.Application.Common.Services;
 
 namespace Convy.Application;
 
@@ -15,6 +17,7 @@ public static class DependencyInjection
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
         services.AddValidatorsFromAssembly(assembly);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        services.AddSingleton<IUserFacingTextNormalizer, UserFacingTextNormalizer>();
 
         return services;
     }

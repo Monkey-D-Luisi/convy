@@ -11,17 +11,14 @@ public static class McpAuditEndpoints
     private static readonly HashSet<string> AllowedTools =
     [
         "convy_get_context",
-        "convy_get_household_overview",
-        "convy_get_lists",
-        "convy_get_shopping_items",
-        "convy_get_tasks",
+        "convy_get_shopping_context",
+        "convy_get_shopping_list",
+        "convy_get_task_list",
         "convy_get_recent_activity",
-        "convy_create_shopping_item",
-        "convy_complete_shopping_item",
-        "convy_uncomplete_shopping_item",
-        "convy_create_task",
-        "convy_complete_task",
-        "convy_uncomplete_task"
+        "convy_add_shopping_items",
+        "convy_update_shopping_items_status",
+        "convy_add_tasks",
+        "convy_update_tasks_status"
     ];
 
     public static void MapMcpAuditEndpoints(this IEndpointRouteBuilder routes)
@@ -58,6 +55,7 @@ public static class McpAuditEndpoints
             var invocation = new McpToolInvocation(
                 request.UserId,
                 request.HouseholdId,
+                request.ClientId,
                 request.ToolName,
                 status,
                 request.LatencyMs,
@@ -67,7 +65,8 @@ public static class McpAuditEndpoints
             await db.SaveChangesAsync(cancellationToken);
 
             return Results.Accepted($"/api/v1/mcp/audit/tool-invocations/{invocation.Id}", new { id = invocation.Id });
-        });
+        })
+        .RequireRateLimiting("mcp-audit");
     }
 
     private static bool SecretEquals(string expected, string? actual)
@@ -84,6 +83,7 @@ public static class McpAuditEndpoints
 public record McpToolInvocationRequest(
     Guid UserId,
     Guid? HouseholdId,
+    string? ClientId,
     string ToolName,
     string Status,
     long LatencyMs,

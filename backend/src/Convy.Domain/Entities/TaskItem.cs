@@ -5,6 +5,7 @@ namespace Convy.Domain.Entities;
 public class TaskItem : Entity
 {
     public string Title { get; private set; } = default!;
+    public string? NormalizedTitle { get; private set; }
     public string? Note { get; private set; }
     public Guid ListId { get; private set; }
     public Guid CreatedBy { get; private set; }
@@ -15,6 +16,12 @@ public class TaskItem : Entity
 
     private TaskItem() { }
 
+    public TaskItem(string title, string normalizedTitle, Guid listId, Guid createdBy, string? note = null)
+        : this(title, listId, createdBy, note)
+    {
+        SetNormalizedTitle(normalizedTitle);
+    }
+
     public TaskItem(string title, Guid listId, Guid createdBy, string? note = null)
     {
         if (string.IsNullOrWhiteSpace(title))
@@ -24,8 +31,9 @@ public class TaskItem : Entity
         if (createdBy == Guid.Empty)
             throw new ArgumentException("Creator ID is required.", nameof(createdBy));
 
-        Title = title;
-        Note = note;
+        Title = title.Trim();
+        NormalizedTitle = NormalizeBasicForComparison(Title);
+        Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
         ListId = listId;
         CreatedBy = createdBy;
         CreatedAt = DateTime.UtcNow;
@@ -37,8 +45,17 @@ public class TaskItem : Entity
         if (string.IsNullOrWhiteSpace(title))
             throw new ArgumentException("Task title is required.", nameof(title));
 
-        Title = title;
-        Note = note;
+        Update(title, NormalizeBasicForComparison(title), note);
+    }
+
+    public void Update(string title, string normalizedTitle, string? note)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Task title is required.", nameof(title));
+
+        Title = title.Trim();
+        SetNormalizedTitle(normalizedTitle);
+        Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
     }
 
     public void Complete(Guid completedBy)
@@ -62,4 +79,14 @@ public class TaskItem : Entity
         CompletedBy = null;
         CompletedAt = null;
     }
+
+    private void SetNormalizedTitle(string normalizedTitle)
+    {
+        if (string.IsNullOrWhiteSpace(normalizedTitle))
+            throw new ArgumentException("Normalized task title is required.", nameof(normalizedTitle));
+
+        NormalizedTitle = normalizedTitle.Trim();
+    }
+
+    private static string NormalizeBasicForComparison(string title) => title.Trim().ToLowerInvariant();
 }

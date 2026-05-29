@@ -7,6 +7,7 @@ namespace Convy.Domain.Entities;
 public class ListItem : Entity
 {
     public string Title { get; private set; } = default!;
+    public string? NormalizedTitle { get; private set; }
     public int? Quantity { get; private set; }
     public string? Unit { get; private set; }
     public string? Note { get; private set; }
@@ -27,6 +28,20 @@ public class ListItem : Entity
 
     public ListItem(
         string title,
+        string normalizedTitle,
+        Guid listId,
+        Guid createdBy,
+        int? quantity = null,
+        string? unit = null,
+        string? note = null,
+        ItemCreationSource source = ItemCreationSource.Manual)
+        : this(title, listId, createdBy, quantity, unit, note, source)
+    {
+        SetNormalizedTitle(normalizedTitle);
+    }
+
+    public ListItem(
+        string title,
         Guid listId,
         Guid createdBy,
         int? quantity = null,
@@ -43,12 +58,13 @@ public class ListItem : Entity
         if (quantity.HasValue && quantity.Value <= 0)
             throw new ArgumentException("Quantity must be greater than zero.", nameof(quantity));
 
-        Title = title;
+        Title = title.Trim();
+        NormalizedTitle = NormalizeBasicForComparison(Title);
         ListId = listId;
         CreatedBy = createdBy;
         Quantity = quantity;
-        Unit = unit;
-        Note = note;
+        Unit = string.IsNullOrWhiteSpace(unit) ? null : unit.Trim();
+        Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
         Source = source;
         CreatedAt = DateTime.UtcNow;
         IsCompleted = false;
@@ -58,13 +74,22 @@ public class ListItem : Entity
     {
         if (string.IsNullOrWhiteSpace(title))
             throw new ArgumentException("Item title is required.", nameof(title));
+
+        Update(title, NormalizeBasicForComparison(title), quantity, unit, note);
+    }
+
+    public void Update(string title, string normalizedTitle, int? quantity, string? unit, string? note)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Item title is required.", nameof(title));
         if (quantity.HasValue && quantity.Value <= 0)
             throw new ArgumentException("Quantity must be greater than zero.", nameof(quantity));
 
-        Title = title;
+        Title = title.Trim();
+        SetNormalizedTitle(normalizedTitle);
         Quantity = quantity;
-        Unit = unit;
-        Note = note;
+        Unit = string.IsNullOrWhiteSpace(unit) ? null : unit.Trim();
+        Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
     }
 
     public void Complete(Guid completedBy)
@@ -133,4 +158,14 @@ public class ListItem : Entity
             _ => throw new ArgumentOutOfRangeException(nameof(frequency)),
         };
     }
+
+    private void SetNormalizedTitle(string normalizedTitle)
+    {
+        if (string.IsNullOrWhiteSpace(normalizedTitle))
+            throw new ArgumentException("Normalized item title is required.", nameof(normalizedTitle));
+
+        NormalizedTitle = normalizedTitle.Trim();
+    }
+
+    private static string NormalizeBasicForComparison(string title) => title.Trim().ToLowerInvariant();
 }

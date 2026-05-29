@@ -1,3 +1,4 @@
+using Convy.Application.Common.Interfaces;
 using Convy.Application.Common.Models;
 using Convy.Application.Features.Tasks.Commands;
 using Convy.Application.Features.Tasks.Queries;
@@ -33,7 +34,7 @@ public static class TaskEndpoints
         .RequireAuthorization(McpScopes.TasksRead);
 
         group.MapPost("/", CreateTaskWithMcpIdempotencyAsync)
-            .RequireAuthorization(McpScopes.TasksWrite);
+            .RequireAuthorization("FirebaseOnly");
 
         group.MapPut("/{taskId:guid}", async (
             Guid listId,
@@ -65,10 +66,18 @@ public static class TaskEndpoints
         .RequireAuthorization("FirebaseOnly");
 
         group.MapPost("/{taskId:guid}/complete", CompleteTaskWithMcpIdempotencyAsync)
-            .RequireAuthorization(McpScopes.TasksWrite);
+            .RequireAuthorization("FirebaseOnly");
 
         group.MapPost("/{taskId:guid}/uncomplete", UncompleteTaskWithMcpIdempotencyAsync)
-            .RequireAuthorization(McpScopes.TasksWrite);
+            .RequireAuthorization("FirebaseOnly");
+
+        group.MapPost("/smart-batch", SmartBatchCreateTasksWithMcpIdempotencyAsync)
+            .RequireAuthorization(McpScopes.TasksWrite)
+            .RequireRateLimiting("mcp-write");
+
+        group.MapPost("/status-batch", UpdateTasksStatusWithMcpIdempotencyAsync)
+            .RequireAuthorization(McpScopes.TasksWrite)
+            .RequireRateLimiting("mcp-write");
     }
 
     private static IResult MapError(Error error) => error.Code switch
@@ -90,7 +99,7 @@ public static class TaskEndpoints
     {
         var snapshot = await idempotency.ExecuteAsync(
             httpContext,
-            "convy_create_task",
+            "firebase_create_task",
             new { listId, request.Title, request.Note },
             async () =>
             {
@@ -115,7 +124,7 @@ public static class TaskEndpoints
     {
         var snapshot = await idempotency.ExecuteAsync(
             httpContext,
-            "convy_complete_task",
+            "firebase_complete_task",
             new { listId, taskId },
             async () =>
             {
@@ -138,13 +147,77 @@ public static class TaskEndpoints
     {
         var snapshot = await idempotency.ExecuteAsync(
             httpContext,
-            "convy_uncomplete_task",
+            "firebase_uncomplete_task",
             new { listId, taskId },
             async () =>
             {
                 var command = new UncompleteTaskCommand(listId, taskId);
                 var result = await mediator.Send(command, cancellationToken);
                 return result.IsSuccess ? McpIdempotencySnapshot.NoContent() : ErrorToSnapshot(result.Error!);
+            },
+            cancellationToken);
+
+        return snapshot.ToResult();
+    }
+
+    private static async Task<IResult> SmartBatchCreateTasksWithMcpIdempotencyAsync(
+        Guid listId,
+        SmartBatchCreateTasksRequest request,
+        IMediator mediator,
+        McpWriteIdempotencyService idempotency,
+        IUserFacingTextNormalizer textNormalizer,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        var snapshot = await idempotency.ExecuteAsync(
+            httpContext,
+            "convy_add_tasks",
+            new
+            {
+                listId,
+                tasks = request.Tasks.Select(task => new
+                {
+                    title = textNormalizer.NormalizeForComparison(textNormalizer.NormalizeTitle(task.Title)),
+                    note = string.IsNullOrWhiteSpace(task.Note) ? null : task.Note.Trim(),
+                }).ToArray()
+            },
+            async () =>
+            {
+                var command = new SmartBatchCreateTasksCommand(
+                    listId,
+                    request.Tasks.Select(task => new SmartTaskInput(task.Title, task.Note)).ToList());
+                var result = await mediator.Send(command, cancellationToken);
+                return result.IsSuccess
+                    ? McpIdempotencySnapshot.Json(StatusCodes.Status200OK, null, result.Value!)
+                    : ErrorToSnapshot(result.Error!);
+            },
+            cancellationToken);
+
+        return snapshot.ToResult();
+    }
+
+    private static async Task<IResult> UpdateTasksStatusWithMcpIdempotencyAsync(
+        Guid listId,
+        UpdateTasksStatusRequest request,
+        IMediator mediator,
+        McpWriteIdempotencyService idempotency,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        if (!Enum.TryParse<SmartTaskStatus>(request.Status, ignoreCase: true, out var status))
+            return Results.BadRequest(new { error = "invalid_status" });
+
+        var snapshot = await idempotency.ExecuteAsync(
+            httpContext,
+            "convy_update_tasks_status",
+            new { listId, taskIds = request.TaskIds, status },
+            async () =>
+            {
+                var command = new UpdateTasksStatusCommand(listId, request.TaskIds, status);
+                var result = await mediator.Send(command, cancellationToken);
+                return result.IsSuccess
+                    ? McpIdempotencySnapshot.Json(StatusCodes.Status200OK, null, result.Value!)
+                    : ErrorToSnapshot(result.Error!);
             },
             cancellationToken);
 
@@ -163,3 +236,6 @@ public static class TaskEndpoints
 
 public record CreateTaskRequest(string Title, string? Note);
 public record UpdateTaskRequest(string Title, string? Note);
+public record SmartBatchCreateTasksRequest(IReadOnlyList<SmartBatchCreateTaskRequest> Tasks);
+public record SmartBatchCreateTaskRequest(string Title, string? Note);
+public record UpdateTasksStatusRequest(IReadOnlyList<Guid> TaskIds, string Status);

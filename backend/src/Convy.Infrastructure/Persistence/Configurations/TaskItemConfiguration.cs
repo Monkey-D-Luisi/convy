@@ -18,6 +18,10 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             .HasMaxLength(200)
             .IsRequired();
 
+        builder.Property(t => t.NormalizedTitle)
+            .HasColumnName("normalized_title")
+            .HasMaxLength(200);
+
         builder.Property(t => t.Note)
             .HasColumnName("note")
             .HasMaxLength(500);
@@ -50,5 +54,8 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
 
         builder.HasIndex(t => new { t.ListId, t.IsCompleted })
             .HasDatabaseName("ix_task_items_list_id_is_completed");
+
+        builder.HasIndex(t => new { t.ListId, t.NormalizedTitle, t.IsCompleted })
+            .HasDatabaseName("ix_task_items_list_id_normalized_title_is_completed");
     }
 }

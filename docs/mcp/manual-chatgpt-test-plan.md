@@ -20,13 +20,15 @@ Run this against staging before private beta access.
 2. Confirm ChatGPT receives a 401 challenge with protected resource metadata.
 3. Start OAuth authorization.
 4. Sign in with Firebase at `auth.convyapp.com`.
-5. Confirm the consent page says ChatGPT can create and complete shopping items and tasks, and cannot edit, delete, archive, invite, leave, view admin metrics, access backups, or manage lists.
+5. Confirm the consent page says ChatGPT can add shopping items/tasks and mark existing shopping items/tasks completed or pending, and cannot edit, delete, archive, invite, leave, view admin metrics, access backups, or manage lists.
 6. Approve the requested scopes.
-7. Query household context, lists, shopping items, tasks, and recent activity.
-8. Create one shopping item and one task from ChatGPT. Confirm ChatGPT requests write confirmation before each write.
-9. Complete and uncomplete the created shopping item and task.
-10. Revoke access through ChatGPT.
-11. Confirm refresh no longer works and ChatGPT loses access.
+7. Query household context, shopping context, one shopping list, one task list, and recent activity.
+8. Ask ChatGPT: `Añade leche, pan y huevos a la compra.` Confirm it uses one `convy_add_shopping_items` call.
+9. Ask ChatGPT to add an already pending item. Confirm the API returns `reused` and does not duplicate it.
+10. Complete an item in Convy, then ask ChatGPT to add it again. Confirm the API returns it to pending and reports `uncompleted`.
+11. Ask ChatGPT to add one task and then mark it completed through the task status-batch tool.
+12. Revoke access through ChatGPT.
+13. Confirm refresh no longer works and ChatGPT loses access.
 
 ## Google Sign-In Check
 
@@ -41,10 +43,10 @@ Use Chrome or Edge for Google Sign-In validation because the Codex in-app browse
 ## Negative Checks
 
 - A token without any supported Convy scope returns 403 from MCP.
-- A read-only token cannot invoke create/complete/uncomplete write tools.
-- A write call without `Idempotency-Key` returns 400.
+- A read-only token cannot invoke smart-batch or status-batch write tools.
+- A direct API write call without `Idempotency-Key` returns 400 for MCP tokens.
 - Reusing the same idempotency key with a different request returns 409.
 - Missing or invalid token returns 401 with `WWW-Authenticate`.
-- Direct MCP token calls to POST, PUT, DELETE, archive, invite, leave, admin, backup, and device endpoints fail.
+- Direct MCP token calls to single create, single complete/uncomplete, PUT, DELETE, archive, invite, leave, admin, backup, and device endpoints fail.
 - User A cannot read User B household, list, item, task, or activity.
 - Multi-household users receive `selectionRequired=true` when no household is selected.

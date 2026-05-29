@@ -46,6 +46,7 @@ function registerTool(
       householdId = structuredContent.meta.householdId;
       await recordAudit(apiClient, {
         userId: auth.userId,
+        clientId: auth.clientId,
         toolName: definition.name,
         householdId,
         status: "Success",
@@ -63,6 +64,7 @@ function registerTool(
       const status = statusForError(error);
       await recordAudit(apiClient, {
         userId: auth.userId,
+        clientId: auth.clientId,
         toolName: definition.name,
         householdId,
         status,

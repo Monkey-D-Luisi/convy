@@ -47,7 +47,8 @@ public static class McpOAuthEndpoints
             return result.IsValid
                 ? Results.Ok(new { redirectUri = result.RedirectUri })
                 : Results.BadRequest(new { error = result.Error });
-        });
+        })
+        .RequireRateLimiting("mcp-oauth");
 
         routes.MapPost("/oauth/token", async (
             HttpRequest request,
@@ -95,7 +96,8 @@ public static class McpOAuthEndpoints
                 })
                 : Results.BadRequest(new { error = result.Error });
         })
-        .AllowAnonymous();
+        .AllowAnonymous()
+        .RequireRateLimiting("mcp-oauth");
 
         routes.MapPost("/oauth/revoke", async (
             HttpRequest request,
@@ -109,7 +111,8 @@ public static class McpOAuthEndpoints
             await oauthService.RevokeRefreshTokenAsync(form["token"].ToString(), cancellationToken);
             return Results.Ok();
         })
-        .AllowAnonymous();
+        .AllowAnonymous()
+        .RequireRateLimiting("mcp-oauth");
     }
 
     private static Dictionary<string, object?> CreateProtectedResourceMetadata(IConfiguration configuration)

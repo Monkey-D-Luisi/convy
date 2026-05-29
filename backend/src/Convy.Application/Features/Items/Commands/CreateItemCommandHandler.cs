@@ -1,4 +1,5 @@
 using Convy.Application.Common.Interfaces;
+using Convy.Application.Common.Services;
 using Convy.Application.Common.Models;
 using Convy.Application.Features.Items.DTOs;
 using Convy.Domain.Entities;
@@ -17,6 +18,7 @@ public class CreateItemCommandHandler : IRequestHandler<CreateItemCommand, Resul
     private readonly ICurrentUserService _currentUser;
     private readonly IHouseholdNotificationService _notifications;
     private readonly IActivityLogger _activityLogger;
+    private readonly IUserFacingTextNormalizer _textNormalizer;
 
     public CreateItemCommandHandler(
         IListItemRepository itemRepository,
@@ -25,7 +27,8 @@ public class CreateItemCommandHandler : IRequestHandler<CreateItemCommand, Resul
         IUserRepository userRepository,
         ICurrentUserService currentUser,
         IHouseholdNotificationService notifications,
-        IActivityLogger activityLogger)
+        IActivityLogger activityLogger,
+        IUserFacingTextNormalizer? textNormalizer = null)
     {
         _itemRepository = itemRepository;
         _listRepository = listRepository;
@@ -34,6 +37,7 @@ public class CreateItemCommandHandler : IRequestHandler<CreateItemCommand, Resul
         _currentUser = currentUser;
         _notifications = notifications;
         _activityLogger = activityLogger;
+        _textNormalizer = textNormalizer ?? new UserFacingTextNormalizer();
     }
 
     public async Task<Result<Guid>> Handle(CreateItemCommand request, CancellationToken cancellationToken)
@@ -49,7 +53,9 @@ public class CreateItemCommandHandler : IRequestHandler<CreateItemCommand, Resul
         if (household is null || !household.IsMember(_currentUser.UserId))
             return Result<Guid>.Failure(Error.Forbidden("You are not a member of this household."));
 
-        var item = new ListItem(request.Title, request.ListId, _currentUser.UserId, request.Quantity, request.Unit, request.Note);
+        var title = _textNormalizer.NormalizeTitle(request.Title);
+        var normalizedTitle = _textNormalizer.NormalizeForComparison(title);
+        var item = new ListItem(title, normalizedTitle, request.ListId, _currentUser.UserId, request.Quantity, request.Unit, request.Note);
 
         if (request.RecurrenceFrequency.HasValue && request.RecurrenceInterval.HasValue)
             item.SetRecurrence(request.RecurrenceFrequency.Value, request.RecurrenceInterval.Value);

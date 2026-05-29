@@ -5,23 +5,40 @@ type Fetch = typeof fetch;
 export type AuditEvent = {
   userId: string;
   householdId?: string | null;
+  clientId?: string | null;
   toolName: string;
   status: McpToolInvocationStatus;
   latencyMs: number;
   errorType?: string | null;
 };
 
-export type CreateShoppingItemRequest = {
-  title: string;
-  quantity?: number | null;
-  unit?: string | null;
-  note?: string | null;
+export type AddShoppingItemsRequest = {
+  items: Array<{
+    title: string;
+    quantity?: number;
+    unit?: string;
+    note?: string;
+  }>;
   idempotencyKey: string;
 };
 
-export type CreateTaskRequest = {
-  title: string;
-  note?: string | null;
+export type UpdateShoppingItemsStatusRequest = {
+  itemIds: string[];
+  status: "Pending" | "Completed";
+  idempotencyKey: string;
+};
+
+export type AddTasksRequest = {
+  tasks: Array<{
+    title: string;
+    note?: string;
+  }>;
+  idempotencyKey: string;
+};
+
+export type UpdateTasksStatusRequest = {
+  taskIds: string[];
+  status: "Pending" | "Completed";
   idempotencyKey: string;
 };
 
@@ -85,46 +102,46 @@ export class ConvyApiClient {
     return this.getJson<unknown[]>(`/api/v1/households/${householdId}/activity/?${query}`, token);
   }
 
-  createShoppingItem(token: string, listId: string, request: CreateShoppingItemRequest) {
+  addShoppingItems(token: string, listId: string, request: AddShoppingItemsRequest) {
     return this.postJson<Record<string, unknown>>(
-      `/api/v1/lists/${listId}/items/`,
+      `/api/v1/lists/${listId}/items/smart-batch`,
+      token,
+      request.idempotencyKey,
+      { items: request.items },
+    );
+  }
+
+  updateShoppingItemsStatus(token: string, listId: string, request: UpdateShoppingItemsStatusRequest) {
+    return this.postJson<Record<string, unknown>>(
+      `/api/v1/lists/${listId}/items/status-batch`,
       token,
       request.idempotencyKey,
       {
-        title: request.title,
-        quantity: request.quantity ?? null,
-        unit: request.unit ?? null,
-        note: request.note ?? null,
+        itemIds: request.itemIds,
+        status: request.status,
       },
     );
   }
 
-  completeShoppingItem(token: string, listId: string, itemId: string, idempotencyKey: string) {
-    return this.postNoContent(`/api/v1/lists/${listId}/items/${itemId}/complete`, token, idempotencyKey);
-  }
-
-  uncompleteShoppingItem(token: string, listId: string, itemId: string, idempotencyKey: string) {
-    return this.postNoContent(`/api/v1/lists/${listId}/items/${itemId}/uncomplete`, token, idempotencyKey);
-  }
-
-  createTask(token: string, listId: string, request: CreateTaskRequest) {
+  addTasks(token: string, listId: string, request: AddTasksRequest) {
     return this.postJson<Record<string, unknown>>(
-      `/api/v1/lists/${listId}/tasks/`,
+      `/api/v1/lists/${listId}/tasks/smart-batch`,
       token,
       request.idempotencyKey,
-      {
-        title: request.title,
-        note: request.note ?? null,
-      },
+      { tasks: request.tasks },
     );
   }
 
-  completeTask(token: string, listId: string, taskId: string, idempotencyKey: string) {
-    return this.postNoContent(`/api/v1/lists/${listId}/tasks/${taskId}/complete`, token, idempotencyKey);
-  }
-
-  uncompleteTask(token: string, listId: string, taskId: string, idempotencyKey: string) {
-    return this.postNoContent(`/api/v1/lists/${listId}/tasks/${taskId}/uncomplete`, token, idempotencyKey);
+  updateTasksStatus(token: string, listId: string, request: UpdateTasksStatusRequest) {
+    return this.postJson<Record<string, unknown>>(
+      `/api/v1/lists/${listId}/tasks/status-batch`,
+      token,
+      request.idempotencyKey,
+      {
+        taskIds: request.taskIds,
+        status: request.status,
+      },
+    );
   }
 
   async recordToolInvocation(event: AuditEvent) {
@@ -141,6 +158,7 @@ export class ConvyApiClient {
       body: JSON.stringify({
         userId: event.userId,
         householdId: event.householdId ?? null,
+        clientId: event.clientId ?? null,
         toolName: event.toolName,
         status: event.status,
         latencyMs: event.latencyMs,
@@ -188,19 +206,6 @@ export class ConvyApiClient {
     return (await response.json()) as T;
   }
 
-  private async postNoContent(path: string, token: string, idempotencyKey: string): Promise<void> {
-    const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${token}`,
-        "Idempotency-Key": idempotencyKey,
-      },
-    });
-
-    if (!response.ok) {
-      throw new ConvyApiError(response.status, mapStatusToErrorType(response.status), await readError(response));
-    }
-  }
 }
 
 async function readError(response: Response) {

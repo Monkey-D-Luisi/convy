@@ -18,6 +18,10 @@ public class ListItemConfiguration : IEntityTypeConfiguration<ListItem>
             .HasMaxLength(200)
             .IsRequired();
 
+        builder.Property(i => i.NormalizedTitle)
+            .HasColumnName("normalized_title")
+            .HasMaxLength(200);
+
         builder.Property(i => i.Quantity)
             .HasColumnName("quantity");
 
@@ -80,6 +84,9 @@ public class ListItemConfiguration : IEntityTypeConfiguration<ListItem>
 
         builder.HasIndex(i => new { i.ListId, i.IsCompleted })
             .HasDatabaseName("ix_list_items_list_id_is_completed");
+
+        builder.HasIndex(i => new { i.ListId, i.NormalizedTitle, i.IsCompleted })
+            .HasDatabaseName("ix_list_items_list_id_normalized_title_is_completed");
 
         builder.HasIndex(i => i.NextDueDate)
             .HasDatabaseName("ix_list_items_next_due_date")
