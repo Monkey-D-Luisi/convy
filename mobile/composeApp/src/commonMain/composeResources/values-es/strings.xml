@@ -74,7 +74,7 @@
 
     <!-- Household Lists -->
     <string name="lists_default_title">Mi Hogar</string>
-    <string name="home_greeting">Buenos dias</string>
+    <string name="home_greeting">Buenos días</string>
     <string name="home_today_at_home">Hoy en casa</string>
     <string name="home_groceries">compras</string>
     <string name="home_chores">tareas</string>

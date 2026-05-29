@@ -36,12 +36,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.convy.app.ui.theme.ConvyEmerald
 import com.convy.app.ui.theme.ConvyLavender
 import com.convy.app.ui.theme.ConvyLine
 import com.convy.app.ui.theme.ConvyMintSoft
@@ -60,17 +60,27 @@ fun ConvyBackground(
     contentAlignment: Alignment = Alignment.TopStart,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+    val isDarkTheme = colorScheme.background.luminance() < 0.5f
+    val backgroundColors = if (isDarkTheme) {
+        listOf(
+            colorScheme.background,
+            colorScheme.surfaceContainerLowest,
+            colorScheme.surfaceContainerLow,
+        )
+    } else {
+        listOf(
+            ConvyWarmWhite,
+            ConvyLavender.copy(alpha = 0.54f),
+            ConvyMintSoft.copy(alpha = 0.44f),
+        )
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(
-                Brush.verticalGradient(
-                    listOf(
-                        ConvyWarmWhite,
-                        ConvyLavender.copy(alpha = 0.54f),
-                        ConvyMintSoft.copy(alpha = 0.44f),
-                    ),
-                ),
+                Brush.verticalGradient(backgroundColors),
             ),
         contentAlignment = contentAlignment,
         content = content,
@@ -143,6 +153,7 @@ fun ConvyAvatar(
     size: Dp = 40.dp,
     containerColor: Color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
     contentColor: Color = MaterialTheme.colorScheme.primary,
+    textStyle: TextStyle = MaterialTheme.typography.titleSmall,
 ) {
     Surface(
         modifier = modifier.size(size),
@@ -152,9 +163,8 @@ fun ConvyAvatar(
         Box(contentAlignment = Alignment.Center) {
             Text(
                 text = label.firstOrNull()?.uppercase() ?: "?",
-                style = MaterialTheme.typography.titleSmall,
+                style = textStyle,
                 color = contentColor,
-                fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
             )
         }
@@ -264,8 +274,8 @@ fun ConvyPrimaryButton(
         enabled = enabled,
         shape = MaterialTheme.shapes.large,
         colors = ButtonDefaults.buttonColors(
-            containerColor = ConvyEmerald,
-            contentColor = Color.White,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
         ),
         contentPadding = PaddingValues(horizontal = 18.dp),
         content = content,
