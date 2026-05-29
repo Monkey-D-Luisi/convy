@@ -205,7 +205,7 @@ Run before merging documentation or deployment changes:
 
 ```bash
 rg -n "convy\\.app|com\\.combi|com\\.combi\\.app|com\\.convy\\.app" .
-rg -n "main-only PR wording|main as the sole target|default branch is main" README.md docs .github
+rg -n "main-only PR wording|main as the sole target|default branch is main|to `main`|PRs.*to `main`|PRs.*target `main`|target main" AGENTS.md README.md docs .github .agents .claude -g '!docs/TESTING.md'
 rg -n "BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|PRIVATE KEY-----|ghp_[A-Za-z0-9_]+|sk-proj-[A-Za-z0-9_]+|McpAuth__PrivateKeyPemBase64=[A-Za-z0-9+/=]{80,}" .
 ```
 

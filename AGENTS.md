@@ -44,7 +44,7 @@ All code, variable names, function names, comments, commit messages, branch name
   - `test:` adding/fixing tests
   - `refactor:` code change that neither fixes nor adds
 - **Branch naming:** `feature/<short-description>`, `fix/<short-description>`, `chore/<short-description>`
-- **PRs:** always to `main`, require review.
+- **PRs:** target `master`, require review. CI also accepts `main` while repository defaults are normalized.
 
 ## Build & Test
 
