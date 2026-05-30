@@ -66,6 +66,7 @@ const toolOutputSchema = z.object({
     householdId: uuid.nullable().optional(),
     truncated: z.boolean().optional(),
     selectionRequired: z.boolean().optional(),
+    debug: z.boolean().optional(),
   }).strict(),
 }).strict();
 
@@ -98,6 +99,7 @@ export type ToolDefinition<TInput extends z.ZodTypeAny = z.ZodTypeAny> = {
   outputSchema: typeof toolOutputSchema;
   annotations: typeof readOnlyAnnotations | typeof writeAnnotations;
   requiredScopes: SupportedScope[];
+  rendersWidget?: boolean;
   execute: (args: z.infer<TInput>, context: ToolExecutionContext) => Promise<ToolResult>;
 };
 
@@ -126,6 +128,12 @@ const taskGuidance = [
   "The Convy API normalizes titles and avoids safe duplicates.",
 ].join(" ");
 
+const renderGuidance = [
+  "Use this only when the user explicitly asks for a panel, card, widget, visual component, tarjeta, or componente visual.",
+  "Do not use this for ordinary text answers, shopping summaries, item additions, or status updates.",
+  generalGuidance,
+].join(" ");
+
 const readOnlyToolDefinitions = [
   defineTool({
     name: "convy_get_context",
@@ -135,15 +143,7 @@ const readOnlyToolDefinitions = [
     outputSchema: toolOutputSchema,
     annotations: readOnlyAnnotations,
     requiredScopes: [readOnlyScopes[0]],
-    execute: async (_args, context) => {
-      const households = compactHouseholdsForSelection(await context.apiClient.getHouseholds(context.auth.token));
-      return result({
-        householdCount: households.length,
-        defaultHouseholdId: households.length === 1 ? households[0]?.id : null,
-        selectionRequired: households.length > 1,
-        households,
-      }, { selectionRequired: households.length > 1 });
-    },
+    execute: executeContext,
   }),
   defineTool({
     name: "convy_get_shopping_context",
@@ -153,23 +153,7 @@ const readOnlyToolDefinitions = [
     outputSchema: toolOutputSchema,
     annotations: readOnlyAnnotations,
     requiredScopes: [readOnlyScopes[0], readOnlyScopes[1]],
-    execute: async (args, context) => {
-      const selection = await resolveHouseholdSelection(context, args.householdId);
-      if (selection.selectionRequired) {
-        return selectionRequiredResult(selection.households);
-      }
-
-      const lists = await context.apiClient.getLists(context.auth.token, selection.householdId, false);
-      const shoppingLists = compactListsForResponse(lists, 100).items.filter((list) => list.type === "Shopping" && list.isArchived !== true);
-      return result({
-        household: { id: selection.householdId },
-        shoppingLists,
-        selectionRequired: shoppingLists.length !== 1,
-      }, {
-        householdId: selection.householdId,
-        selectionRequired: shoppingLists.length !== 1,
-      });
-    },
+    execute: executeShoppingContext,
   }),
   defineTool({
     name: "convy_get_shopping_list",
@@ -179,19 +163,7 @@ const readOnlyToolDefinitions = [
     outputSchema: toolOutputSchema,
     annotations: readOnlyAnnotations,
     requiredScopes: [readOnlyScopes[2]],
-    execute: async (args, context) => {
-      const [pending, completed] = await Promise.all([
-        context.apiClient.getShoppingItems(context.auth.token, args.listId, "Pending"),
-        args.includeCompleted ? context.apiClient.getShoppingItems(context.auth.token, args.listId, "Completed") : Promise.resolve([]),
-      ]);
-      const compactPending = compactItemsForResponse(pending, args.limit);
-      const compactCompleted = compactItemsForResponse(completed, args.limit);
-      return result({
-        list: { id: args.listId },
-        pendingItems: compactPending.items,
-        completedItems: compactCompleted.items,
-      }, { truncated: compactPending.truncated || compactCompleted.truncated });
-    },
+    execute: executeShoppingList,
   }),
   defineTool({
     name: "convy_get_task_list",
@@ -201,19 +173,7 @@ const readOnlyToolDefinitions = [
     outputSchema: toolOutputSchema,
     annotations: readOnlyAnnotations,
     requiredScopes: [readOnlyScopes[3]],
-    execute: async (args, context) => {
-      const [pending, completed] = await Promise.all([
-        context.apiClient.getTasks(context.auth.token, args.listId, "Pending"),
-        args.includeCompleted ? context.apiClient.getTasks(context.auth.token, args.listId, "Completed") : Promise.resolve([]),
-      ]);
-      const compactPending = compactTasksForResponse(pending, args.limit);
-      const compactCompleted = compactTasksForResponse(completed, args.limit);
-      return result({
-        list: { id: args.listId },
-        pendingTasks: compactPending.items,
-        completedTasks: compactCompleted.items,
-      }, { truncated: compactPending.truncated || compactCompleted.truncated });
-    },
+    execute: executeTaskList,
   }),
   defineTool({
     name: "convy_get_recent_activity",
@@ -223,19 +183,65 @@ const readOnlyToolDefinitions = [
     outputSchema: toolOutputSchema,
     annotations: readOnlyAnnotations,
     requiredScopes: [readOnlyScopes[0], readOnlyScopes[4]],
-    execute: async (args, context) => {
-      const selection = await resolveHouseholdSelection(context, args.householdId);
-      if (selection.selectionRequired) {
-        return selectionRequiredResult(selection.households);
-      }
+    execute: executeRecentActivity,
+  }),
+] as const;
 
-      const activity = await context.apiClient.getRecentActivity(context.auth.token, selection.householdId, args.limit);
-      const compact = compactActivityForResponse(activity, args.limit);
-      return result({ activity: compact.items }, {
-        householdId: selection.householdId,
-        truncated: compact.truncated,
-      });
-    },
+const renderToolDefinitions = [
+  defineTool({
+    name: "convy_render_context",
+    title: "Render Convy Context Panel",
+    description: renderGuidance,
+    inputSchema: z.object({}).strict(),
+    outputSchema: toolOutputSchema,
+    annotations: readOnlyAnnotations,
+    requiredScopes: [readOnlyScopes[0]],
+    rendersWidget: true,
+    execute: executeContext,
+  }),
+  defineTool({
+    name: "convy_render_shopping_context",
+    title: "Render Shopping Context Panel",
+    description: renderGuidance,
+    inputSchema: householdSelectionSchema,
+    outputSchema: toolOutputSchema,
+    annotations: readOnlyAnnotations,
+    requiredScopes: [readOnlyScopes[0], readOnlyScopes[1]],
+    rendersWidget: true,
+    execute: executeShoppingContext,
+  }),
+  defineTool({
+    name: "convy_render_shopping_list",
+    title: "Render Shopping List Panel",
+    description: renderGuidance,
+    inputSchema: shoppingListSchema,
+    outputSchema: toolOutputSchema,
+    annotations: readOnlyAnnotations,
+    requiredScopes: [readOnlyScopes[2]],
+    rendersWidget: true,
+    execute: executeShoppingList,
+  }),
+  defineTool({
+    name: "convy_render_task_list",
+    title: "Render Task List Panel",
+    description: renderGuidance,
+    inputSchema: taskListSchema,
+    outputSchema: toolOutputSchema,
+    annotations: readOnlyAnnotations,
+    requiredScopes: [readOnlyScopes[3]],
+    rendersWidget: true,
+    execute: executeTaskList,
+  }),
+  defineTool({
+    name: "convy_render_recent_activity",
+    title: "Render Recent Activity Panel",
+    description: renderGuidance,
+    inputSchema: activitySchema,
+    outputSchema: toolOutputSchema,
+    annotations: readOnlyAnnotations,
+    requiredScopes: [readOnlyScopes[0], readOnlyScopes[4]],
+    rendersWidget: true,
+    execute: executeRecentActivity,
   }),
 ] as const;
 
@@ -310,6 +316,7 @@ const writeToolDefinitions = [
 
 export const toolDefinitions = [
   ...readOnlyToolDefinitions,
+  ...renderToolDefinitions,
   ...writeToolDefinitions,
 ] as const;
 
@@ -347,6 +354,76 @@ function result(
 
 function defineTool<TInput extends z.ZodTypeAny>(definition: ToolDefinition<TInput>) {
   return definition;
+}
+
+async function executeContext(_args: Record<string, never>, context: ToolExecutionContext) {
+  const households = compactHouseholdsForSelection(await context.apiClient.getHouseholds(context.auth.token));
+  return result({
+    householdCount: households.length,
+    defaultHouseholdId: households.length === 1 ? households[0]?.id : null,
+    selectionRequired: households.length > 1,
+    households,
+  }, { selectionRequired: households.length > 1 });
+}
+
+async function executeShoppingContext(args: z.infer<typeof householdSelectionSchema>, context: ToolExecutionContext) {
+  const selection = await resolveHouseholdSelection(context, args.householdId);
+  if (selection.selectionRequired) {
+    return selectionRequiredResult(selection.households);
+  }
+
+  const lists = await context.apiClient.getLists(context.auth.token, selection.householdId, false);
+  const shoppingLists = compactListsForResponse(lists, 100).items.filter((list) => list.type === "Shopping" && list.isArchived !== true);
+  return result({
+    household: { id: selection.householdId },
+    shoppingLists,
+    selectionRequired: shoppingLists.length !== 1,
+  }, {
+    householdId: selection.householdId,
+    selectionRequired: shoppingLists.length !== 1,
+  });
+}
+
+async function executeShoppingList(args: z.infer<typeof shoppingListSchema>, context: ToolExecutionContext) {
+  const [pending, completed] = await Promise.all([
+    context.apiClient.getShoppingItems(context.auth.token, args.listId, "Pending"),
+    args.includeCompleted ? context.apiClient.getShoppingItems(context.auth.token, args.listId, "Completed") : Promise.resolve([]),
+  ]);
+  const compactPending = compactItemsForResponse(pending, args.limit);
+  const compactCompleted = compactItemsForResponse(completed, args.limit);
+  return result({
+    list: { id: args.listId },
+    pendingItems: compactPending.items,
+    completedItems: compactCompleted.items,
+  }, { truncated: compactPending.truncated || compactCompleted.truncated });
+}
+
+async function executeTaskList(args: z.infer<typeof taskListSchema>, context: ToolExecutionContext) {
+  const [pending, completed] = await Promise.all([
+    context.apiClient.getTasks(context.auth.token, args.listId, "Pending"),
+    args.includeCompleted ? context.apiClient.getTasks(context.auth.token, args.listId, "Completed") : Promise.resolve([]),
+  ]);
+  const compactPending = compactTasksForResponse(pending, args.limit);
+  const compactCompleted = compactTasksForResponse(completed, args.limit);
+  return result({
+    list: { id: args.listId },
+    pendingTasks: compactPending.items,
+    completedTasks: compactCompleted.items,
+  }, { truncated: compactPending.truncated || compactCompleted.truncated });
+}
+
+async function executeRecentActivity(args: z.infer<typeof activitySchema>, context: ToolExecutionContext) {
+  const selection = await resolveHouseholdSelection(context, args.householdId);
+  if (selection.selectionRequired) {
+    return selectionRequiredResult(selection.households);
+  }
+
+  const activity = await context.apiClient.getRecentActivity(context.auth.token, selection.householdId, args.limit);
+  const compact = compactActivityForResponse(activity, args.limit);
+  return result({ activity: compact.items }, {
+    householdId: selection.householdId,
+    truncated: compact.truncated,
+  });
 }
 
 async function resolveHouseholdSelection(context: ToolExecutionContext, requestedHouseholdId?: string) {

@@ -48,21 +48,44 @@ test("MCP-hosted widget origin has documented Apps review isolation rationale", 
   assert.match(readinessAudit, /empty connect, resource, and frame domains/i);
 });
 
-test("every MCP tool references the shared widget and has explicit status text", () => {
+test("only render tools reference the shared widget and every tool has explicit status text", () => {
   for (const definition of toolDefinitions) {
     const metadata = createToolDescriptorMetadata(definition);
+    const isRenderTool = definition.name.startsWith("convy_render_");
 
-    assert.equal(metadata._meta.ui.resourceUri, CONVY_WIDGET_RESOURCE_URI);
-    assert.equal(metadata._meta["openai/outputTemplate"], CONVY_WIDGET_RESOURCE_URI);
-    assert.match(metadata._meta["openai/toolInvocation/invoking"], /^Checking|^Updating|^Adding|^Loading/);
-    assert.match(metadata._meta["openai/toolInvocation/invoked"], /Convy/);
-
-    if (definition.annotations.readOnlyHint) {
-      assert.deepEqual(metadata._meta.ui.visibility, ["model", "app"]);
+    if (isRenderTool) {
+      assert.equal(metadata._meta.ui?.resourceUri, CONVY_WIDGET_RESOURCE_URI);
+      assert.equal(metadata._meta["openai/outputTemplate"], CONVY_WIDGET_RESOURCE_URI);
+      assert.deepEqual(metadata._meta.ui?.visibility, ["model"]);
     } else {
-      assert.deepEqual(metadata._meta.ui.visibility, ["model"]);
+      assert.equal(metadata._meta.ui?.resourceUri, undefined);
+      assert.equal(metadata._meta["openai/outputTemplate"], undefined);
     }
+
+    assert.match(metadata._meta["openai/toolInvocation/invoking"], /^Checking|^Updating|^Adding|^Loading|^Rendering/);
+    assert.match(metadata._meta["openai/toolInvocation/invoked"], /Convy/);
   }
+});
+
+test("widget source removes refresh controls and avoids empty completed sections", () => {
+  const widgetSource = readFileSync(new URL("../widget/src/ConvySummaryWidget.tsx", import.meta.url), "utf8");
+
+  assert.doesNotMatch(widgetSource, /className="refresh"/);
+  assert.doesNotMatch(widgetSource, /callTool/);
+  assert.doesNotMatch(widgetSource, /No completed items returned/);
+  assert.doesNotMatch(widgetSource, /No completed tasks returned/);
+});
+
+test("widget hides technical identifiers by default and caps visible rows", () => {
+  const widgetSource = readFileSync(new URL("../widget/src/ConvySummaryWidget.tsx", import.meta.url), "utf8");
+  const stylesheet = readFileSync(new URL("../widget/src/styles.css", import.meta.url), "utf8");
+
+  assert.doesNotMatch(widgetSource, /secondaryKeys=\{\["id"/);
+  assert.doesNotMatch(widgetSource, /secondaryKeys=\{\[".*Id/);
+  assert.match(widgetSource, /showDebug/);
+  assert.match(stylesheet, /--entity-row-height:\s*52px/);
+  assert.match(stylesheet, /max-height:\s*calc\(var\(--entity-row-height\) \* 8\)/);
+  assert.match(stylesheet, /overflow-y:\s*auto/);
 });
 
 test("MCP package builds a React single-file Apps SDK widget", () => {

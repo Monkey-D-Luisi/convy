@@ -4,7 +4,7 @@
   "app_info": {
     "display_name": "Convy",
     "subtitle": "Shared household lists and tasks",
-    "description": "Convy helps households manage shared shopping lists and tasks directly from ChatGPT. Users can inspect household context, view shopping and task lists, add multiple shopping items, create tasks, and mark existing items or tasks as completed or pending. All write actions are limited to the user's private Convy household data and require confirmation.",
+    "description": "Convy helps households manage shared shopping lists and tasks directly from ChatGPT. Users can inspect household context, view shopping and task lists, open compact visual panels on request, add multiple shopping items, create tasks, and mark existing items or tasks as completed or pending. All write actions are limited to the user's private Convy household data and require confirmation.",
     "category": "PRODUCTIVITY"
   },
   "tools": {
@@ -69,6 +69,71 @@
       },
       "justifications": {
         "read_only_justification": "Returns recent household activity visible to the authorized user without changing Convy data.",
+        "open_world_justification": "Only reads private Convy activity data.",
+        "destructive_justification": "Does not delete, overwrite, revoke, or modify any Convy record."
+      }
+    },
+    "convy_render_context": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Returns household selection context and attaches a compact visual panel only when explicitly requested.",
+        "open_world_justification": "Only reads from the user's private Convy account and cannot publish to public or third-party systems.",
+        "destructive_justification": "Does not delete, overwrite, revoke, or modify any Convy record."
+      }
+    },
+    "convy_render_shopping_context": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Returns household and shopping-list selection context and attaches a compact visual panel only when explicitly requested.",
+        "open_world_justification": "Only reads private Convy household and list data for the authorized user.",
+        "destructive_justification": "Does not delete, archive, overwrite, or modify lists."
+      }
+    },
+    "convy_render_shopping_list": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Returns shopping items for an authorized list and attaches a compact visual panel only when explicitly requested.",
+        "open_world_justification": "Only reads private Convy shopping item data.",
+        "destructive_justification": "Does not delete, complete, edit, or create shopping items."
+      }
+    },
+    "convy_render_task_list": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Returns tasks for an authorized task list and attaches a compact visual panel only when explicitly requested.",
+        "open_world_justification": "Only reads private Convy task data.",
+        "destructive_justification": "Does not delete, complete, edit, or create tasks."
+      }
+    },
+    "convy_render_recent_activity": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Returns recent household activity and attaches a compact visual panel only when explicitly requested.",
         "open_world_justification": "Only reads private Convy activity data.",
         "destructive_justification": "Does not delete, overwrite, revoke, or modify any Convy record."
       }
@@ -205,6 +270,14 @@
       "file_attachment_urls": null,
       "tools_triggered": "convy_get_recent_activity",
       "expected_output": "Returns recent read-only activity for the selected household.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Render a compact shopping-list panel only on explicit visual request.",
+      "user_prompt": "Open a compact panel for my grocery list.",
+      "file_attachment_urls": null,
+      "tools_triggered": "convy_render_shopping_list",
+      "expected_output": "Renders a compact bounded shopping-list widget without write controls, refresh controls, empty completed sections, or visible technical IDs.",
       "expected_output_url": null
     }
   ],

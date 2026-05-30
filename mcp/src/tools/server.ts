@@ -23,11 +23,11 @@ import {
 
 type ToolDescriptorMetadata = {
   _meta: {
-    ui: {
+    ui?: {
       resourceUri: typeof CONVY_WIDGET_RESOURCE_URI;
-      visibility: ["model", "app"] | ["model"];
+      visibility: ["model"];
     };
-    "openai/outputTemplate": typeof CONVY_WIDGET_RESOURCE_URI;
+    "openai/outputTemplate"?: typeof CONVY_WIDGET_RESOURCE_URI;
     "openai/toolInvocation/invoking": string;
     "openai/toolInvocation/invoked": string;
   };
@@ -53,6 +53,26 @@ const toolStatusText: Record<string, { invoking: string; invoked: string }> = {
   convy_get_recent_activity: {
     invoking: "Loading Convy activity",
     invoked: "Convy activity loaded",
+  },
+  convy_render_context: {
+    invoking: "Rendering Convy households",
+    invoked: "Convy panel rendered",
+  },
+  convy_render_shopping_context: {
+    invoking: "Rendering Convy shopping lists",
+    invoked: "Convy panel rendered",
+  },
+  convy_render_shopping_list: {
+    invoking: "Rendering Convy shopping items",
+    invoked: "Convy panel rendered",
+  },
+  convy_render_task_list: {
+    invoking: "Rendering Convy tasks",
+    invoked: "Convy panel rendered",
+  },
+  convy_render_recent_activity: {
+    invoking: "Rendering Convy activity",
+    invoked: "Convy panel rendered",
   },
   convy_add_shopping_items: {
     invoking: "Adding Convy shopping items",
@@ -99,17 +119,22 @@ export function createToolDescriptorMetadata(definition: ToolDefinition): ToolDe
     invoked: "Convy updated",
   };
 
-  return {
+  const metadata: ToolDescriptorMetadata = {
     _meta: {
-      ui: {
-        resourceUri: CONVY_WIDGET_RESOURCE_URI,
-        visibility: definition.annotations.readOnlyHint ? ["model", "app"] : ["model"],
-      },
-      "openai/outputTemplate": CONVY_WIDGET_RESOURCE_URI,
       "openai/toolInvocation/invoking": status.invoking,
       "openai/toolInvocation/invoked": status.invoked,
     },
   };
+
+  if (definition.rendersWidget) {
+    metadata._meta.ui = {
+      resourceUri: CONVY_WIDGET_RESOURCE_URI,
+      visibility: ["model"],
+    };
+    metadata._meta["openai/outputTemplate"] = CONVY_WIDGET_RESOURCE_URI;
+  }
+
+  return metadata;
 }
 
 function registerConvyWidgetResource(server: McpServer) {

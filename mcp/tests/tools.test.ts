@@ -14,6 +14,11 @@ test("MCP exposes read tools and limited idempotent write tools", () => {
     "convy_get_shopping_context",
     "convy_get_shopping_list",
     "convy_get_task_list",
+    "convy_render_context",
+    "convy_render_recent_activity",
+    "convy_render_shopping_context",
+    "convy_render_shopping_list",
+    "convy_render_task_list",
     "convy_update_shopping_items_status",
     "convy_update_tasks_status",
   ]);
@@ -28,6 +33,20 @@ test("MCP exposes read tools and limited idempotent write tools", () => {
     assert.equal(tool.annotations.openWorldHint, false);
     assert.equal(tool.annotations.idempotentHint, true);
     assert.ok(tool.requiredScopes.some((scope) => scope.includes(".write")));
+  }
+});
+
+test("render tools are read-only and restricted to explicit visual requests", () => {
+  const renderTools = toolDefinitions.filter((tool) => tool.name.startsWith("convy_render_"));
+
+  assert.equal(renderTools.length, 5);
+  for (const tool of renderTools) {
+    assert.equal(tool.annotations.readOnlyHint, true);
+    assert.equal(tool.annotations.destructiveHint, false);
+    assert.equal(tool.annotations.openWorldHint, false);
+    assert.ok(!tool.requiredScopes.some((scope) => scope.includes(".write")));
+    assert.match(tool.description, /Use this only when/i);
+    assert.match(tool.description, /panel|card|widget|visual component|tarjeta|componente visual/i);
   }
 });
 
@@ -127,4 +146,73 @@ test("task list responses include smart task metadata", async () => {
     reminderSentAtUtc: null,
     priority: "High",
   });
+});
+
+test("shopping list tools do not fetch completed items by default", async () => {
+  const getShoppingList = toolDefinitions.find((tool) => tool.name === "convy_get_shopping_list");
+  const renderShoppingList = toolDefinitions.find((tool) => tool.name === "convy_render_shopping_list");
+  assert.ok(getShoppingList);
+  assert.ok(renderShoppingList);
+
+  for (const tool of [getShoppingList, renderShoppingList]) {
+    const statuses: string[] = [];
+    const result = await tool.execute({
+      listId: "11111111-1111-4111-8111-111111111111",
+      includeCompleted: false,
+      limit: 50,
+    } as never, {
+      auth: {
+        token: "token",
+        userId: "22222222-2222-4222-8222-222222222222",
+        scopes: new Set(["convy.items.read"]),
+      },
+      apiClient: {
+        getShoppingItems: async (_token: string, _listId: string, status: string) => {
+          statuses.push(status);
+          return status === "Pending"
+            ? [{ id: "33333333-3333-4333-8333-333333333333", title: "Milk" }]
+            : [{ id: "44444444-4444-4444-8444-444444444444", title: "Already bought" }];
+        },
+      } as never,
+    });
+
+    assert.deepEqual(statuses, ["Pending"]);
+    assert.deepEqual((result.data as { completedItems: unknown[] }).completedItems, []);
+  }
+});
+
+test("shopping list tools fetch completed items only when explicitly included", async () => {
+  const getShoppingList = toolDefinitions.find((tool) => tool.name === "convy_get_shopping_list");
+  const renderShoppingList = toolDefinitions.find((tool) => tool.name === "convy_render_shopping_list");
+  assert.ok(getShoppingList);
+  assert.ok(renderShoppingList);
+
+  for (const tool of [getShoppingList, renderShoppingList]) {
+    const statuses: string[] = [];
+    const result = await tool.execute({
+      listId: "11111111-1111-4111-8111-111111111111",
+      includeCompleted: true,
+      limit: 50,
+    } as never, {
+      auth: {
+        token: "token",
+        userId: "22222222-2222-4222-8222-222222222222",
+        scopes: new Set(["convy.items.read"]),
+      },
+      apiClient: {
+        getShoppingItems: async (_token: string, _listId: string, status: string) => {
+          statuses.push(status);
+          return status === "Pending"
+            ? [{ id: "33333333-3333-4333-8333-333333333333", title: "Milk" }]
+            : [{ id: "44444444-4444-4444-8444-444444444444", title: "Already bought" }];
+        },
+      } as never,
+    });
+
+    assert.deepEqual(statuses, ["Pending", "Completed"]);
+    assert.deepEqual((result.data as { completedItems: unknown[] }).completedItems, [{
+      id: "44444444-4444-4444-8444-444444444444",
+      title: "Already bought",
+    }]);
+  }
 });

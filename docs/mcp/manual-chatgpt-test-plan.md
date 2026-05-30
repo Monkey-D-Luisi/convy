@@ -44,18 +44,21 @@ It must not advertise admin, backup, delete, invite, household-management, or li
 7. Approve requested scopes.
 8. Ask ChatGPT to show Convy households.
 9. Ask ChatGPT to show shopping context.
-10. Ask ChatGPT to show one shopping list, including completed items.
-11. Ask ChatGPT to show one task list, including completed tasks.
-12. Ask ChatGPT to show recent household activity.
-13. Confirm the Convy summary widget renders household/list/item/task/activity data without exposing write buttons.
-14. Ask: `Add milk, bread, and eggs to my grocery list.` Confirm one `convy_add_shopping_items` call.
-15. Ask ChatGPT to add an already pending item. Confirm the API reports reuse and no duplicate item appears in the app.
-16. Complete an item in Convy, then ask ChatGPT to add it again. Confirm the API returns it to pending and reports that state.
-17. Ask ChatGPT to create one task with explicit assignee, due date, reminder, and priority when those values are available from Convy context.
-18. Ask ChatGPT to mark that task completed through the task status-batch tool.
-19. Ask ChatGPT to mark the task pending again.
-20. Revoke access through ChatGPT.
-21. Confirm refresh no longer works and ChatGPT loses access.
+10. Ask ChatGPT to show one shopping list. Confirm it answers in text and does not render a widget.
+11. Ask ChatGPT what you still need to buy. Confirm it answers with a textual list and does not render a widget.
+12. Ask ChatGPT to show completed items in one shopping list. Confirm completed items are fetched only for this explicit request.
+13. Ask ChatGPT to show one task list. Confirm it answers in text and does not render a widget.
+14. Ask ChatGPT to show one task list including completed tasks. Confirm completed tasks are fetched only for this explicit request.
+15. Ask ChatGPT to show recent household activity. Confirm it answers in text and does not render a widget.
+16. Ask ChatGPT to open a compact panel for the shopping list. Confirm the render tool is called and the Convy summary widget renders without write buttons, empty completed sections, or visible technical IDs.
+17. Ask: `Add milk, bread, and eggs to my grocery list.` Confirm one `convy_add_shopping_items` call and no widget.
+18. Ask ChatGPT to add an already pending item. Confirm the API reports reuse and no duplicate item appears in the app.
+19. Complete an item in Convy, then ask ChatGPT to add it again. Confirm the API returns it to pending and reports that state.
+20. Ask ChatGPT to create one task with explicit assignee, due date, reminder, and priority when those values are available from Convy context.
+21. Ask ChatGPT to mark that task completed through the task status-batch tool.
+22. Ask ChatGPT to mark the task pending again.
+23. Revoke access through ChatGPT.
+24. Confirm subsequent Convy tool calls fail and ChatGPT loses access.
 
 ## Google Sign-In Check
 
