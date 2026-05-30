@@ -70,6 +70,16 @@ public class OpsContractTests
     }
 
     [Fact]
+    public void VpsDeployScript_ShouldPruneDockerBuildCacheAfterHealthyDeploy()
+    {
+        var source = ReadRepoFile("ops", "vps", "deploy-release.sh");
+
+        source.Should().Contain("DOCKER_BUILD_CACHE_MAX_USED_SPACE");
+        source.Should().Contain("docker buildx prune");
+        source.Should().Contain("--max-used-space");
+    }
+
+    [Fact]
     public void VpsEnvironmentExample_ShouldDefaultToConvyAppDotCom()
     {
         var source = ReadRepoFile("docker", ".env.vps.example");

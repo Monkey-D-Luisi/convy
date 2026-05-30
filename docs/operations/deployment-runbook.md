@@ -84,6 +84,7 @@ ssh -i "$env:USERPROFILE\.ssh\convy_vps_deploy" "convy-deploy@<server>" "sudo mk
 - builds `api`, `worker`, `dashboard`, `auth`, and `mcp`
 - starts Compose services
 - checks API, auth, and MCP health
+- prunes Docker image and BuildKit cache after a healthy deploy. BuildKit cache is capped by `DOCKER_BUILD_CACHE_MAX_USED_SPACE`, default `4GB`.
 
 ## Smoke Checks
 

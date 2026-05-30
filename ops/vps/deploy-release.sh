@@ -12,9 +12,10 @@ LEGAL_DIR="$APP_ROOT/legal" # Default staging path: /opt/convy/legal
 PUBLIC_DIR="$APP_ROOT/public" # Default staging path: /opt/convy/public
 BACKUP_ROOT="${BACKUP_ROOT:-$APP_ROOT/backups/postgres}"
 BACKUP_READ_GROUP="${BACKUP_READ_GROUP:-1654}"
+DOCKER_BUILD_CACHE_MAX_USED_SPACE="${DOCKER_BUILD_CACHE_MAX_USED_SPACE:-4GB}"
 
 if [ "$(id -u)" -ne 0 ]; then
-  exec sudo --preserve-env=APP_ROOT,COMPOSE_FILE,CONVY_RELEASE_ENV_FILE,BACKUP_ROOT,BACKUP_READ_GROUP,PUBLIC_DIR "$0" "$@"
+  exec sudo --preserve-env=APP_ROOT,COMPOSE_FILE,CONVY_RELEASE_ENV_FILE,BACKUP_ROOT,BACKUP_READ_GROUP,PUBLIC_DIR,DOCKER_BUILD_CACHE_MAX_USED_SPACE "$0" "$@"
 fi
 
 if [ ! -f "$ENV_FILE" ]; then
@@ -111,6 +112,7 @@ for _ in $(seq 1 30); do
 
   if [ "$all_healthy" = true ]; then
     docker image prune -f --filter "until=168h" >/dev/null
+    docker buildx prune -f --max-used-space "$DOCKER_BUILD_CACHE_MAX_USED_SPACE" >/dev/null
     echo "Convy release $RELEASE_SHA deployed and healthy."
     exit 0
   fi
