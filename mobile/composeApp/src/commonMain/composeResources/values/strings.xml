@@ -120,6 +120,9 @@
     <string name="detail_load_failed">Failed to load items</string>
     <string name="detail_update_failed">Failed to update item</string>
     <string name="detail_delete_failed">Failed to delete item</string>
+    <string name="detail_delete_confirm">Delete “%1$s”?</string>
+    <string name="detail_delete_confirm_action">Delete</string>
+    <string name="detail_delete_request_affordance">Delete?</string>
     <string name="detail_task_load_failed">Failed to load tasks</string>
     <string name="detail_task_update_failed">Failed to update task</string>
     <string name="detail_task_delete_failed">Failed to delete task</string>

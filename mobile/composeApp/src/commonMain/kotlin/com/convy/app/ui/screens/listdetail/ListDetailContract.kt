@@ -289,6 +289,7 @@ sealed interface ListDetailIntent {
     data object AddItem : ListDetailIntent
     data object ToggleCompletedVisibility : ListDetailIntent
     data object NavigateBack : ListDetailIntent
+    data class RequestDeleteItem(val itemId: String) : ListDetailIntent
     data class DeleteItem(val itemId: String) : ListDetailIntent
     data class UndoOperation(val operationId: Long) : ListDetailIntent
     data class RedoOperation(val operationId: Long) : ListDetailIntent
@@ -312,6 +313,7 @@ sealed interface ListDetailSideEffect {
     data class NavigateToEditTask(val householdId: String, val listId: String, val taskId: String) : ListDetailSideEffect
     data object NavigateBack : ListDetailSideEffect
     data class ShowError(val message: UiText) : ListDetailSideEffect
+    data class ShowDeleteConfirmation(val itemId: String, val message: UiText) : ListDetailSideEffect
     data class ShowUndo(val operationId: Long, val message: UiText, val isPendingDelete: Boolean) : ListDetailSideEffect
     data class ShowRedo(val operationId: Long, val message: UiText) : ListDetailSideEffect
 }

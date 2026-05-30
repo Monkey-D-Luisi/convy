@@ -1,5 +1,7 @@
 package com.convy.app.ui.screens.listdetail
 
+import com.convy.app.generated.resources.*
+import com.convy.app.util.UiText
 import com.convy.shared.config.ApiConfig
 import com.convy.shared.data.offline.OfflineActionQueue
 import com.convy.shared.data.remote.HouseholdRealtimeService
@@ -38,6 +40,88 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ListDetailStoreTest {
+    @Test
+    fun `delete request emits confirmation and keeps item visible`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val itemRepository = FakeItemRepository(items = mutableListOf(listItem(id = "item-1")))
+            val store = createStore(itemRepository = itemRepository)
+            val sideEffects = mutableListOf<ListDetailSideEffect>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                store.sideEffects.toList(sideEffects)
+            }
+            runCurrent()
+
+            store.processIntent(ListDetailIntent.RequestDeleteItem("item-1"))
+            runCurrent()
+
+            assertEquals(listOf("item-1"), store.state.value.pendingEntries.map { it.id })
+            assertEquals(emptyList(), itemRepository.deletedItemIds)
+            val confirmation = sideEffects.filterIsInstance<ListDetailSideEffect.ShowDeleteConfirmation>().single()
+            assertEquals("item-1", confirmation.itemId)
+            val message = confirmation.message as UiText.StringResourceText
+            assertEquals(Res.string.detail_delete_confirm, message.res)
+            assertEquals(listOf("Milk"), message.args)
+            store.close()
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `confirmed delete creates pending delete undo and removes item locally`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val itemRepository = FakeItemRepository(items = mutableListOf(listItem(id = "item-1")))
+            val store = createStore(itemRepository = itemRepository)
+            val sideEffects = mutableListOf<ListDetailSideEffect>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                store.sideEffects.toList(sideEffects)
+            }
+            runCurrent()
+
+            store.processIntent(ListDetailIntent.DeleteItem("item-1"))
+            runCurrent()
+
+            assertEquals(emptyList(), store.state.value.pendingEntries.map { it.id })
+            assertEquals(emptyList(), itemRepository.deletedItemIds)
+            val undo = sideEffects.filterIsInstance<ListDetailSideEffect.ShowUndo>().single()
+            assertTrue(undo.isPendingDelete)
+            val message = undo.message as UiText.StringResourceText
+            assertEquals(Res.string.detail_item_deleted, message.res)
+            store.close()
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `undo after confirmed delete restores item before remote commit`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val itemRepository = FakeItemRepository(items = mutableListOf(listItem(id = "item-1")))
+            val store = createStore(itemRepository = itemRepository)
+            val sideEffects = mutableListOf<ListDetailSideEffect>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                store.sideEffects.toList(sideEffects)
+            }
+            runCurrent()
+
+            store.processIntent(ListDetailIntent.DeleteItem("item-1"))
+            runCurrent()
+            val operationId = sideEffects.filterIsInstance<ListDetailSideEffect.ShowUndo>().single().operationId
+
+            store.processIntent(ListDetailIntent.UndoOperation(operationId))
+            runCurrent()
+
+            assertEquals(listOf("item-1"), store.state.value.pendingEntries.map { it.id })
+            assertEquals(emptyList(), itemRepository.deletedItemIds)
+            store.close()
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     @Test
     fun `pending item delete is committed before navigating away`() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))

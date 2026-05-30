@@ -120,6 +120,9 @@
     <string name="detail_load_failed">Error al cargar los artículos</string>
     <string name="detail_update_failed">Error al actualizar el artículo</string>
     <string name="detail_delete_failed">Error al eliminar el artículo</string>
+    <string name="detail_delete_confirm">¿Eliminar “%1$s”?</string>
+    <string name="detail_delete_confirm_action">Eliminar</string>
+    <string name="detail_delete_request_affordance">¿Eliminar?</string>
     <string name="detail_task_load_failed">Error al cargar las tareas</string>
     <string name="detail_task_update_failed">Error al actualizar la tarea</string>
     <string name="detail_task_delete_failed">Error al eliminar la tarea</string>

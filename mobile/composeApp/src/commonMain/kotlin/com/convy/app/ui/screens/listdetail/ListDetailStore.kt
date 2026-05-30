@@ -88,6 +88,7 @@ class ListDetailStore(
                 it.copy(showCompleted = !it.showCompleted)
             }
             is ListDetailIntent.NavigateBack -> navigateBack()
+            is ListDetailIntent.RequestDeleteItem -> requestDeleteItem(intent.itemId)
             is ListDetailIntent.DeleteItem -> deleteItem(intent.itemId)
             is ListDetailIntent.UndoOperation -> undoOperation(intent.operationId)
             is ListDetailIntent.RedoOperation -> redoOperation(intent.operationId)
@@ -199,6 +200,18 @@ class ListDetailStore(
                     operationId = operation.id,
                     message = completionMessage(!isCurrentlyCompleted),
                     isPendingDelete = false,
+                ),
+            )
+        }
+    }
+
+    private fun requestDeleteItem(itemId: String) {
+        val entry = findEntry(itemId) ?: return
+        scope.launch {
+            _sideEffects.emit(
+                ListDetailSideEffect.ShowDeleteConfirmation(
+                    itemId = itemId,
+                    message = UiText.StringResourceText(Res.string.detail_delete_confirm, listOf(entry.title)),
                 ),
             )
         }
