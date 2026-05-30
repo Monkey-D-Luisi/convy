@@ -155,14 +155,16 @@ fun ListDetailScreen(
                     nextSnackbarId += 1
                 }
                 is ListDetailSideEffect.ShowDeleteConfirmation -> {
-                    pendingSnackbarMessages.add(
-                        PendingSnackbarMessage(
-                            id = nextSnackbarId,
-                            message = effect.message,
-                            action = SnackbarAction.ConfirmDelete(effect.itemId),
-                        ),
-                    )
-                    nextSnackbarId += 1
+                    if (shouldQueueDeleteConfirmation(pendingSnackbarMessages, effect.itemId)) {
+                        pendingSnackbarMessages.add(
+                            PendingSnackbarMessage(
+                                id = nextSnackbarId,
+                                message = effect.message,
+                                action = SnackbarAction.ConfirmDelete(effect.itemId),
+                            ),
+                        )
+                        nextSnackbarId += 1
+                    }
                 }
                 is ListDetailSideEffect.ShowUndo -> {
                     pendingSnackbarMessages.add(
@@ -261,14 +263,14 @@ fun ListDetailScreen(
     )
 }
 
-private data class PendingSnackbarMessage(
+internal data class PendingSnackbarMessage(
     val id: Int,
     val message: UiText,
     val operationId: Long? = null,
     val action: SnackbarAction? = null,
 )
 
-private sealed interface SnackbarAction {
+internal sealed interface SnackbarAction {
     data class ConfirmDelete(val itemId: String) : SnackbarAction
     data class Undo(val isPendingDelete: Boolean) : SnackbarAction
     data object Redo : SnackbarAction
@@ -639,7 +641,7 @@ private fun DismissibleEntry(
     content: @Composable () -> Unit,
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
-        positionalThreshold = { it * 0.85f },
+        positionalThreshold = { it * 0.75f },
         confirmValueChange = { value -> confirmDeleteSwipeRequest(value, onDeleteRequest) },
     )
     SwipeToDismissBox(
@@ -705,6 +707,15 @@ internal fun deleteConfirmationIntentForSnackbarResult(
         ListDetailIntent.DeleteItem(itemId)
     } else {
         null
+    }
+
+internal fun shouldQueueDeleteConfirmation(
+    pendingSnackbarMessages: List<PendingSnackbarMessage>,
+    itemId: String,
+): Boolean =
+    pendingSnackbarMessages.none { pendingMessage ->
+        val action = pendingMessage.action
+        action is SnackbarAction.ConfirmDelete && action.itemId == itemId
     }
 
 @Composable
