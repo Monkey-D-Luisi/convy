@@ -48,6 +48,89 @@ public class TaskCommandValidatorTests
     }
 
     [Fact]
+    public void Create_WithReminderInPast_FailsValidation()
+    {
+        var result = new CreateTaskCommandValidator().TestValidate(
+            new CreateTaskCommand(
+                Guid.NewGuid(),
+                "Clean kitchen",
+                null,
+                ReminderAtUtc: DateTime.UtcNow.AddMinutes(-5)));
+
+        result.ShouldHaveValidationErrorFor(x => x.ReminderAtUtc);
+    }
+
+    [Fact]
+    public void Create_WithLocalReminder_FailsValidation()
+    {
+        var result = new CreateTaskCommandValidator().TestValidate(
+            new CreateTaskCommand(
+                Guid.NewGuid(),
+                "Clean kitchen",
+                null,
+                ReminderAtUtc: DateTime.SpecifyKind(DateTime.UtcNow.AddHours(1), DateTimeKind.Local)));
+
+        result.ShouldHaveValidationErrorFor(x => x.ReminderAtUtc);
+    }
+
+    [Fact]
+    public void Create_WithUnspecifiedReminder_FailsValidation()
+    {
+        var result = new CreateTaskCommandValidator().TestValidate(
+            new CreateTaskCommand(
+                Guid.NewGuid(),
+                "Clean kitchen",
+                null,
+                ReminderAtUtc: DateTime.SpecifyKind(DateTime.UtcNow.AddHours(1), DateTimeKind.Unspecified)));
+
+        result.ShouldHaveValidationErrorFor(x => x.ReminderAtUtc);
+    }
+
+    [Fact]
+    public void Create_WithReminderWithoutDueDate_PassesValidation()
+    {
+        var result = new CreateTaskCommandValidator().TestValidate(
+            new CreateTaskCommand(
+                Guid.NewGuid(),
+                "Clean kitchen",
+                null,
+                DueDate: null,
+                ReminderAtUtc: DateTime.UtcNow.AddHours(1)));
+
+        result.ShouldNotHaveValidationErrorFor(x => x.DueDate);
+        result.ShouldNotHaveValidationErrorFor(x => x.ReminderAtUtc);
+    }
+
+    [Fact]
+    public void Create_WithPastDueDate_PassesValidationAsOverdueTask()
+    {
+        var result = new CreateTaskCommandValidator().TestValidate(
+            new CreateTaskCommand(
+                Guid.NewGuid(),
+                "Clean kitchen",
+                null,
+                DueDate: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1))));
+
+        result.ShouldNotHaveValidationErrorFor(x => x.DueDate);
+    }
+
+    [Fact]
+    public void SmartBatch_WithReminderInPast_FailsValidation()
+    {
+        var result = new SmartBatchCreateTasksCommandValidator().TestValidate(
+            new SmartBatchCreateTasksCommand(
+                Guid.NewGuid(),
+                [
+                    new SmartTaskInput(
+                        "Clean kitchen",
+                        null,
+                        ReminderAtUtc: DateTime.UtcNow.AddMinutes(-5))
+                ]));
+
+        result.ShouldHaveValidationErrorFor("Tasks[0].ReminderAtUtc");
+    }
+
+    [Fact]
     public void Delete_WithEmptyListId_FailsValidation()
     {
         var result = new DeleteTaskCommandValidator().TestValidate(new DeleteTaskCommand(Guid.Empty, Guid.NewGuid()));

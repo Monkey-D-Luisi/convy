@@ -71,13 +71,18 @@ public class ParseTaskVoiceAudioCommandHandler : IRequestHandler<ParseTaskVoiceA
             .ToDictionary(group => group.Key, group => group.OrderBy(task => task.IsCompleted).First(), StringComparer.Ordinal);
         var tasks = result.Tasks.Select(task =>
         {
+            var enrichedTask = task.AssignedToUserId.HasValue &&
+                               userNames.TryGetValue(task.AssignedToUserId.Value, out var assignedToUserName)
+                ? task with { AssignedToUserName = assignedToUserName }
+                : task;
+
             if (!string.IsNullOrWhiteSpace(task.MatchedExistingTask))
-                return task;
+                return enrichedTask;
 
             var normalizedTitle = _textNormalizer.NormalizeForComparison(_textNormalizer.NormalizeTitle(task.Title));
             return existingByTitle.TryGetValue(normalizedTitle, out var existing)
-                ? task with { MatchedExistingTask = existing.Title }
-                : task;
+                ? enrichedTask with { MatchedExistingTask = existing.Title }
+                : enrichedTask;
         }).ToList();
 
         result = result with { Tasks = tasks };

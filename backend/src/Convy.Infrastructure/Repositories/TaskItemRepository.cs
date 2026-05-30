@@ -55,6 +55,7 @@ public class TaskItemRepository : ITaskItemRepository
 
     public async Task<IReadOnlyList<TaskItem>> GetDueRemindersAsync(
         DateTime asOfUtc,
+        int limit,
         CancellationToken cancellationToken = default)
     {
         return await _context.TaskItems
@@ -62,6 +63,7 @@ public class TaskItemRepository : ITaskItemRepository
             .Where(t => t.ReminderAtUtc != null && t.ReminderAtUtc <= asOfUtc)
             .Where(t => t.ReminderSentAtUtc == null)
             .OrderBy(t => t.ReminderAtUtc)
+            .Take(limit)
             .ToListAsync(cancellationToken);
     }
 

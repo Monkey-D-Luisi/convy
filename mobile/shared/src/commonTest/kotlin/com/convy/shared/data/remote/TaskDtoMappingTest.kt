@@ -42,6 +42,7 @@ class TaskDtoMappingTest {
             title = "Clean kitchen",
             note = "Before dinner",
             assignedToUserId = "user-2",
+            assignedToUserName = "Marina",
             dueDate = "2026-05-30",
             reminderAtUtc = "2026-05-30T07:00:00Z",
             priority = "High",
@@ -50,6 +51,7 @@ class TaskDtoMappingTest {
 
         assertEquals("Clean kitchen", task.title)
         assertEquals("user-2", task.assignedToUserId)
+        assertEquals("Marina", task.assignedToUserName)
         assertEquals("2026-05-30", task.dueDate)
         assertEquals(TaskPriority.High, task.priority)
         assertEquals("task-1", task.matchedExistingTask)

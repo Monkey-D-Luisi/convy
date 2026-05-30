@@ -50,9 +50,10 @@ internal sealed class OpenAiVoiceTaskParser : IOpenAiVoiceTaskParser
             _options.MaxOutputTokenCount);
 
         var response = await _responsesClient.CreateResponseAsync(options, cancellationToken);
-        var tasks = OpenAiVoiceTasksResponseParser.Parse(response.OutputText, _options.MaxParsedItems);
+        var parsedJson = OpenAiVoiceTasksResponseParser.TryParse(response.OutputText, _options.MaxParsedItems, out var tasks);
+        var status = parsedJson ? response.Status : "parse_error";
 
-        return new VoiceTaskParsingResult(tasks, response.Usage, response.Model, response.Status);
+        return new VoiceTaskParsingResult(tasks, response.Usage, response.Model, status);
     }
 }
 
@@ -62,20 +63,35 @@ internal static class OpenAiVoiceTasksResponseParser
 
     public static IReadOnlyList<ParsedTaskDto> Parse(string json, int maxTasks)
     {
-        var parsed = JsonSerializer.Deserialize<VoiceTasksResponse>(json, JsonSerializerOptions);
-        return parsed?.Tasks?
-            .Where(task => !string.IsNullOrWhiteSpace(task.Title))
-            .Take(maxTasks)
-            .Select(task => new ParsedTaskDto(
-                task.Title.Trim(),
-                string.IsNullOrWhiteSpace(task.Note) ? null : task.Note.Trim(),
-                ParseGuid(task.AssignedToUserId),
-                ParseDate(task.DueDate),
-                ParseDateTime(task.ReminderAtUtc),
-                ParsePriority(task.Priority),
-                string.IsNullOrWhiteSpace(task.MatchedExistingTask) ? null : task.MatchedExistingTask.Trim()))
-            .ToList()
-            ?? [];
+        TryParse(json, maxTasks, out var tasks);
+        return tasks;
+    }
+
+    public static bool TryParse(string json, int maxTasks, out IReadOnlyList<ParsedTaskDto> tasks)
+    {
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<VoiceTasksResponse>(json, JsonSerializerOptions);
+            tasks = parsed?.Tasks?
+                .Where(task => !string.IsNullOrWhiteSpace(task.Title))
+                .Take(maxTasks)
+                .Select(task => new ParsedTaskDto(
+                    task.Title.Trim(),
+                    string.IsNullOrWhiteSpace(task.Note) ? null : task.Note.Trim(),
+                    ParseGuid(task.AssignedToUserId),
+                    ParseDate(task.DueDate),
+                    ParseDateTime(task.ReminderAtUtc),
+                    ParsePriority(task.Priority),
+                    string.IsNullOrWhiteSpace(task.MatchedExistingTask) ? null : task.MatchedExistingTask.Trim()))
+                .ToList()
+                ?? [];
+            return true;
+        }
+        catch (JsonException)
+        {
+            tasks = [];
+            return false;
+        }
     }
 
     private static Guid? ParseGuid(string? value) =>

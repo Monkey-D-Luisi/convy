@@ -22,14 +22,14 @@ class TaskFormStateTest {
             assignedToUserId = "user-2",
             assignedToUserName = "Marina",
             dueDate = "2026-05-30",
-            reminderAtUtc = "2026-05-30T07:00:00Z",
+            reminderAtUtc = "2026-05-30 09:00",
             priority = TaskPriority.High,
         )
 
         assertEquals("user-2", state.assignedToUserId)
         assertEquals("Marina", state.assignedToUserName)
         assertEquals("2026-05-30", state.dueDate)
-        assertEquals("2026-05-30T07:00:00Z", state.reminderAtUtc)
+        assertEquals("2026-05-30 09:00", state.reminderAtUtc)
         assertEquals(TaskPriority.High, state.priority)
     }
 }

@@ -2,7 +2,10 @@ package com.convy.app.ui.screens.task
 
 import com.convy.app.generated.resources.*
 import com.convy.app.ui.mvi.MviStore
+import com.convy.app.util.TaskDateInputValidation
 import com.convy.app.util.UiText
+import com.convy.app.util.formatTaskReminderLocal
+import com.convy.app.util.normalizeTaskDateInputs
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.TaskRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -90,7 +93,7 @@ class TaskFormStore(
                                 assignedToUserId = task.assignedToUserId,
                                 assignedToUserName = task.assignedToUserName,
                                 dueDate = task.dueDate ?: "",
-                                reminderAtUtc = task.reminderAtUtc ?: "",
+                                reminderAtUtc = formatTaskReminderLocal(task.reminderAtUtc) ?: "",
                                 priority = task.priority,
                                 isLoading = false,
                             )
@@ -110,11 +113,27 @@ class TaskFormStore(
         val current = _state.value
         if (current.title.isBlank() || current.isSaving) return
 
+        val dateInputs = when (val validation = normalizeTaskDateInputs(current.dueDate, current.reminderAtUtc)) {
+            TaskDateInputValidation.InvalidDueDate -> {
+                _state.update { it.copy(error = UiText.StringResourceText(Res.string.task_due_date_invalid)) }
+                return
+            }
+            TaskDateInputValidation.InvalidReminder -> {
+                _state.update { it.copy(error = UiText.StringResourceText(Res.string.task_reminder_invalid)) }
+                return
+            }
+            TaskDateInputValidation.PastReminder -> {
+                _state.update { it.copy(error = UiText.StringResourceText(Res.string.task_reminder_past)) }
+                return
+            }
+            is TaskDateInputValidation.Success -> validation.dates
+        }
+
         _state.update { it.copy(isSaving = true, error = null) }
         val note = current.note.ifBlank { null }
         val assignedToUserId = current.assignedToUserId?.takeIf { it.isNotBlank() }
-        val dueDate = current.dueDate.ifBlank { null }
-        val reminderAtUtc = current.reminderAtUtc.ifBlank { null }
+        val dueDate = dateInputs.dueDate
+        val reminderAtUtc = dateInputs.reminderAtUtc
 
         scope.launch {
             val result = if (current.isEditing && current.taskId != null) {

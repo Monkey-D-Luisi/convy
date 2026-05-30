@@ -4,6 +4,7 @@ data class ParsedTask(
     val title: String,
     val note: String? = null,
     val assignedToUserId: String? = null,
+    val assignedToUserName: String? = null,
     val dueDate: String? = null,
     val reminderAtUtc: String? = null,
     val priority: TaskPriority = TaskPriority.Normal,

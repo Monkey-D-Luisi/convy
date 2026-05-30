@@ -145,6 +145,21 @@ public class TaskItemTests
     }
 
     [Fact]
+    public void Constructor_WithUnspecifiedReminder_TreatsValueAsUtc()
+    {
+        var unspecified = new DateTime(2026, 5, 30, 7, 0, 0, DateTimeKind.Unspecified);
+
+        var task = new TaskItem(
+            "Clean kitchen",
+            _listId,
+            _creatorId,
+            reminderAtUtc: unspecified);
+
+        task.ReminderAtUtc.Should().Be(DateTime.SpecifyKind(unspecified, DateTimeKind.Utc));
+        task.ReminderAtUtc!.Value.Kind.Should().Be(DateTimeKind.Utc);
+    }
+
+    [Fact]
     public void Complete_WithValidUser_MarksCompleted()
     {
         var task = new TaskItem("Clean kitchen", _listId, _creatorId);

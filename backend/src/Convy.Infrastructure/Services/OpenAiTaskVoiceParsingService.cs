@@ -61,21 +61,22 @@ internal sealed class OpenAiTaskVoiceParsingService : ITaskVoiceParsingService
             now,
             cancellationToken);
         parsingStopwatch.Stop();
+        var parseFailed = parsed.Status == "parse_error";
 
         await RecordUsageAsync(
             householdId,
             "task_parsing",
             parsed.Model ?? _options.ParsingModel,
-            "success",
+            parseFailed ? "failure" : "success",
             parsingStopwatch.Elapsed,
             parsed.Usage,
             null,
-            null,
+            parseFailed ? "invalid_json" : null,
             cancellationToken);
 
         _logger.LogInformation(
             "OpenAI voice task parsing completed result={Result} taskCount={TaskCount} model={Model}",
-            parsed.Tasks.Count == 0 ? "parse_empty" : "success",
+            parseFailed ? "parse_error" : parsed.Tasks.Count == 0 ? "parse_empty" : "success",
             parsed.Tasks.Count,
             parsed.Model);
 
