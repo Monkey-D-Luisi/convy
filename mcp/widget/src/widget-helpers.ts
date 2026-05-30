@@ -11,20 +11,9 @@ export type ConvyStructuredContent = {
     householdId?: string | null;
     truncated?: boolean;
     selectionRequired?: boolean;
+    debug?: boolean;
   };
 };
-
-export function createRefreshErrorResult(error: unknown): ToolResultNotification {
-  const detail = error instanceof Error && error.message ? error.message : "Refresh failed.";
-
-  return {
-    isError: true,
-    content: [{
-      type: "text",
-      text: `Convy refresh failed: ${detail}`,
-    }],
-  };
-}
 
 export function normalizeToolResult(value: unknown): ToolResultNotification {
   if (isRecord(value) && ("structuredContent" in value || "content" in value || "isError" in value)) {
@@ -49,29 +38,6 @@ export function inferActiveTool(data: Record<string, unknown>) {
   if ("pendingTasks" in data || "completedTasks" in data) return "convy_get_task_list";
   if ("activity" in data) return "convy_get_recent_activity";
   return null;
-}
-
-export function createRefreshArgs(
-  activeTool: string | null,
-  data: Record<string, unknown>,
-  meta: ConvyStructuredContent["meta"],
-) {
-  if (activeTool === "convy_get_shopping_context") {
-    const household = isRecord(data.household) ? data.household : {};
-    const householdId = household.id ?? meta?.householdId;
-    return typeof householdId === "string" ? { householdId } : {};
-  }
-
-  if (activeTool === "convy_get_shopping_list" || activeTool === "convy_get_task_list") {
-    const list = isRecord(data.list) ? data.list : {};
-    return { listId: list.id, includeCompleted: true, limit: 50 };
-  }
-
-  if (activeTool === "convy_get_recent_activity") {
-    return { householdId: meta?.householdId, limit: 20 };
-  }
-
-  return {};
 }
 
 export function arrayOfRecords(value: unknown) {

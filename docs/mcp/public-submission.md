@@ -39,6 +39,8 @@ Prepare:
 - Write tools are non-destructive, idempotent, and closed-world.
 - Tool outputs are relevant, concise, and structured.
 - Tool outputs do not include secrets, tokens, admin metrics, backups, or unnecessary personal identifiers.
+- Normal data tools do not attach widget metadata.
+- Only read-only render tools attach `ui://widget/convy-summary-v1.html`.
 - Write tools require user confirmation in ChatGPT.
 - API enforces idempotency for MCP writes.
 - Metadata advertises only the five read scopes plus `convy.items.write` and `convy.tasks.write`.
@@ -51,6 +53,7 @@ Prepare:
 - "Show completed items in my shopping list."
 - "Show my tasks."
 - "Show recent household activity."
+- "Open a compact panel for my shopping list."
 - "Add milk to my shopping list."
 - "Mark milk as complete."
 - "Create a task to clean the kitchen."
@@ -64,7 +67,7 @@ Prepare:
 - MCP endpoint must be publicly reachable.
 - Legal docs must disclose ChatGPT MCP data access and revocation.
 - Public site and legal pages must be reachable.
-- React Apps SDK widget must render through `ui://widget/convy-summary-v1.html`.
+- React Apps SDK widget must render through `ui://widget/convy-summary-v1.html` only for render tools.
 - Dashboard/admin-only features must not be exposed through MCP.
 - Offsite encrypted backups require restic environment configuration before operators present them as active for a deployment.
 

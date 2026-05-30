@@ -26,6 +26,11 @@ Submission status: `needs-changes` until the manual reviewer account, screenshot
 | `convy_get_shopping_list` | true | false | false | true | `convy.items.read` |
 | `convy_get_task_list` | true | false | false | true | `convy.tasks.read` |
 | `convy_get_recent_activity` | true | false | false | true | `convy.households.read`, `convy.activity.read` |
+| `convy_render_context` | true | false | false | true | `convy.households.read` |
+| `convy_render_shopping_context` | true | false | false | true | `convy.households.read`, `convy.lists.read` |
+| `convy_render_shopping_list` | true | false | false | true | `convy.items.read` |
+| `convy_render_task_list` | true | false | false | true | `convy.tasks.read` |
+| `convy_render_recent_activity` | true | false | false | true | `convy.households.read`, `convy.activity.read` |
 | `convy_add_shopping_items` | false | false | false | true | `convy.items.write` |
 | `convy_update_shopping_items_status` | false | false | false | true | `convy.items.write` |
 | `convy_add_tasks` | false | false | false | true | `convy.tasks.write` |
@@ -39,13 +44,15 @@ Submission status: `needs-changes` until the manual reviewer account, screenshot
 - The MCP surface does not expose delete, archive, invite, leave-household, account-management, admin metrics, backup, SQL, device-token, or configuration tools.
 - Write tools generate or forward idempotency keys and the API enforces idempotency for MCP-origin writes.
 - Tool annotations are explicit for `readOnlyHint`, `openWorldHint`, `destructiveHint`, and `idempotentHint`.
-- The React Apps SDK widget is a shared read-oriented summary view. Write tools are model-only and are not callable from the widget.
+- Normal read/write tools are data-first and do not attach widget metadata.
+- Render tools are read-only, model-only, and attach the shared widget only for explicit visual requests.
+- The React Apps SDK widget is a compact display-only summary view. It has no write buttons and no refresh control.
 
 ## Widget Isolation
 
 - The widget origin is currently `https://mcp.convyapp.com` because the deployed topology does not yet provision a dedicated `widgets.convyapp.com` host, certificate, and routing path.
 - This still keeps the Apps review surface narrow: the widget is registered as a single Apps SDK resource, has no cookies, uses no browser storage, and declares empty connect, resource, and frame domains in its CSP.
-- The widget can only call read-only tools exposed with `ui.visibility` for the app; write tools remain model-only and still require ChatGPT confirmation.
+- The widget is not granted tool-calling visibility. Write tools remain model-only and still require ChatGPT confirmation.
 - If infrastructure adds `widgets.convyapp.com`, switch `CONVY_WIDGET_DOMAIN` to that dedicated origin before submission or in a follow-up deploy hardening PR.
 
 ## Risks And Required Manual Actions

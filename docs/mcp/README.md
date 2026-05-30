@@ -4,7 +4,7 @@ This directory documents the Convy ChatGPT MCP integration for the current contr
 
 The ChatGPT MCP integration lets an authorized ChatGPT client read a user's Convy household context, lists, shopping items, tasks, and recent activity, plus perform limited confirmed writes for shopping items and tasks.
 
-The MCP server also registers a shared React Apps SDK widget at `ui://widget/convy-summary-v1.html` so ChatGPT can render household, shopping, task, and activity summaries.
+The MCP server also registers a shared React Apps SDK widget at `ui://widget/convy-summary-v1.html`. Normal tools are data-first and do not render the widget automatically; dedicated render tools use the widget only when the user explicitly asks for a panel, card, widget, or visual component.
 
 For MCP servers used by development agents, see [AI development MCP setup](../ai-tooling/mcp-setup.md).
 
@@ -55,6 +55,11 @@ Current tools:
 - `convy_get_shopping_list`
 - `convy_get_task_list`
 - `convy_get_recent_activity`
+- `convy_render_context`
+- `convy_render_shopping_context`
+- `convy_render_shopping_list`
+- `convy_render_task_list`
+- `convy_render_recent_activity`
 - `convy_add_shopping_items`
 - `convy_update_shopping_items_status`
 - `convy_add_tasks`

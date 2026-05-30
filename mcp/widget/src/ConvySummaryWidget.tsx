@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   arrayOfRecords,
-  createRefreshArgs,
-  createRefreshErrorResult,
   formatValue,
   inferActiveTool,
+  isRecord,
   normalizeStructuredContent,
   normalizeToolResult,
   type ConvyStructuredContent,
@@ -14,7 +13,6 @@ import {
 type OpenAiRuntime = {
   toolOutput?: unknown;
   toolResponseMetadata?: unknown;
-  callTool?: (name: string, args: Record<string, unknown>) => Promise<unknown>;
 };
 
 type OpenAiGlobalsEvent = CustomEvent<{
@@ -29,23 +27,14 @@ declare global {
   }
 }
 
-const refreshableReadTools = new Set([
-  "convy_get_context",
-  "convy_get_shopping_context",
-  "convy_get_shopping_list",
-  "convy_get_task_list",
-  "convy_get_recent_activity",
-]);
-
 export function ConvySummaryWidget() {
   const [result, setResult] = useState<ToolResultNotification>(() => readInitialResult());
-  const [refreshing, setRefreshing] = useState(false);
   const structuredContent = normalizeStructuredContent(result.structuredContent);
   const data = structuredContent.data ?? {};
   const meta = structuredContent.meta ?? {};
   const activeTool = inferActiveTool(data);
-  const canRefresh = Boolean(window.openai?.callTool && activeTool && refreshableReadTools.has(activeTool));
   const hasError = result.isError === true;
+  const showDebug = meta?.debug === true || debugEnabled(window.openai?.toolResponseMetadata);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -76,23 +65,6 @@ export function ConvySummaryWidget() {
     };
   }, []);
 
-  const refreshArgs = useMemo(() => createRefreshArgs(activeTool, data, meta), [activeTool, data, meta]);
-  const refresh = useCallback(async () => {
-    if (!activeTool || !window.openai?.callTool) {
-      return;
-    }
-
-    setRefreshing(true);
-    try {
-      const nextResult = await window.openai.callTool(activeTool, refreshArgs);
-      setResult(normalizeToolResult(nextResult));
-    } catch (error) {
-      setResult(createRefreshErrorResult(error));
-    } finally {
-      setRefreshing(false);
-    }
-  }, [activeTool, refreshArgs]);
-
   return (
     <main className="shell">
       <header className="header">
@@ -100,87 +72,149 @@ export function ConvySummaryWidget() {
           <p className="eyebrow">Convy</p>
           <h1>{headingFor(activeTool, hasError)}</h1>
         </div>
-        {canRefresh ? (
-          <button className="refresh" type="button" onClick={refresh} disabled={refreshing}>
-            {refreshing ? "Refreshing" : "Refresh"}
-          </button>
-        ) : null}
       </header>
 
-      {hasError ? <ErrorState result={result} /> : <ResultView data={data} meta={meta} />}
+      {hasError ? <ErrorState result={result} /> : <ResultView data={data} meta={meta} showDebug={showDebug} />}
     </main>
   );
 }
 
-function ResultView({ data, meta }: { data: Record<string, unknown>; meta: ConvyStructuredContent["meta"] }) {
+function ResultView({
+  data,
+  meta,
+  showDebug,
+}: {
+  data: Record<string, unknown>;
+  meta: ConvyStructuredContent["meta"];
+  showDebug: boolean;
+}) {
+  const households = arrayOfRecords(data.households);
+  const shoppingLists = arrayOfRecords(data.shoppingLists);
+  const pendingItems = arrayOfRecords(data.pendingItems);
+  const completedItems = arrayOfRecords(data.completedItems);
+  const pendingTasks = arrayOfRecords(data.pendingTasks);
+  const completedTasks = arrayOfRecords(data.completedTasks);
+  const activity = arrayOfRecords(data.activity);
+
   if (data.selectionRequired === true || meta?.selectionRequired === true) {
-    return (
+    return households.length > 0 ? (
       <Section title="Choose a household">
-        <EntityList values={arrayOfRecords(data.households)} primaryKey="name" secondaryKeys={["id", "createdAt"]} />
+        <EntityList
+          values={households}
+          primaryKey="name"
+          secondaryKeys={["createdAt"]}
+          debugKeys={["id"]}
+          showDebug={showDebug}
+        />
       </Section>
-    );
+    ) : <EmptyState />;
   }
 
-  if (arrayOfRecords(data.households).length > 0) {
+  if (households.length > 0) {
     return (
       <Section title="Households">
-        <SummaryLine label="Available" value={String(data.householdCount ?? arrayOfRecords(data.households).length)} />
-        <EntityList values={arrayOfRecords(data.households)} primaryKey="name" secondaryKeys={["id", "createdAt"]} />
+        <SummaryLine label="Available" value={String(data.householdCount ?? households.length)} />
+        <EntityList
+          values={households}
+          primaryKey="name"
+          secondaryKeys={["createdAt"]}
+          debugKeys={["id"]}
+          showDebug={showDebug}
+        />
       </Section>
     );
   }
 
-  if (arrayOfRecords(data.shoppingLists).length > 0) {
+  if (shoppingLists.length > 0) {
     return (
       <Section title="Shopping lists">
-        <EntityList values={arrayOfRecords(data.shoppingLists)} primaryKey="name" secondaryKeys={["id", "type"]} />
+        <EntityList
+          values={shoppingLists}
+          primaryKey="name"
+          secondaryKeys={["type"]}
+          debugKeys={["id", "householdId"]}
+          showDebug={showDebug}
+        />
       </Section>
     );
   }
 
-  if (arrayOfRecords(data.pendingItems).length > 0 || arrayOfRecords(data.completedItems).length > 0) {
+  if (pendingItems.length > 0 || completedItems.length > 0) {
     return (
       <div className="stack">
-        <Section title="Pending items">
-          <EntityList values={arrayOfRecords(data.pendingItems)} primaryKey="title" secondaryKeys={["quantity", "unit", "note"]} />
-        </Section>
-        <Section title="Completed items">
-          <EntityList values={arrayOfRecords(data.completedItems)} primaryKey="title" secondaryKeys={["completedByName", "completedAt"]} emptyText="No completed items returned." />
-        </Section>
+        {pendingItems.length > 0 ? (
+          <Section title="Pending items">
+            <EntityList
+              values={pendingItems}
+              primaryKey="title"
+              secondaryKeys={["quantity", "unit", "note"]}
+              debugKeys={["id", "listId"]}
+              showDebug={showDebug}
+            />
+          </Section>
+        ) : null}
+        {completedItems.length > 0 ? (
+          <Section title="Completed items">
+            <EntityList
+              values={completedItems}
+              primaryKey="title"
+              secondaryKeys={["completedByName", "completedAt"]}
+              debugKeys={["id", "listId"]}
+              showDebug={showDebug}
+            />
+          </Section>
+        ) : null}
         <TruncationNotice truncated={meta?.truncated} />
       </div>
     );
   }
 
-  if (arrayOfRecords(data.pendingTasks).length > 0 || arrayOfRecords(data.completedTasks).length > 0) {
+  if (pendingTasks.length > 0 || completedTasks.length > 0) {
     return (
       <div className="stack">
-        <Section title="Pending tasks">
-          <EntityList values={arrayOfRecords(data.pendingTasks)} primaryKey="title" secondaryKeys={["note", "createdByName"]} />
-        </Section>
-        <Section title="Completed tasks">
-          <EntityList values={arrayOfRecords(data.completedTasks)} primaryKey="title" secondaryKeys={["completedByName", "completedAt"]} emptyText="No completed tasks returned." />
-        </Section>
+        {pendingTasks.length > 0 ? (
+          <Section title="Pending tasks">
+            <EntityList
+              values={pendingTasks}
+              primaryKey="title"
+              secondaryKeys={["note", "createdByName"]}
+              debugKeys={["id", "listId", "assignedToUserId"]}
+              showDebug={showDebug}
+            />
+          </Section>
+        ) : null}
+        {completedTasks.length > 0 ? (
+          <Section title="Completed tasks">
+            <EntityList
+              values={completedTasks}
+              primaryKey="title"
+              secondaryKeys={["completedByName", "completedAt"]}
+              debugKeys={["id", "listId", "assignedToUserId"]}
+              showDebug={showDebug}
+            />
+          </Section>
+        ) : null}
         <TruncationNotice truncated={meta?.truncated} />
       </div>
     );
   }
 
-  if (arrayOfRecords(data.activity).length > 0) {
+  if (activity.length > 0) {
     return (
       <Section title="Recent activity">
-        <EntityList values={arrayOfRecords(data.activity)} primaryKey="actionType" secondaryKeys={["entityType", "performedByName", "createdAt"]} />
+        <EntityList
+          values={activity}
+          primaryKey="actionType"
+          secondaryKeys={["entityType", "performedByName", "createdAt"]}
+          debugKeys={["id", "householdId", "entityId"]}
+          showDebug={showDebug}
+        />
         <TruncationNotice truncated={meta?.truncated} />
       </Section>
     );
   }
 
-  return (
-    <section className="empty">
-      <h2>Convy result</h2>
-      <p>The latest Convy tool returned data that can be summarized in the chat response.</p>
-    </section>
-  );
+  return <EmptyState />;
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -205,26 +239,35 @@ function EntityList({
   values,
   primaryKey,
   secondaryKeys,
-  emptyText = "No records returned.",
+  debugKeys,
+  showDebug,
 }: {
   values: Record<string, unknown>[];
   primaryKey: string;
   secondaryKeys: string[];
-  emptyText?: string;
+  debugKeys: string[];
+  showDebug: boolean;
 }) {
-  if (values.length === 0) {
-    return <p className="muted">{emptyText}</p>;
-  }
+  const visibleSecondaryKeys = showDebug ? [...secondaryKeys, ...debugKeys] : secondaryKeys;
 
   return (
     <ul className="entity-list">
       {values.map((value, index) => (
         <li key={String(value.id ?? `${primaryKey}-${index}`)}>
           <strong>{formatValue(value[primaryKey])}</strong>
-          <span>{secondaryKeys.map((key) => formatValue(value[key])).filter(Boolean).join(" | ")}</span>
+          <span>{visibleSecondaryKeys.map((key) => formatValue(value[key])).filter(Boolean).join(" | ")}</span>
         </li>
       ))}
     </ul>
+  );
+}
+
+function EmptyState() {
+  return (
+    <section className="empty">
+      <h2>Convy result</h2>
+      <p>The latest Convy tool returned data that can be summarized in the chat response.</p>
+    </section>
   );
 }
 
@@ -244,6 +287,10 @@ function TruncationNotice({ truncated }: { truncated?: boolean }) {
 
 function readInitialResult(): ToolResultNotification {
   return normalizeToolResult(window.openai?.toolOutput ?? {});
+}
+
+function debugEnabled(value: unknown) {
+  return isRecord(value) && value.debug === true;
 }
 
 function headingFor(activeTool: string | null, hasError: boolean) {

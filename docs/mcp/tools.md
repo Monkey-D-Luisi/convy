@@ -16,9 +16,9 @@ Tool responses return concise `structuredContent` with:
 }
 ```
 
-The text response is a short summary only. Consumers should use structured content.
+The text response is a short summary only. Consumers should use structured content. Normal read and write tools are data-first: they do not include `openai/outputTemplate` or `ui.resourceUri`, so ChatGPT can answer in text without automatically rendering a component.
 
-All tools reference the shared Apps SDK widget resource `ui://widget/convy-summary-v1.html`. Read tools are visible to both the model and the widget so the widget can refresh read-only context. Write tools are model-only and are not callable from the widget.
+Only render tools reference the shared Apps SDK widget resource `ui://widget/convy-summary-v1.html`. Render tools are read-only, model-only, and should be used only when the user explicitly asks for a panel, card, widget, visual component, tarjeta, or componente visual.
 
 ## Read Tools
 
@@ -40,6 +40,36 @@ Read annotations:
   "openWorldHint": false
 }
 ```
+
+Read tools return pending shopping items and tasks by default. Completed items/tasks are fetched only when `includeCompleted=true`.
+
+## Render Tools
+
+Render tools reuse the same API paths and output schemas as their matching read tools, but they attach widget metadata so ChatGPT can render a compact Convy panel on explicit visual requests.
+
+| Tool | Matching data tool | Scopes | Input |
+| --- | --- | --- | --- |
+| `convy_render_context` | `convy_get_context` | `convy.households.read` | `{}` |
+| `convy_render_shopping_context` | `convy_get_shopping_context` | `convy.households.read`, `convy.lists.read` | optional `householdId` UUID |
+| `convy_render_shopping_list` | `convy_get_shopping_list` | `convy.items.read` | `listId` UUID, optional `includeCompleted`, optional `limit` 1-100 |
+| `convy_render_task_list` | `convy_get_task_list` | `convy.tasks.read` | `listId` UUID, optional `includeCompleted`, optional `limit` 1-100 |
+| `convy_render_recent_activity` | `convy_get_recent_activity` | `convy.households.read`, `convy.activity.read` | optional `householdId` UUID, optional `limit` 1-50 |
+
+Render tool annotations match read tools. Render tool descriptors are the only tool descriptors that include:
+
+```json
+{
+  "_meta": {
+    "ui": {
+      "resourceUri": "ui://widget/convy-summary-v1.html",
+      "visibility": ["model"]
+    },
+    "openai/outputTemplate": "ui://widget/convy-summary-v1.html"
+  }
+}
+```
+
+The widget is display-only. It has no refresh button, no write controls, no empty completed sections, no technical IDs unless debug metadata is enabled, and internally scrolls long lists after roughly eight visible rows.
 
 ## Write Tools
 
