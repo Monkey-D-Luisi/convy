@@ -9,9 +9,6 @@ import com.convy.shared.data.remote.HouseholdEvent
 import com.convy.shared.data.remote.HouseholdRealtimeService
 import com.convy.shared.data.remote.SignalRClient
 import com.convy.shared.domain.repository.AuthRepository
-import com.convy.shared.domain.repository.ItemRepository
-import com.convy.shared.domain.repository.TaskRepository
-import com.convy.shared.domain.model.ParsedTask
 import com.convy.shared.platform.AudioRecorder
 import com.convy.shared.platform.NetworkMonitor
 import kotlinx.coroutines.delay
@@ -34,8 +31,8 @@ class ListDetailStore(
     private val listId: String,
     private val listName: String,
     private val listType: String,
-    private val itemRepository: ItemRepository,
-    private val taskRepository: TaskRepository,
+    private val entryActions: ListDetailEntryActions,
+    private val voiceCoordinator: ListDetailVoiceCoordinator,
     private val realtimeService: HouseholdRealtimeService,
     private val audioRecorder: AudioRecorder,
     private val networkMonitor: NetworkMonitor,
@@ -149,15 +146,7 @@ class ListDetailStore(
             }
             val createdBy: String? = null
 
-            val result = if (isTaskList) {
-                taskRepository.getByList(listId, status, createdBy).map { tasks ->
-                    tasks.map { it.toListEntryUi() }
-                }
-            } else {
-                itemRepository.getByList(listId, status, createdBy).map { items ->
-                    items.map { it.toListEntryUi() }
-                }
-            }
+            val result = entryActions.load(isTaskList, listId, status, createdBy)
 
             result.fold(
                 onSuccess = { entries ->
@@ -386,14 +375,10 @@ class ListDetailStore(
     }
 
     private suspend fun setRemoteCompletion(itemId: String, completed: Boolean): Result<Unit> =
-        if (isTaskList) {
-            if (completed) taskRepository.complete(listId, itemId) else taskRepository.uncomplete(listId, itemId)
-        } else {
-            if (completed) itemRepository.complete(listId, itemId) else itemRepository.uncomplete(listId, itemId)
-        }
+        entryActions.setCompletion(isTaskList, listId, itemId, completed)
 
     private suspend fun deleteRemote(itemId: String): Result<Unit> =
-        if (isTaskList) taskRepository.delete(listId, itemId) else itemRepository.delete(listId, itemId)
+        entryActions.delete(isTaskList, listId, itemId)
 
     private fun startRecording() {
         try {
@@ -432,44 +417,7 @@ class ListDetailStore(
         }
 
         scope.launch {
-            if (isTaskList) {
-                taskRepository.parseVoiceAudio(listId, audioData).fold(
-                    onSuccess = { result ->
-                        if (result.transcription.isBlank()) {
-                            _state.update { it.copy(isProcessingVoice = false) }
-                            _sideEffects.emit(resourceError(Res.string.detail_speech_not_recognized))
-                        } else {
-                            _state.update {
-                                it.copy(
-                                    isProcessingVoice = false,
-                                    voiceTranscription = result.transcription,
-                                    parsedVoiceTasks = result.tasks.map { parsed ->
-                                        ParsedVoiceTask(
-                                            title = parsed.title,
-                                            note = parsed.note,
-                                            assignedToUserId = parsed.assignedToUserId,
-                                            assignedToUserName = parsed.assignedToUserName,
-                                            dueDate = parsed.dueDate,
-                                            reminderAtUtc = parsed.reminderAtUtc,
-                                            priority = parsed.priority,
-                                            matchedExistingTask = parsed.matchedExistingTask,
-                                        )
-                                    },
-                                    parsedVoiceItems = emptyList(),
-                                    showVoiceSheet = true,
-                                )
-                            }
-                        }
-                    },
-                    onFailure = { error ->
-                        _state.update { it.copy(isProcessingVoice = false) }
-                        _sideEffects.emit(repositoryError(error.message, Res.string.detail_voice_process_failed))
-                    },
-                )
-                return@launch
-            }
-
-            itemRepository.parseVoiceAudio(listId, audioData).fold(
+            voiceCoordinator.parse(isTaskList, listId, audioData).fold(
                 onSuccess = { result ->
                     if (result.transcription.isBlank()) {
                         _state.update { it.copy(isProcessingVoice = false) }
@@ -479,10 +427,8 @@ class ListDetailStore(
                             it.copy(
                                 isProcessingVoice = false,
                                 voiceTranscription = result.transcription,
-                                parsedVoiceItems = result.items.map { p ->
-                                    ParsedVoiceItem(p.title, p.quantity, p.unit, p.matchedExistingItem)
-                                },
-                                parsedVoiceTasks = emptyList(),
+                                parsedVoiceItems = result.items,
+                                parsedVoiceTasks = result.tasks,
                                 showVoiceSheet = true,
                             )
                         }
@@ -509,10 +455,7 @@ class ListDetailStore(
         }
 
         scope.launch {
-            val parsedItems = selected.map {
-                com.convy.shared.domain.model.ParsedItem(it.title, it.quantity, it.unit, it.matchedExistingItem)
-            }
-            itemRepository.batchCreate(listId, parsedItems, source = "voice").fold(
+            voiceCoordinator.confirmItems(listId, selected).fold(
                 onSuccess = {
                     _state.update { it.copy(showVoiceSheet = false, parsedVoiceItems = emptyList(), voiceTranscription = "") }
                     loadItems()
@@ -532,19 +475,7 @@ class ListDetailStore(
         }
 
         scope.launch {
-            val parsedTasks = selected.map {
-                ParsedTask(
-                    title = it.title,
-                    note = it.note,
-                    assignedToUserId = it.assignedToUserId,
-                    assignedToUserName = it.assignedToUserName,
-                    dueDate = it.dueDate,
-                    reminderAtUtc = it.reminderAtUtc,
-                    priority = it.priority,
-                    matchedExistingTask = it.matchedExistingTask,
-                )
-            }
-            taskRepository.batchCreate(listId, parsedTasks).fold(
+            voiceCoordinator.confirmTasks(listId, selected).fold(
                 onSuccess = {
                     _state.update { it.copy(showVoiceSheet = false, parsedVoiceTasks = emptyList(), voiceTranscription = "") }
                     loadItems()

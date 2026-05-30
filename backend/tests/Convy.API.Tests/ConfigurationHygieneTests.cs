@@ -29,6 +29,26 @@ public class ConfigurationHygieneTests
         environmentGuardIndex.Should().BeLessThan(migrationIndex);
     }
 
+    [Fact]
+    public void Program_ShouldFailFastForMissingMcpPublicKeyOutsideDevelopment()
+    {
+        var programPath = Path.Combine(FindRepoRoot(), "backend", "src", "Convy.API", "Program.cs");
+        var program = File.ReadAllText(programPath);
+
+        program.Should().Contain("MCP public key is required outside Development.");
+        program.Should().NotContain("?? new RsaSecurityKey(RSA.Create(2048))");
+    }
+
+    [Fact]
+    public void Infrastructure_ShouldRequireOpenAiKeyWhenVoiceParsingEnabledOutsideDevelopment()
+    {
+        var source = File.ReadAllText(Path.Combine(FindRepoRoot(), "backend", "src", "Convy.Infrastructure", "DependencyInjection.cs"));
+
+        source.Should().Contain("Features:VoiceParsingEnabled");
+        source.Should().Contain("if (!voiceParsingEnabled)");
+        source.Should().Contain("OpenAI API key is required when voice parsing is enabled outside Development.");
+    }
+
     private static string FindRepoRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

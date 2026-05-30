@@ -28,12 +28,19 @@ jobs:
         env:
           DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
           SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          STAGING_SSH_KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
         run: |
+          if [ -z "${STAGING_SSH_KNOWN_HOSTS}" ]; then
+            echo "Set STAGING_SSH_KNOWN_HOSTS to the pinned staging host key entry." >&2
+            exit 1
+          fi
           mkdir -p ~/.ssh
           printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/convy_deploy
           chmod 600 ~/.ssh/convy_deploy
           ssh-keygen -y -f ~/.ssh/convy_deploy > ~/.ssh/convy_deploy.pub
-          ssh-keyscan -H "${DEPLOY_HOST}" >> ~/.ssh/known_hosts
+          printf '%s\n' "${STAGING_SSH_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          ssh-keygen -F "${DEPLOY_HOST}" -f ~/.ssh/known_hosts >/dev/null
 
       - name: Ensure non-root deploy user
         if: ${{ vars.STAGING_DEPLOY_USER == '' }}

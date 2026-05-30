@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Configuration;
 
 namespace Convy.API.Services;
 
@@ -13,15 +14,23 @@ public class McpClientMetadataValidator
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<McpClientMetadataValidator> _logger;
     private readonly IMcpClientMetadataDnsResolver _dnsResolver;
+    private readonly HashSet<string> _allowedHosts;
 
     public McpClientMetadataValidator(
         IHttpClientFactory httpClientFactory,
         ILogger<McpClientMetadataValidator> logger,
-        IMcpClientMetadataDnsResolver dnsResolver)
+        IMcpClientMetadataDnsResolver dnsResolver,
+        IConfiguration configuration)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
         _dnsResolver = dnsResolver;
+        _allowedHosts = configuration.GetSection("McpAuth:AllowedClientMetadataHosts")
+            .Get<string[]>()?
+            .Where(host => !string.IsNullOrWhiteSpace(host))
+            .Select(host => host.Trim().TrimEnd('.'))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase)
+            ?? [];
     }
 
     public async Task<McpClientMetadataValidationResult> ValidateAsync(
@@ -31,7 +40,7 @@ public class McpClientMetadataValidator
     {
         var uriValidation = await ValidateClientMetadataUriAsync(clientId, cancellationToken);
         if (!uriValidation.IsSafe)
-            return McpClientMetadataValidationResult.Invalid("invalid_client_id");
+            return McpClientMetadataValidationResult.Invalid(uriValidation.Error ?? "invalid_client_id");
 
         var clientUri = uriValidation.ClientUri!;
 
@@ -79,31 +88,34 @@ public class McpClientMetadataValidator
         }
     }
 
-    private async Task<(bool IsSafe, Uri? ClientUri)> ValidateClientMetadataUriAsync(string clientId, CancellationToken cancellationToken)
+    private async Task<(bool IsSafe, Uri? ClientUri, string? Error)> ValidateClientMetadataUriAsync(string clientId, CancellationToken cancellationToken)
     {
         if (!Uri.TryCreate(clientId, UriKind.Absolute, out var parsed))
-            return (false, null);
+            return (false, null, "invalid_client_id");
 
         if (parsed.Scheme != Uri.UriSchemeHttps)
-            return (false, null);
+            return (false, null, "invalid_client_id");
+
+        if (_allowedHosts.Count == 0 || !_allowedHosts.Contains(parsed.Host.TrimEnd('.')))
+            return (false, null, "client_metadata_host_not_allowed");
 
         if (string.IsNullOrWhiteSpace(parsed.AbsolutePath) || parsed.AbsolutePath == "/")
-            return (false, null);
+            return (false, null, "invalid_client_id");
 
         if (string.Equals(parsed.Host, "localhost", StringComparison.OrdinalIgnoreCase))
-            return (false, null);
+            return (false, null, "invalid_client_id");
 
         if (IPAddress.TryParse(parsed.Host, out var address) && IsPrivateOrLocalAddress(address))
-            return (false, null);
+            return (false, null, "invalid_client_id");
 
         if (!IPAddress.TryParse(parsed.Host, out _))
         {
             var resolvedAddresses = await _dnsResolver.GetHostAddressesAsync(parsed.Host, cancellationToken);
             if (resolvedAddresses.Count == 0 || resolvedAddresses.Any(IsPrivateOrLocalAddress))
-                return (false, null);
+                return (false, null, "invalid_client_id");
         }
 
-        return (true, parsed);
+        return (true, parsed, null);
     }
 
     private static bool IsPrivateOrLocalAddress(IPAddress address)

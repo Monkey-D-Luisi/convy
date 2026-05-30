@@ -14,6 +14,7 @@ ChatGPT should:
 - send multiple requested items/tasks in one batch call
 - ask the user to choose a household or list when tool output marks selection as required
 - avoid inventing quantities, units, notes, item IDs, task IDs, households, or lists
+- include task assignee IDs, due dates, reminders, and priority only when they are explicit in the request or selected from Convy data
 
 Example shopping write:
 
@@ -38,6 +39,23 @@ Quantities and units must be explicit. Because Convy quantity is currently an in
 { "title": "Tomates", "unit": "medio kilo" }
 ```
 
+Example task write with metadata:
+
+```json
+{
+  "listId": "22222222-2222-4222-8222-222222222222",
+  "tasks": [
+    {
+      "title": "Clean kitchen",
+      "assignedToUserId": "33333333-3333-4333-8333-333333333333",
+      "dueDate": "2026-05-30",
+      "reminderAtUtc": "2026-05-30T07:00:00Z",
+      "priority": "High"
+    }
+  ]
+}
+```
+
 ## Backend Guarantees
 
 The backend:
@@ -50,6 +68,7 @@ The backend:
 - reuses pending matches
 - returns completed matches to pending
 - reports quantity/unit/note conflicts as warnings
+- accepts explicit task assignment, due date, reminder, and priority metadata for task creation
 - reports duplicates inside the same batch
 
 The API does not:

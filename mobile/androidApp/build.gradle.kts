@@ -24,7 +24,7 @@ android {
 
     defaultConfig {
         applicationId = "com.monkeydluisi.convy"
-        minSdk = 26
+        minSdk = 31
         targetSdk = 35
         versionCode = 25
         versionName = "0.1.22"

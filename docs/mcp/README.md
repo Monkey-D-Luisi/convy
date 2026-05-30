@@ -71,8 +71,10 @@ High-level controls:
 - Hashed authorization codes and refresh tokens.
 - Short-lived RS256 access tokens.
 - API and MCP scope enforcement.
+- MCP-only API policies for smart writes.
 - No direct PostgreSQL access from MCP.
 - Idempotency for MCP writes.
+- Allowlisted OAuth client metadata hosts.
 - Redacted MCP audit logs.
 - Static tools and prompt-injection-resistant output policy.
 

@@ -66,7 +66,7 @@ Prepare:
 - Public site and legal pages must be reachable.
 - React Apps SDK widget must render through `ui://widget/convy-summary-v1.html`.
 - Dashboard/admin-only features must not be exposed through MCP.
-- Offsite encrypted backups are not yet implemented; avoid presenting them as current.
+- Offsite encrypted backups require restic environment configuration before operators present them as active for a deployment.
 
 ## References
 

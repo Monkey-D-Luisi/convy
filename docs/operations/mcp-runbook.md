@@ -34,6 +34,8 @@ Response should be `401` with `WWW-Authenticate` pointing to protected resource 
 - `McpAuth__AuthorizationEndpoint`
 - `McpAuth__PrivateKeyPemBase64`
 - `McpAuth__PublicKeyPemBase64`
+- `McpAuth__AllowedClientMetadataHosts__0=chat.openai.com`
+- `McpAuth__AllowedClientMetadataHosts__1=chatgpt.com`
 - `McpAudit__ApiKey`
 - `MCP_PUBLIC_URL`
 - `AUTH_PUBLIC_URL`
@@ -51,7 +53,7 @@ ops/vps/push-secrets.ps1 -HostName <server>
 ops/vps/deploy-release.sh <release-sha>
 ```
 
-The deploy script builds `api`, `dashboard`, `auth`, and `mcp`, recreates services, and checks API, auth, and MCP health endpoints.
+The deploy script builds `api`, `worker`, `dashboard`, `auth`, and `mcp`, recreates services, and checks API, auth, and MCP health endpoints.
 
 ## Validate Scopes
 

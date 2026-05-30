@@ -76,8 +76,8 @@ public class McpOAuthContractTests
     {
         ReadEndpointFile("HouseholdEndpoints.cs").Should().Contain("FirebaseOnly");
         ReadEndpointFile("ListEndpoints.cs").Should().Contain("FirebaseOnly");
-        ReadEndpointFile("ItemEndpoints.cs").Should().Contain("McpScopes.ItemsWrite");
-        ReadEndpointFile("TaskEndpoints.cs").Should().Contain("McpScopes.TasksWrite");
+        ReadEndpointFile("ItemEndpoints.cs").Should().Contain("McpPolicyNames.OnlyScope(McpScopes.ItemsWrite)");
+        ReadEndpointFile("TaskEndpoints.cs").Should().Contain("McpPolicyNames.OnlyScope(McpScopes.TasksWrite)");
         ReadEndpointFile("ItemEndpoints.cs").Should().Contain("McpWriteIdempotencyService");
         ReadEndpointFile("TaskEndpoints.cs").Should().Contain("McpWriteIdempotencyService");
         ReadEndpointFile("ItemEndpoints.cs").Should().Contain("smart-batch");
@@ -85,6 +85,15 @@ public class McpOAuthContractTests
         ReadEndpointFile("TaskEndpoints.cs").Should().Contain("smart-batch");
         ReadEndpointFile("TaskEndpoints.cs").Should().Contain("status-batch");
         ReadEndpointFile("UserEndpoints.cs").Should().Contain("FirebaseOnly");
+    }
+
+    [Fact]
+    public void Program_ShouldRegisterMcpOnlyScopePoliciesForSmartWriteEndpoints()
+    {
+        var source = ReadApiFile("Program.cs");
+
+        source.Should().Contain("McpPolicyNames.OnlyScope(scope)");
+        source.Should().Contain("policy.AddAuthenticationSchemes(AuthSchemes.McpBearer)");
     }
 
     [Fact]
@@ -148,6 +157,7 @@ public class McpOAuthContractTests
         source.Should().Contain("await transaction.CommitAsync(cancellationToken)");
         source.Should().Contain("CreateExecutionStrategy()");
         source.Should().Contain("ExecuteAsync(async () =>");
+        source.Should().Contain("idempotency_key_expired");
     }
 
     [Fact]

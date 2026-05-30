@@ -11,6 +11,7 @@ This document describes implemented security boundaries and known controlled-rel
 | Auth app | Firebase login for OAuth consent. |
 | MCP service | Short-lived Convy MCP JWT access tokens issued by the backend OAuth broker. |
 | MCP audit ingestion | Service key header from MCP service to API. |
+| Worker | No public surface; runs inside Compose with database and Firebase Admin credentials. |
 
 ## Authorization
 
@@ -18,6 +19,7 @@ This document describes implemented security boundaries and known controlled-rel
 - Household, list, item, task, activity, invite, and device access is scoped to the authenticated user.
 - `AdminOnly` uses Firebase authentication and rejects MCP-origin tokens.
 - MCP scopes are enforced by API endpoint policies and by MCP tool handlers.
+- Smart write endpoints use MCP-only policies; Firebase/mobile bearer tokens cannot call them.
 
 ## ChatGPT MCP OAuth
 
@@ -26,7 +28,7 @@ Implemented controls:
 - OAuth authorization code flow with PKCE S256.
 - Firebase login before consent.
 - Strict redirect URI and resource validation.
-- CIMD client metadata validation with HTTPS, timeout, size, client ID, and redirect URI checks.
+- CIMD client metadata validation with an allowlisted metadata host, HTTPS, timeout, size, client ID, redirect URI, private-IP, DNS, and redirect checks.
 - Authorization codes and refresh tokens stored as hashes, not raw values.
 - RS256 access tokens signed by the API private key.
 - MCP service validates issuer, audience, `token_use=mcp_access`, subject, and scopes.
@@ -51,6 +53,7 @@ MCP does not expose admin metrics, backups, list management, household managemen
 - API write paths require an `Idempotency-Key` for MCP tokens.
 - The MCP service generates an idempotency key when ChatGPT does not provide one.
 - Idempotency records store hashed keys, request hash, action name, status code, optional location, compact response JSON, and expiry metadata.
+- Expired idempotency keys return `409 idempotency_key_expired` and do not execute the write.
 - Smart writes normalize titles and reuse exact normalized matches instead of creating safe duplicates.
 
 ## Prompt Injection And Output Policy
@@ -81,7 +84,7 @@ Do not commit:
 - GitHub tokens
 - SSH private keys
 
-Use placeholders in docs. Store runtime secrets on the VPS under `/opt/convy/shared` and push them with `ops/vps/push-secrets.ps1`.
+Use placeholders in docs. Store runtime secrets on the VPS under `/opt/convy/shared` and push them with `ops/vps/push-secrets.ps1`. The API and worker mount the same Firebase Admin JSON read-only.
 
 ## Backups
 
@@ -89,11 +92,11 @@ Use placeholders in docs. Store runtime secrets on the VPS under `/opt/convy/sha
 - Dumps include checksums and metadata.
 - Catalog verification and scheduled restore verification are implemented.
 - Admin dashboard download is limited to registered successful backup files resolved under the configured backup root.
-- Encrypted offsite backups are a required future step before broader public onboarding.
+- Encrypted offsite backups are supported with restic-compatible S3 storage when `RESTIC_REPOSITORY` and restic credentials are configured.
 
 ## Rate Limits And Availability
 
-The MCP service has a fixed-window request limit in `mcp/src/server.ts`. Broader rate limiting, external alerting, and production monitoring should be treated as future hardening unless implemented in code.
+The MCP service has a fixed-window request limit in `mcp/src/server.ts`. ADR 008 requires external or distributed rate limiting before scaling MCP beyond one instance. External health alerting is supported by `ops/vps/monitoring/check-health.sh` and the `convy-health-check.timer`.
 
 ## Incident Checklist
 

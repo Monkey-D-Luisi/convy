@@ -3,6 +3,7 @@ set -euo pipefail
 
 APP_ROOT="${APP_ROOT:-/opt/convy}"
 ENV_FILE="${ENV_FILE:-$APP_ROOT/shared/api.env}"
+RESTIC_ENV_FILE="${RESTIC_ENV_FILE:-$APP_ROOT/shared/backup.env}"
 BACKUP_ROOT="${BACKUP_ROOT:-$APP_ROOT/backups/postgres}"
 DB_CONTAINER="${DB_CONTAINER:-convy-db}"
 BACKUP_TYPE="${BACKUP_TYPE:-Daily}"
@@ -38,7 +39,7 @@ generate_uuid() {
 RUN_ID="$(generate_uuid)"
 
 if [ "$(id -u)" -ne 0 ] && [ "$APP_ROOT" = "/opt/convy" ]; then
-  exec sudo --preserve-env=APP_ROOT,ENV_FILE,BACKUP_ROOT,DB_CONTAINER,BACKUP_TYPE,BACKUP_TIMEOUT_SECONDS,MIN_FREE_KB,BACKUP_READ_GROUP "$0" "$@"
+  exec sudo --preserve-env=APP_ROOT,ENV_FILE,RESTIC_ENV_FILE,BACKUP_ROOT,DB_CONTAINER,BACKUP_TYPE,BACKUP_TIMEOUT_SECONDS,MIN_FREE_KB,BACKUP_READ_GROUP,RESTIC_REPOSITORY,RESTIC_PASSWORD,RESTIC_PASSWORD_FILE,RESTIC_CACHE_DIR,RESTIC_BACKUP_TAGS,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_DEFAULT_REGION,AWS_PROFILE "$0" "$@"
 fi
 
 if [ ! -f "$ENV_FILE" ]; then
@@ -50,6 +51,13 @@ set -a
 # shellcheck disable=SC1090
 . "$ENV_FILE"
 set +a
+
+if [ -f "$RESTIC_ENV_FILE" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "$RESTIC_ENV_FILE"
+  set +a
+fi
 
 case "$BACKUP_TYPE" in
   Daily|Weekly|Monthly|Manual) ;;
@@ -107,6 +115,7 @@ write_metadata() {
   local size_bytes="${3:-}"
   local sha256="${4:-}"
   local error_message="${5:-}"
+  local offsite_status="${6:-Disabled}"
 
   cat > "$metadata_path" <<JSON
 {
@@ -117,12 +126,37 @@ write_metadata() {
   "sizeBytes": ${size_bytes:-null},
   "sha256": "${sha256:-}",
   "verificationStatus": "$verification_status",
+  "offsiteStatus": "$offsite_status",
   "errorMessage": "${error_message:-}",
   "startedAt": "$STARTED_AT",
   "finishedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 }
 JSON
   chmod 600 "$metadata_path"
+}
+
+run_offsite_backup() {
+  if [ -z "${RESTIC_REPOSITORY:-}" ]; then
+    return 0
+  fi
+
+  if [ -z "${RESTIC_PASSWORD:-}" ] && [ -z "${RESTIC_PASSWORD_FILE:-}" ]; then
+    echo "RESTIC_REPOSITORY is set but no RESTIC_PASSWORD or RESTIC_PASSWORD_FILE is configured." >&2
+    return 1
+  fi
+
+  if ! command -v restic >/dev/null 2>&1; then
+    echo "RESTIC_REPOSITORY is set but restic is not installed." >&2
+    return 1
+  fi
+
+  local -a restic_args
+  restic_args=(backup "$backup_path" "$metadata_path" --tag convy --tag postgres --tag "$BUCKET")
+  for tag in ${RESTIC_BACKUP_TAGS:-}; do
+    restic_args+=(--tag "$tag")
+  done
+
+  restic "${restic_args[@]}"
 }
 
 if command -v flock >/dev/null 2>&1; then
@@ -167,7 +201,18 @@ if ! "$(dirname "$0")/verify-backup.sh" "$backup_path"; then
   exit 1
 fi
 
-write_metadata "Success" "PgRestoreListOk" "$size_bytes" "$sha256" ""
+if [ -n "${RESTIC_REPOSITORY:-}" ]; then
+  write_metadata "Success" "PgRestoreListOk" "$size_bytes" "$sha256" "" "Uploaded"
+  if ! run_offsite_backup; then
+    error_message="restic offsite backup failed"
+    write_metadata "Failed" "PgRestoreListOk" "$size_bytes" "$sha256" "$error_message" "Failed"
+    record_run "Failed" "PgRestoreListOk" "$backup_name" "$size_bytes" "$sha256" "$error_message"
+    exit 1
+  fi
+else
+  write_metadata "Success" "PgRestoreListOk" "$size_bytes" "$sha256" "" "Disabled"
+fi
+
 record_run "Success" "PgRestoreListOk" "$backup_name" "$size_bytes" "$sha256" ""
 
 if [ -x "$(dirname "$0")/prune-backups.sh" ]; then

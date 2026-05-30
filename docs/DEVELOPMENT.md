@@ -27,6 +27,13 @@ cd docker
 docker compose --profile tools up -d pgadmin
 ```
 
+To run the API and scheduled worker with PostgreSQL:
+
+```bash
+cd docker
+docker compose up -d db api worker
+```
+
 ## Backend
 
 ```bash
@@ -34,9 +41,20 @@ dotnet restore backend/Convy.slnx
 dotnet user-secrets set --project backend/src/Convy.API "ConnectionStrings:DefaultConnection" "<local-postgres-connection-string>"
 dotnet user-secrets set --project backend/src/Convy.API "Firebase:ProjectId" "<firebase-project-id>"
 dotnet user-secrets set --project backend/src/Convy.API "OpenAI:ApiKey" "<openai-api-key>"
+dotnet user-secrets set --project backend/src/Convy.API "Features:VoiceParsingEnabled" "true"
 dotnet build backend/Convy.slnx
 dotnet run --project backend/src/Convy.API --launch-profile http
 ```
+
+Run scheduled jobs locally with:
+
+```bash
+dotnet run --project backend/src/Convy.Worker
+```
+
+The worker uses the same database connection string and, outside Development, requires `Firebase:ProjectId` plus Google Application Default Credentials for task reminder push notifications.
+
+`Features:VoiceParsingEnabled` can remain `false` for local work that does not need OpenAI voice parsing. Outside Development, enabling it requires `OpenAI:ApiKey`.
 
 Use placeholders in docs and examples. Do not commit real Firebase admin JSON, OpenAI keys, MCP keys, Caddy hashes, or deployment secrets.
 

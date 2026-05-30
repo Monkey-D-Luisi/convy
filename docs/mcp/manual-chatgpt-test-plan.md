@@ -51,7 +51,7 @@ It must not advertise admin, backup, delete, invite, household-management, or li
 14. Ask: `Add milk, bread, and eggs to my grocery list.` Confirm one `convy_add_shopping_items` call.
 15. Ask ChatGPT to add an already pending item. Confirm the API reports reuse and no duplicate item appears in the app.
 16. Complete an item in Convy, then ask ChatGPT to add it again. Confirm the API returns it to pending and reports that state.
-17. Ask ChatGPT to create one task.
+17. Ask ChatGPT to create one task with explicit assignee, due date, reminder, and priority when those values are available from Convy context.
 18. Ask ChatGPT to mark that task completed through the task status-batch tool.
 19. Ask ChatGPT to mark the task pending again.
 20. Revoke access through ChatGPT.

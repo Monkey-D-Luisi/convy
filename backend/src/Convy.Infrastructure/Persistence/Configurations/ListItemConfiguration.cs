@@ -103,5 +103,38 @@ public class ListItemConfiguration : IEntityTypeConfiguration<ListItem>
 
         builder.HasIndex(i => new { i.Source, i.CreatedAt })
             .HasDatabaseName("ix_list_items_source_created_at");
+
+        builder.HasIndex(i => i.CreatedBy)
+            .HasDatabaseName("ix_list_items_created_by");
+
+        builder.HasIndex(i => i.CompletedBy)
+            .HasDatabaseName("ix_list_items_completed_by");
+
+        builder.HasIndex(i => i.ReturnedToPendingBy)
+            .HasDatabaseName("ix_list_items_returned_to_pending_by");
+
+        builder.HasOne<HouseholdList>()
+            .WithMany()
+            .HasForeignKey(i => i.ListId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("fk_list_items_household_lists_list_id");
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(i => i.CreatedBy)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_list_items_users_created_by");
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(i => i.CompletedBy)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_list_items_users_completed_by");
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(i => i.ReturnedToPendingBy)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_list_items_users_returned_to_pending_by");
     }
 }

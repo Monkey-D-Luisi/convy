@@ -27,7 +27,7 @@ All tools reference the shared Apps SDK widget resource `ui://widget/convy-summa
 | `convy_get_context` | `convy.households.read` | `{}` | `GET /api/v1/households` | Household count, default household ID when exactly one exists, compact household choices. | `401`, `403`, API connectivity failures. |
 | `convy_get_shopping_context` | `convy.households.read`, `convy.lists.read` | optional `householdId` UUID | `GET /api/v1/households`, `GET /api/v1/households/{householdId}/lists` | Active shopping lists for the selected household and selection hints. | `401`, `403`, `404`, selection required. |
 | `convy_get_shopping_list` | `convy.items.read` | `listId` UUID, optional `includeCompleted`, optional `limit` 1-100 | `GET /api/v1/lists/{listId}/items?status=Pending`, optionally `status=Completed` | Pending items and optionally completed items, compacted and truncated by limit. | `401`, `403`, `404`, validation errors. |
-| `convy_get_task_list` | `convy.tasks.read` | `listId` UUID, optional `includeCompleted`, optional `limit` 1-100 | `GET /api/v1/lists/{listId}/tasks?status=Pending`, optionally `status=Completed` | Pending tasks and optionally completed tasks, compacted and truncated by limit. | `401`, `403`, `404`, validation errors. |
+| `convy_get_task_list` | `convy.tasks.read` | `listId` UUID, optional `includeCompleted`, optional `limit` 1-100 | `GET /api/v1/lists/{listId}/tasks?status=Pending`, optionally `status=Completed` | Pending tasks and optionally completed tasks, including compact assignment, due date, reminder, and priority metadata. | `401`, `403`, `404`, validation errors. |
 | `convy_get_recent_activity` | `convy.households.read`, `convy.activity.read` | optional `householdId` UUID, optional `limit` 1-50 | `GET /api/v1/households/{householdId}/activity` | Recent household activity with compact entity/action metadata. | `401`, `403`, `404`, selection required. |
 
 Read annotations:
@@ -47,7 +47,7 @@ Read annotations:
 | --- | --- | --- | --- | --- | --- | --- |
 | `convy_add_shopping_items` | `convy.items.write` | `listId`, `items[]` with `title`, optional integer `quantity`, optional `unit`, optional `note`, optional `idempotencyKey` | `POST /api/v1/lists/{listId}/items/smart-batch` | Created, reused, uncompleted, duplicate, and warning summaries from the API. | MCP sends/generates an idempotency key. API stores hashed key and request hash. | `400`, `401`, `403`, `404`, `409`, API errors. |
 | `convy_update_shopping_items_status` | `convy.items.write` | `listId`, `itemIds[]`, `status` of `Pending` or `Completed`, optional `idempotencyKey` | `POST /api/v1/lists/{listId}/items/status-batch` | Updated item status summary. | MCP sends/generates an idempotency key. | `400`, `401`, `403`, `404`, `409`, API errors. |
-| `convy_add_tasks` | `convy.tasks.write` | `listId`, `tasks[]` with `title`, optional `note`, optional `idempotencyKey` | `POST /api/v1/lists/{listId}/tasks/smart-batch` | Created, reused, uncompleted, duplicate, and warning summaries from the API. | MCP sends/generates an idempotency key. | `400`, `401`, `403`, `404`, `409`, API errors. |
+| `convy_add_tasks` | `convy.tasks.write` | `listId`, `tasks[]` with `title`, optional `note`, optional `assignedToUserId`, optional `dueDate` as `YYYY-MM-DD`, optional `reminderAtUtc` ISO instant, optional `priority` of `Low`, `Normal`, or `High`, optional `idempotencyKey` | `POST /api/v1/lists/{listId}/tasks/smart-batch` | Created, reused, uncompleted, duplicate, and warning summaries from the API. | MCP sends/generates an idempotency key. Expired keys return `409 idempotency_key_expired` without executing. | `400`, `401`, `403`, `404`, `409`, API errors. |
 | `convy_update_tasks_status` | `convy.tasks.write` | `listId`, `taskIds[]`, `status` of `Pending` or `Completed`, optional `idempotencyKey` | `POST /api/v1/lists/{listId}/tasks/status-batch` | Updated task status summary. | MCP sends/generates an idempotency key. | `400`, `401`, `403`, `404`, `409`, API errors. |
 
 Write annotations:
@@ -77,6 +77,7 @@ Implemented backend behavior:
 - Exact normalized pending matches are reused instead of duplicated.
 - Exact normalized completed matches are returned to pending instead of duplicated.
 - Quantity, unit, or note conflicts are reported as warnings and are not silently edited.
+- Task assignment, due date, reminder, and priority are accepted when explicitly provided and are echoed in compact task read responses.
 - Duplicate entries inside one batch create one record and report later duplicates.
 - The same pattern exists for shopping items and tasks.
 

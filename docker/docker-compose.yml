@@ -36,6 +36,22 @@ services:
       db:
         condition: service_healthy
 
+  worker:
+    build:
+      context: ../backend
+      dockerfile: ../docker/worker/Dockerfile
+    container_name: convy-worker
+    restart: unless-stopped
+    env_file:
+      - ${CONVY_DOCKER_ENV_FILE:-.env.example}
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB:-convy};Username=${POSTGRES_USER:-convy};Password=${POSTGRES_PASSWORD:-convy_dev_password}"
+      Operations__DataPath: /opt/convy
+    depends_on:
+      db:
+        condition: service_healthy
+
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: convy-pgadmin

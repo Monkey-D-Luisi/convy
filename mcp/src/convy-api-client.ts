@@ -32,6 +32,10 @@ export type AddTasksRequest = {
   tasks: Array<{
     title: string;
     note?: string;
+    assignedToUserId?: string;
+    dueDate?: string;
+    reminderAtUtc?: string;
+    priority?: "Low" | "Normal" | "High";
   }>;
   idempotencyKey: string;
 };

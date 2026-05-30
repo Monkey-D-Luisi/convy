@@ -1,5 +1,7 @@
 package com.convy.shared.data.repository
 
+import com.convy.shared.data.offline.OfflineAction
+import com.convy.shared.data.offline.OfflineActionQueue
 import com.convy.shared.data.remote.ConvyApi
 import com.convy.shared.data.remote.dto.BatchCreateTaskEntry
 import com.convy.shared.data.remote.dto.BatchCreateTasksRequest
@@ -16,9 +18,12 @@ import io.ktor.utils.io.errors.IOException
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class TaskRepositoryImpl(
     private val api: ConvyApi,
+    private val offlineQueue: OfflineActionQueue,
 ) : TaskRepository {
 
     override suspend fun getByList(listId: String, status: String?, createdBy: String?): Result<List<TaskItem>> =
@@ -74,20 +79,68 @@ class TaskRepositoryImpl(
             )
         }
 
+    @OptIn(ExperimentalUuidApi::class)
     override suspend fun delete(listId: String, taskId: String): Result<Unit> =
-        cancellableRunCatching {
+        executeOrQueue(
+            offlineAction = OfflineAction.DeleteTask(
+                id = Uuid.random().toString(),
+                listId = listId,
+                taskId = taskId,
+                createdAt = Clock.System.now().toEpochMilliseconds(),
+            ),
+        ) {
             api.deleteTask(listId, taskId)
         }
 
+    @OptIn(ExperimentalUuidApi::class)
     override suspend fun complete(listId: String, taskId: String): Result<Unit> =
-        cancellableRunCatching {
+        executeOrQueue(
+            offlineAction = OfflineAction.CompleteTask(
+                id = Uuid.random().toString(),
+                listId = listId,
+                taskId = taskId,
+                createdAt = Clock.System.now().toEpochMilliseconds(),
+            ),
+        ) {
             api.completeTask(listId, taskId)
         }
 
+    @OptIn(ExperimentalUuidApi::class)
     override suspend fun uncomplete(listId: String, taskId: String): Result<Unit> =
-        cancellableRunCatching {
+        executeOrQueue(
+            offlineAction = OfflineAction.UncompleteTask(
+                id = Uuid.random().toString(),
+                listId = listId,
+                taskId = taskId,
+                createdAt = Clock.System.now().toEpochMilliseconds(),
+            ),
+        ) {
             api.uncompleteTask(listId, taskId)
         }
+
+    private suspend fun executeOrQueue(
+        offlineAction: OfflineAction,
+        apiCall: suspend () -> Unit,
+    ): Result<Unit> {
+        return try {
+            apiCall()
+            Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (e.isNetworkError()) {
+                offlineQueue.enqueue(offlineAction)
+                Result.success(Unit)
+            } else {
+                Result.failure(e)
+            }
+        }
+    }
+
+    private fun Exception.isNetworkError(): Boolean =
+        this is HttpRequestTimeoutException ||
+            this is IOException ||
+            this.cause is IOException
 
     override suspend fun parseVoiceAudio(listId: String, audioData: ByteArray): Result<TaskVoiceParseResult> =
         try {

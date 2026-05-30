@@ -17,6 +17,26 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        AddCoreInfrastructure(services, configuration);
+        AddApiNotificationServices(services, configuration);
+        AddOpenAiServices(services, configuration);
+
+        return services;
+    }
+
+    public static IServiceCollection AddWorkerInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    {
+        AddCoreInfrastructure(services, configuration);
+
+        services.AddHostedService<RecurringItemService>();
+        services.AddHostedService<TaskReminderService>();
+        services.AddHostedService<SystemMetricSnapshotHostedService>();
+
+        return services;
+    }
+
+    private static void AddCoreInfrastructure(IServiceCollection services, IConfiguration configuration)
+    {
         services.AddDbContext<ConvyDbContext>(options =>
             options.UseNpgsql(
                 configuration.GetConnectionString("DefaultConnection"),
@@ -36,7 +56,6 @@ public static class DependencyInjection
         services.AddScoped<INotificationPreferencesRepository, NotificationPreferencesRepository>();
         services.AddScoped<IVoiceParseEventRepository, VoiceParseEventRepository>();
         services.AddScoped<IBackupRunRepository, BackupRunRepository>();
-        services.AddScoped<IHouseholdNotificationService, HouseholdNotificationService>();
         services.AddScoped<IFirebaseMessagingClient, FirebaseMessagingClient>();
         services.AddScoped<IPushNotificationTextProvider, PushNotificationTextProvider>();
         services.AddScoped<IPushNotificationService, PushNotificationService>();
@@ -48,7 +67,11 @@ public static class DependencyInjection
         services.AddScoped<IAiUsageRecorder, AiUsageRecorder>();
         services.AddScoped<ISystemMetricSource, SystemMetricSource>();
         services.AddScoped<SystemMetricSnapshotRecorder>();
+    }
 
+    private static void AddApiNotificationServices(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddScoped<IHouseholdNotificationService, HouseholdNotificationService>();
         services.AddSingleton<PushNotificationBatcher>(sp =>
             new PushNotificationBatcher(
                 sp.GetRequiredService<IServiceScopeFactory>(),
@@ -56,23 +79,31 @@ public static class DependencyInjection
                 sp.GetRequiredService<ILogger<PushNotificationBatcher>>()));
         services.AddSingleton<IPushNotificationBatcher>(sp => sp.GetRequiredService<PushNotificationBatcher>());
         services.AddHostedService(sp => sp.GetRequiredService<PushNotificationBatcher>());
-
-        services.AddHostedService<RecurringItemService>();
-        services.AddHostedService<TaskReminderService>();
-        services.AddHostedService<SystemMetricSnapshotHostedService>();
-
-        AddOpenAiServices(services, configuration);
-
-        return services;
     }
 
     private static void AddOpenAiServices(IServiceCollection services, IConfiguration configuration)
     {
         var apiKey = configuration["OpenAI:ApiKey"]
                      ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        var voiceParsingEnabled = configuration.GetValue<bool>("Features:VoiceParsingEnabled");
+        var environmentName = configuration["ASPNETCORE_ENVIRONMENT"]
+                              ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                              ?? "Production";
+
+        if (!voiceParsingEnabled)
+        {
+            services.AddScoped<IAiVoiceParsingService, NoOpVoiceParsingService>();
+            services.AddScoped<ITaskVoiceParsingService, NoOpTaskVoiceParsingService>();
+            return;
+        }
 
         if (string.IsNullOrWhiteSpace(apiKey))
         {
+            if (!string.Equals(environmentName, "Development", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("OpenAI API key is required when voice parsing is enabled outside Development.");
+            }
+
             services.AddScoped<IAiVoiceParsingService, NoOpVoiceParsingService>();
             services.AddScoped<ITaskVoiceParsingService, NoOpTaskVoiceParsingService>();
             return;

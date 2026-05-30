@@ -26,13 +26,6 @@ public static class DeviceEndpoints
             var result = await mediator.Send(command);
             return result.IsSuccess ? Results.NoContent() : MapError(result.Error!);
         });
-
-        group.MapDelete("/{token}", async (string token, IMediator mediator) =>
-        {
-            var command = new UnregisterDeviceCommand(token);
-            var result = await mediator.Send(command);
-            return result.IsSuccess ? Results.NoContent() : MapError(result.Error!);
-        });
     }
 
     private static IResult MapError(Error error) => error.Code switch

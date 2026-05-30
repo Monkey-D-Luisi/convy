@@ -1,8 +1,6 @@
 # Backup And Restore Runbook
 
-Backups currently run on the Hetzner VPS and store PostgreSQL custom-format dumps locally under `/opt/convy/backups/postgres`.
-
-Offsite encrypted backups are a required future hardening step before broader public onboarding.
+Backups run on the Hetzner VPS and store PostgreSQL custom-format dumps locally under `/opt/convy/backups/postgres`. When restic is configured, the same backup run uploads the dump and metadata to encrypted offsite storage.
 
 ## Files
 
@@ -14,6 +12,7 @@ Offsite encrypted backups are a required future hardening step before broader pu
 | `ops/vps/backups/restore-postgres.sh` | Restores a dump into a target database. |
 | `ops/vps/backups/restore-verify-postgres.sh` | Restores latest dump into a temporary database and checks it. |
 | `ops/vps/backups/prune-backups.sh` | Removes old backup files according to retention policy. |
+| `ops/vps/db/check-orphan-references.sql` | Preflight check before applying database FK migrations. |
 
 ## Install Timers
 
@@ -35,7 +34,40 @@ Expected:
 - dump file under `/opt/convy/backups/postgres`
 - checksum metadata
 - `pg_restore --list` verification
+- restic upload when `RESTIC_REPOSITORY` is configured
 - `backup_runs` row in PostgreSQL
+
+## Offsite Restic Storage
+
+Install `restic` on the VPS and create `/opt/convy/shared/backup.env` with provider credentials. Example for S3-compatible storage:
+
+```bash
+RESTIC_REPOSITORY=s3:https://s3.example.com/convy-postgres
+RESTIC_PASSWORD_FILE=/opt/convy/shared/restic-password
+AWS_ACCESS_KEY_ID=<access-key>
+AWS_SECRET_ACCESS_KEY=<secret-key>
+AWS_DEFAULT_REGION=<region>
+RESTIC_BACKUP_TAGS=staging
+```
+
+Dry-run checks:
+
+```bash
+sudo bash -c 'set -a; . /opt/convy/shared/backup.env; set +a; restic snapshots'
+sudo BACKUP_TYPE=Manual /opt/convy/current/ops/vps/backups/backup-postgres.sh
+```
+
+If `RESTIC_REPOSITORY` is set and upload fails, the backup run records failure and exits non-zero.
+
+## FK Migration Preflight
+
+Before applying referential-integrity migrations to an existing database:
+
+```bash
+docker exec -i convy-db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" < /opt/convy/current/ops/vps/db/check-orphan-references.sql
+```
+
+Every row must report `orphan_count = 0`.
 
 ## Verify Dump Catalog
 
@@ -101,7 +133,7 @@ Core row-count tables:
 
 ## Risks
 
-- Local-only backups do not protect against VPS loss.
+- Local-only backups do not protect against VPS loss; configure restic before broader onboarding.
 - Backup files may contain household data and must be handled as sensitive data.
 - Schema rollback may not be safe after migrations.
 - Admin backup download must remain guarded by Basic Auth, Firebase login, and `AdminOnly`.

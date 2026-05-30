@@ -30,5 +30,14 @@ public class HouseholdConfiguration : IEntityTypeConfiguration<Household>
             .WithOne()
             .HasForeignKey(m => m.HouseholdId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(h => h.CreatedBy)
+            .HasDatabaseName("ix_households_created_by");
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(h => h.CreatedBy)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_households_users_created_by");
     }
 }

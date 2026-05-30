@@ -21,12 +21,13 @@ Roles:
 ## Implemented Controls
 
 - Firebase authenticates the Convy user during consent.
-- CIMD client metadata must use HTTPS, fit timeout/size limits, match `client_id`, and contain the exact redirect URI.
+- CIMD client metadata must come from `McpAuth:AllowedClientMetadataHosts`, use HTTPS, fit timeout/size limits, avoid private network targets, match `client_id`, and contain the exact redirect URI.
 - OAuth authorization codes and refresh tokens are stored as hashes.
 - PKCE S256 is required.
 - Access tokens are short-lived RS256 JWTs.
 - The API signs with the private key; API and MCP validate with the public key.
 - API endpoints enforce MCP scopes in addition to MCP tool handlers.
+- Smart write API endpoints use MCP-only policies and reject Firebase/mobile bearer tokens.
 - `AdminOnly` requires Firebase auth and rejects `auth_source=mcp`.
 - MCP write API endpoints require `Idempotency-Key`.
 - MCP audit ingestion uses a service key.
@@ -72,7 +73,7 @@ MCP write calls store idempotency records with:
 - compact response JSON
 - created and expiry timestamps
 
-Reusing the same key with the same request returns the stored outcome. Reusing the same key with a different request returns conflict.
+Reusing the same key with the same request returns the stored outcome. Reusing the same key with a different request returns conflict. Reusing an expired key returns `409 idempotency_key_expired` without executing the write.
 
 ## Prompt Injection Policy
 
@@ -84,7 +85,7 @@ Reusing the same key with the same request returns the stored outcome. Reusing t
 
 ## Output Minimization
 
-MCP responses include compact household/list/item/task/activity fields needed for the requested task. They should not include admin metrics, backups, raw tokens, secrets, internal logs, prompts, full arguments, or unrelated household data.
+MCP responses include compact household/list/item/task/activity fields needed for the requested task, including task assignment, due date, reminder, and priority metadata. They should not include admin metrics, backups, raw tokens, secrets, internal logs, prompts, full arguments, or unrelated household data.
 
 ## Key Rotation
 

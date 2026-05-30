@@ -39,6 +39,10 @@ const shoppingStatusSchema = z.object({
 const taskInputSchema = z.object({
   title: z.string().trim().min(1).max(200),
   note: z.string().trim().max(500).optional(),
+  assignedToUserId: uuid.optional(),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  reminderAtUtc: z.string().datetime({ offset: true }).optional(),
+  priority: z.enum(["Low", "Normal", "High"]).optional(),
 }).strict();
 const addTasksSchema = z.object({
   listId: uuid,
@@ -114,6 +118,7 @@ const shoppingGuidance = [
 const taskGuidance = [
   "Extract only tasks the user clearly wants to add or update.",
   "Use concise task titles.",
+  "Include assignee IDs, due dates, reminders, and priority only when the user explicitly provided them or chose them from Convy data.",
   "Do not include negated tasks or tasks the user corrected away.",
   "The Convy API normalizes titles and avoids safe duplicates.",
 ].join(" ");
@@ -396,6 +401,12 @@ function compactTasksForResponse(values: unknown[], limit: number) {
     "title",
     "note",
     "listId",
+    "assignedToUserId",
+    "assignedToUserName",
+    "dueDate",
+    "reminderAtUtc",
+    "reminderSentAtUtc",
+    "priority",
     "createdByName",
     "createdAt",
     "isCompleted",

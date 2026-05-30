@@ -1,0 +1,7 @@
+[Unit]
+Description=Convy external health check
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/opt/convy/shared/monitoring.env
+ExecStart=/opt/convy/current/ops/vps/monitoring/check-health.sh

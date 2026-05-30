@@ -8,6 +8,12 @@ Users
   |                                      |-- SignalR
   |                                      |-- Firebase Admin / FCM
   |                                      `-- OpenAI voice parsing
+  |                                      ^
+  |                                      |
+  |                         Convy.Worker scheduled jobs
+  |                         |-- recurring item rollover
+  |                         |-- task reminders
+  |                         `-- system metric snapshots
   |
   |-- Admin browser -> admin.convyapp.com -> Next.js dashboard -> API admin endpoints
   |
@@ -19,7 +25,7 @@ Users
 ## Monorepo Layout
 
 ```text
-backend/       ASP.NET Core API, Clean Architecture, EF Core, tests
+backend/       ASP.NET Core API, worker, Clean Architecture, EF Core, tests
 mobile/        Kotlin Multiplatform and Android app
 dashboard/     Next.js admin dashboard
 auth/          Next.js OAuth consent app for ChatGPT MCP
@@ -37,13 +43,15 @@ docs/          Project documentation
 The backend follows Clean Architecture with CQRS:
 
 ```text
-Convy.API -> Convy.Infrastructure -> Convy.Application -> Convy.Domain
+Convy.API    -> Convy.Infrastructure -> Convy.Application -> Convy.Domain
+Convy.Worker -> Convy.Infrastructure -> Convy.Application -> Convy.Domain
 ```
 
 - `Convy.Domain`: entities, value objects, invariants; zero external dependencies.
 - `Convy.Application`: MediatR commands/queries, handlers, DTOs, validators, application interfaces.
 - `Convy.Infrastructure`: EF Core, PostgreSQL, Firebase Admin, OpenAI, push notifications, metrics readers, repository implementations.
 - `Convy.API`: Minimal API endpoints, auth policies, health checks, OAuth broker, admin endpoints, SignalR wiring.
+- `Convy.Worker`: .NET worker host for recurring items, task reminders, and system metric snapshots.
 
 Key backend patterns:
 
@@ -69,6 +77,8 @@ Main modules:
 - `androidApp`: Android entry point, package identity, Firebase/FCM integration, build flavors.
 - `composeApp`: shared Compose UI, screens, navigation, theme.
 - `shared`: data repositories, Ktor API client, DTOs, domain models, DI, sync helpers.
+
+Task forms keep due date and reminder as structured local date/time state and convert reminder values to UTC at the repository boundary. Offline sync queues item and task complete, uncomplete, and delete actions for reconnect replay.
 
 Android identity:
 
@@ -155,6 +165,9 @@ Caddy
   |-- admin.convyapp.com -> dashboard:3000
   |-- auth.convyapp.com -> auth:3000 plus OAuth API routes to api:8080
   `-- mcp.convyapp.com -> mcp:3001
+
+worker
+  `-- scheduled backend jobs, not exposed through Caddy
 ```
 
 OCI and legacy GCP infrastructure are reference/fallback roots and should not be documented as active production unless the deployment target changes.
@@ -171,7 +184,7 @@ Current EF Core `DbSet` tables:
 | `invites` | Household invitation codes and status. |
 | `household_lists` | Shopping/task lists. |
 | `list_items` | Shopping list items, completion, recurrence, normalized titles, creation source. |
-| `task_items` | Task list items, completion, normalized titles. |
+| `task_items` | Task list items, completion, assignment, due date, reminder, priority, normalized titles. |
 | `activity_logs` | Household activity feed. |
 | `device_tokens` | FCM device registrations. |
 | `notification_preferences` | User notification settings. |
@@ -183,6 +196,8 @@ Current EF Core `DbSet` tables:
 | `mcp_oauth_consents` | User/client/resource/scope consent records. |
 | `mcp_tool_invocations` | MCP audit records with redacted tool invocation metadata. |
 | `mcp_idempotency_records` | Hashed MCP write idempotency records. |
+
+Core ownership relationships are enforced by PostgreSQL foreign keys. Structural ownership uses cascade deletes; actor/audit references use restrict deletes. See [ADR 005](adr/005-database-referential-integrity.md).
 
 ## Runtime Flows
 
@@ -204,7 +219,15 @@ Current EF Core `DbSet` tables:
 
 1. Mobile registers FCM device token.
 2. API stores token and notification preferences.
-3. Backend events enqueue/send notifications through Firebase Cloud Messaging.
+3. API events enqueue/send immediate household notifications through Firebase Cloud Messaging.
+4. Worker sends scheduled task reminders through Firebase Cloud Messaging.
+
+### Worker jobs
+
+1. `Convy.Worker` starts as a separate Compose service.
+2. It uses the same PostgreSQL database and Firebase Admin credentials as the API.
+3. It runs recurring item rollover, task reminder fanout, and system metric snapshot jobs outside API request latency.
+4. Task reminder processing uses a PostgreSQL advisory lock so duplicate worker instances do not send duplicate reminders.
 
 ### Voice parsing
 
@@ -226,15 +249,16 @@ Current EF Core `DbSet` tables:
 1. Systemd timer runs VPS backup script.
 2. Script creates PostgreSQL custom-format dump.
 3. Script records checksum, size, duration, and verification status.
-4. Weekly restore verification restores the latest dump into a temporary database.
-5. Dashboard can download registered successful dumps through admin-only API.
+4. If restic is configured, the script uploads the dump and metadata to encrypted offsite storage.
+5. Weekly restore verification restores the latest dump into a temporary database.
+6. Dashboard can download registered successful dumps through admin-only API.
 
 ## Dependency Rules
 
 - Domain has no external dependencies.
 - Application depends only on Domain.
 - Infrastructure depends on Application and Domain.
-- API depends on all backend layers for composition.
+- API and Worker depend on backend layers for composition.
 - Dashboard/auth/MCP call the API; they do not access PostgreSQL directly.
 - MCP tokens must not satisfy `AdminOnly`.
 
@@ -245,5 +269,6 @@ Current EF Core `DbSet` tables:
 - Backend email allowlist gates admin APIs.
 - MCP OAuth grants only explicit Convy scopes.
 - MCP writes are idempotent and limited to item/task creation and status changes.
+- MCP smart write API endpoints require MCP-only policies and cannot be called with Firebase/mobile tokens.
 - Backups are admin-only and resolved under the configured backup root.
 - Legal and public pages are static and served by Caddy.
