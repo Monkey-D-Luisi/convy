@@ -16,7 +16,7 @@ The CD workflow:
 
 1. Runs after successful CI.
 2. Checks out the CI commit.
-3. Configures SSH from `STAGING_SSH_PRIVATE_KEY`.
+3. Configures SSH from `STAGING_SSH_PRIVATE_KEY` and pinned `STAGING_SSH_KNOWN_HOSTS`.
 4. Ensures a non-root deploy user if needed.
 5. Packages the repository, excluding build artifacts and Terraform state.
 6. Uploads to `/tmp/convy-release.tar.gz`.
@@ -28,6 +28,7 @@ Required secrets:
 
 - `STAGING_DEPLOY_HOST`
 - `STAGING_SSH_PRIVATE_KEY`
+- `STAGING_SSH_KNOWN_HOSTS`
 - `STAGING_API_HOSTNAME` or `STAGING_PUBLIC_HOSTNAME`
 
 Optional variables:
@@ -61,6 +62,8 @@ $env:FIREBASE_WEB_APP_ID = "<firebase-web-app-id>"
 
 `push-secrets.ps1` preserves existing PostgreSQL password, MCP RSA keys, and MCP audit key when present. If both MCP key values are missing, it generates a new RSA key pair.
 
+The pushed API environment sets `VOICE_PARSING_ENABLED=true`, `McpAuth__AllowedClientMetadataHosts__0=chat.openai.com`, and `McpAuth__AllowedClientMetadataHosts__1=chatgpt.com`. If voice parsing is enabled outside Development, `OPENAI_API_KEY` must be present.
+
 ## Manual Deploy
 
 ```powershell
@@ -78,7 +81,7 @@ ssh -i "$env:USERPROFILE\.ssh\convy_vps_deploy" "convy-deploy@<server>" "sudo mk
 - writes `/opt/convy/shared/release.env`
 - copies `legal/` to `/opt/convy/legal`
 - copies `public-site/` to `/opt/convy/public`
-- builds `api`, `dashboard`, `auth`, and `mcp`
+- builds `api`, `worker`, `dashboard`, `auth`, and `mcp`
 - starts Compose services
 - checks API, auth, and MCP health
 
@@ -122,5 +125,6 @@ sudo bash /opt/convy/releases/<previous-sha>/ops/vps/deploy-release.sh <previous
 - API admin endpoints return `401` without token and `403` for non-admin users.
 - ChatGPT MCP metadata is reachable.
 - MCP Developer Mode authorization works.
+- `docker compose --env-file /opt/convy/shared/api.env -f /opt/convy/current/docker/docker-compose.vps.yml ps worker` shows the worker running.
 - Latest backup timer is still enabled.
 - `release.env` shows the expected release SHA and Android version.

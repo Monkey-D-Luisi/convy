@@ -55,12 +55,14 @@ public class McpWriteIdempotencyService
                 .FirstOrDefaultAsync(record =>
                     record.UserId == userId
                     && record.ClientId == clientId
-                    && record.KeyHash == keyHash
-                    && record.ExpiresAt > now,
+                    && record.KeyHash == keyHash,
                     cancellationToken);
 
             if (existing is not null)
             {
+                if (existing.ExpiresAt <= now)
+                    return McpIdempotencySnapshot.Json(StatusCodes.Status409Conflict, null, new { error = "idempotency_key_expired" });
+
                 return string.Equals(existing.RequestHash, requestHash, StringComparison.Ordinal)
                     ? new McpIdempotencySnapshot(existing.StatusCode, existing.Location, existing.ResponseJson)
                     : McpIdempotencySnapshot.Json(StatusCodes.Status409Conflict, null, new { error = "idempotency_key_conflict" });

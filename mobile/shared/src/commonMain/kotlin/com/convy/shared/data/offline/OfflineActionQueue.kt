@@ -35,14 +35,12 @@ class OfflineActionQueue(
         mutex.withLock {
             val current = _actions.value.toMutableList()
 
-            // Collapse logic: if there's already an action for this itemId, handle it
-            val existingIndex = current.indexOfFirst { it.itemId == action.itemId }
+            // Collapse actions for the same item or task so reconnect sync only sends the final intent.
+            val existingIndex = current.indexOfFirst { it.queueKey == action.queueKey }
             if (existingIndex >= 0) {
                 val existing = current[existingIndex]
                 // If the new action cancels the existing one (complete ↔ uncomplete), remove both
-                val cancelsOut = (existing is OfflineAction.CompleteItem && action is OfflineAction.UncompleteItem) ||
-                    (existing is OfflineAction.UncompleteItem && action is OfflineAction.CompleteItem)
-                if (cancelsOut) {
+                if (existing.cancelsOut(action)) {
                     current.removeAt(existingIndex)
                     _actions.value = current
                     persist(current)
@@ -85,3 +83,19 @@ class OfflineActionQueue(
         private const val FILENAME = "offline_queue.json"
     }
 }
+
+private val OfflineAction.queueKey: String
+    get() = when (this) {
+        is OfflineAction.CompleteItem -> "item:$itemId"
+        is OfflineAction.UncompleteItem -> "item:$itemId"
+        is OfflineAction.DeleteItem -> "item:$itemId"
+        is OfflineAction.CompleteTask -> "task:$taskId"
+        is OfflineAction.UncompleteTask -> "task:$taskId"
+        is OfflineAction.DeleteTask -> "task:$taskId"
+    }
+
+private fun OfflineAction.cancelsOut(next: OfflineAction): Boolean =
+    (this is OfflineAction.CompleteItem && next is OfflineAction.UncompleteItem) ||
+        (this is OfflineAction.UncompleteItem && next is OfflineAction.CompleteItem) ||
+        (this is OfflineAction.CompleteTask && next is OfflineAction.UncompleteTask) ||
+        (this is OfflineAction.UncompleteTask && next is OfflineAction.CompleteTask)

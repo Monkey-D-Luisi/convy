@@ -49,5 +49,20 @@ public class ActivityLogConfiguration : IEntityTypeConfiguration<ActivityLog>
         builder.HasIndex(a => new { a.HouseholdId, a.CreatedAt })
             .HasDatabaseName("ix_activity_logs_household_id_created_at")
             .IsDescending(false, true);
+
+        builder.HasIndex(a => a.PerformedBy)
+            .HasDatabaseName("ix_activity_logs_performed_by");
+
+        builder.HasOne<Household>()
+            .WithMany()
+            .HasForeignKey(a => a.HouseholdId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_activity_logs_households_household_id");
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(a => a.PerformedBy)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_activity_logs_users_performed_by");
     }
 }

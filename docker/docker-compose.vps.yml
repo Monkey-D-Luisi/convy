@@ -40,16 +40,40 @@ services:
       Firebase__ProjectId: ${FIREBASE_PROJECT_ID}
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase-admin.json
       OpenAI__ApiKey: ${OPENAI_API_KEY}
+      Features__VoiceParsingEnabled: ${VOICE_PARSING_ENABLED:-true}
       Database__MigrateOnStartup: ${DATABASE_MIGRATE_ON_STARTUP:-true}
       McpAuth__Issuer: https://${CONVY_AUTH_HOSTNAME}
       McpAuth__Audience: https://${CONVY_MCP_HOSTNAME}
       McpAuth__AuthorizationEndpoint: https://${CONVY_AUTH_HOSTNAME}/oauth/authorize
       McpAuth__PrivateKeyPemBase64: ${McpAuth__PrivateKeyPemBase64}
       McpAuth__PublicKeyPemBase64: ${McpAuth__PublicKeyPemBase64}
+      McpAuth__AllowedClientMetadataHosts__0: chat.openai.com
+      McpAuth__AllowedClientMetadataHosts__1: chatgpt.com
       McpAudit__ApiKey: ${McpAudit__ApiKey}
     volumes:
       - /opt/convy/shared/firebase-admin.json:/run/secrets/firebase-admin.json:ro
       - /opt/convy/backups/postgres:/opt/convy/backups/postgres:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - convy
+
+  worker:
+    build:
+      context: ../backend
+      dockerfile: ../docker/worker/Dockerfile
+    container_name: convy-worker
+    restart: unless-stopped
+    env_file: *convy-env-file
+    environment:
+      DOTNET_ENVIRONMENT: Staging
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Firebase__ProjectId: ${FIREBASE_PROJECT_ID}
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase-admin.json
+      Operations__DataPath: /opt/convy
+    volumes:
+      - /opt/convy/shared/firebase-admin.json:/run/secrets/firebase-admin.json:ro
     depends_on:
       db:
         condition: service_healthy

@@ -90,5 +90,38 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
 
         builder.HasIndex(t => new { t.ReminderAtUtc, t.ReminderSentAtUtc })
             .HasDatabaseName("ix_task_items_reminder_at_utc_reminder_sent_at_utc");
+
+        builder.HasIndex(t => t.CreatedBy)
+            .HasDatabaseName("ix_task_items_created_by");
+
+        builder.HasIndex(t => t.AssignedToUserId)
+            .HasDatabaseName("ix_task_items_assigned_to_user_id");
+
+        builder.HasIndex(t => t.CompletedBy)
+            .HasDatabaseName("ix_task_items_completed_by");
+
+        builder.HasOne<HouseholdList>()
+            .WithMany()
+            .HasForeignKey(t => t.ListId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("fk_task_items_household_lists_list_id");
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(t => t.CreatedBy)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_task_items_users_created_by");
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(t => t.AssignedToUserId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_task_items_users_assigned_to_user_id");
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(t => t.CompletedBy)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_task_items_users_completed_by");
     }
 }

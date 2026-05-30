@@ -73,11 +73,11 @@ public static class ItemEndpoints
             .RequireAuthorization("FirebaseOnly");
 
         group.MapPost("/smart-batch", SmartBatchCreateItemsWithMcpIdempotencyAsync)
-            .RequireAuthorization(McpScopes.ItemsWrite)
+            .RequireAuthorization(McpPolicyNames.OnlyScope(McpScopes.ItemsWrite))
             .RequireRateLimiting("mcp-write");
 
         group.MapPost("/status-batch", UpdateShoppingItemsStatusWithMcpIdempotencyAsync)
-            .RequireAuthorization(McpScopes.ItemsWrite)
+            .RequireAuthorization(McpPolicyNames.OnlyScope(McpScopes.ItemsWrite))
             .RequireRateLimiting("mcp-write");
 
         group.MapGet("/check-duplicate", async (

@@ -29,7 +29,7 @@ fi
 
 ln -sfn "$RELEASE_DIR" "$APP_ROOT/current"
 
-docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" build api
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" build api worker
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --remove-orphans --force-recreate
 
 HOSTNAME="$(grep '^CONVY_HOSTNAME=' "$ENV_FILE" | cut -d '=' -f2-)"

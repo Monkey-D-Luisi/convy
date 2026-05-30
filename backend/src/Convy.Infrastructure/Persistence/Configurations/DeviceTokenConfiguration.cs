@@ -39,5 +39,11 @@ public class DeviceTokenConfiguration : IEntityTypeConfiguration<DeviceToken>
 
         builder.HasIndex(d => d.Token).IsUnique().HasDatabaseName("ix_device_tokens_token");
         builder.HasIndex(d => d.UserId).HasDatabaseName("ix_device_tokens_user_id");
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(d => d.UserId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("fk_device_tokens_users_user_id");
     }
 }

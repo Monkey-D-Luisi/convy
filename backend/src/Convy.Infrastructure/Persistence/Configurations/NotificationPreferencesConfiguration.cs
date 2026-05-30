@@ -61,5 +61,11 @@ public class NotificationPreferencesConfiguration : IEntityTypeConfiguration<Not
         builder.HasIndex(p => p.UserId)
             .IsUnique()
             .HasDatabaseName("ix_notification_preferences_user_id");
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(p => p.UserId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("fk_notification_preferences_users_user_id");
     }
 }

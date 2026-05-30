@@ -30,7 +30,7 @@ public class NotificationEndpointContractTests
 
         source.Should().Contain("using Microsoft.AspNetCore.Mvc;");
         source.Should().Contain("async ([FromBody] UnregisterDeviceRequest request, IMediator mediator)");
-        source.Should().Contain("MapDelete(\"/{token}\"");
+        source.Should().NotContain("MapDelete(\"/{token}\"");
     }
 
     private static string FindRepoRoot()

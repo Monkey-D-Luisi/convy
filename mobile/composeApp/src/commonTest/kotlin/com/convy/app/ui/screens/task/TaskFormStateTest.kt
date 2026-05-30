@@ -1,6 +1,8 @@
 package com.convy.app.ui.screens.task
 
 import com.convy.shared.domain.model.TaskPriority
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -21,15 +23,15 @@ class TaskFormStateTest {
             title = "Clean kitchen",
             assignedToUserId = "user-2",
             assignedToUserName = "Marina",
-            dueDate = "2026-05-30",
-            reminderAtUtc = "2026-05-30 09:00",
+            dueDate = LocalDate(2026, 5, 30),
+            reminderLocalDateTime = LocalDateTime(2026, 5, 30, 9, 0),
             priority = TaskPriority.High,
         )
 
         assertEquals("user-2", state.assignedToUserId)
         assertEquals("Marina", state.assignedToUserName)
-        assertEquals("2026-05-30", state.dueDate)
-        assertEquals("2026-05-30 09:00", state.reminderAtUtc)
+        assertEquals(LocalDate(2026, 5, 30), state.dueDate)
+        assertEquals(LocalDateTime(2026, 5, 30, 9, 0), state.reminderLocalDateTime)
         assertEquals(TaskPriority.High, state.priority)
     }
 }

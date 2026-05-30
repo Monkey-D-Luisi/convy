@@ -131,6 +131,7 @@ curl -fsS https://178.105.70.69.nip.io/health/ready
 cd /opt/convy/current/docker
 docker compose --env-file /opt/convy/shared/api.env -f docker-compose.vps.yml ps
 docker compose --env-file /opt/convy/shared/api.env -f docker-compose.vps.yml logs --tail=200 api
+docker compose --env-file /opt/convy/shared/api.env -f docker-compose.vps.yml logs --tail=200 worker
 docker compose --env-file /opt/convy/shared/api.env -f docker-compose.vps.yml logs --tail=200 mcp
 docker compose --env-file /opt/convy/shared/api.env -f docker-compose.vps.yml logs --tail=200 caddy
 ```

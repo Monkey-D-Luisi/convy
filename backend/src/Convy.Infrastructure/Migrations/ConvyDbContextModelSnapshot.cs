@@ -63,6 +63,9 @@ namespace Convy.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("PerformedBy")
+                        .HasDatabaseName("ix_activity_logs_performed_by");
+
                     b.HasIndex("HouseholdId", "CreatedAt")
                         .IsDescending(false, true)
                         .HasDatabaseName("ix_activity_logs_household_id_created_at");
@@ -298,6 +301,9 @@ namespace Convy.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedBy")
+                        .HasDatabaseName("ix_households_created_by");
+
                     b.ToTable("households", (string)null);
                 });
 
@@ -342,6 +348,9 @@ namespace Convy.Infrastructure.Migrations
                         .HasColumnName("type");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedBy")
+                        .HasDatabaseName("ix_household_lists_created_by");
 
                     b.HasIndex("HouseholdId")
                         .HasDatabaseName("ix_household_lists_household_id");
@@ -431,7 +440,14 @@ namespace Convy.Infrastructure.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.HasIndex("HouseholdId");
+                    b.HasIndex("CreatedBy")
+                        .HasDatabaseName("ix_invites_created_by");
+
+                    b.HasIndex("HouseholdId")
+                        .HasDatabaseName("ix_invites_household_id");
+
+                    b.HasIndex("UsedBy")
+                        .HasDatabaseName("ix_invites_used_by");
 
                     b.ToTable("invites", (string)null);
                 });
@@ -523,12 +539,21 @@ namespace Convy.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CompletedBy")
+                        .HasDatabaseName("ix_list_items_completed_by");
+
+                    b.HasIndex("CreatedBy")
+                        .HasDatabaseName("ix_list_items_created_by");
+
                     b.HasIndex("ListId")
                         .HasDatabaseName("ix_list_items_list_id");
 
                     b.HasIndex("NextDueDate")
                         .HasDatabaseName("ix_list_items_next_due_date")
                         .HasFilter("\"next_due_date\" IS NOT NULL");
+
+                    b.HasIndex("ReturnedToPendingBy")
+                        .HasDatabaseName("ix_list_items_returned_to_pending_by");
 
                     b.HasIndex("ListId", "IsCompleted")
                         .HasDatabaseName("ix_list_items_list_id_is_completed");
@@ -1057,6 +1082,15 @@ namespace Convy.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AssignedToUserId")
+                        .HasDatabaseName("ix_task_items_assigned_to_user_id");
+
+                    b.HasIndex("CompletedBy")
+                        .HasDatabaseName("ix_task_items_completed_by");
+
+                    b.HasIndex("CreatedBy")
+                        .HasDatabaseName("ix_task_items_created_by");
+
                     b.HasIndex("ListId")
                         .HasDatabaseName("ix_task_items_list_id");
 
@@ -1197,6 +1231,60 @@ namespace Convy.Infrastructure.Migrations
                     b.ToTable("voice_parse_events", (string)null);
                 });
 
+            modelBuilder.Entity("Convy.Domain.Entities.ActivityLog", b =>
+                {
+                    b.HasOne("Convy.Domain.Entities.Household", null)
+                        .WithMany()
+                        .HasForeignKey("HouseholdId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_activity_logs_households_household_id");
+
+                    b.HasOne("Convy.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("PerformedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_activity_logs_users_performed_by");
+                });
+
+            modelBuilder.Entity("Convy.Domain.Entities.DeviceToken", b =>
+                {
+                    b.HasOne("Convy.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_device_tokens_users_user_id");
+                });
+
+            modelBuilder.Entity("Convy.Domain.Entities.Household", b =>
+                {
+                    b.HasOne("Convy.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_households_users_created_by");
+                });
+
+            modelBuilder.Entity("Convy.Domain.Entities.HouseholdList", b =>
+                {
+                    b.HasOne("Convy.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_household_lists_users_created_by");
+
+                    b.HasOne("Convy.Domain.Entities.Household", null)
+                        .WithMany()
+                        .HasForeignKey("HouseholdId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_household_lists_households_household_id");
+                });
+
             modelBuilder.Entity("Convy.Domain.Entities.HouseholdMembership", b =>
                 {
                     b.HasOne("Convy.Domain.Entities.Household", null)
@@ -1210,6 +1298,97 @@ namespace Convy.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Convy.Domain.Entities.Invite", b =>
+                {
+                    b.HasOne("Convy.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_invites_users_created_by");
+
+                    b.HasOne("Convy.Domain.Entities.Household", null)
+                        .WithMany()
+                        .HasForeignKey("HouseholdId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_invites_households_household_id");
+
+                    b.HasOne("Convy.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UsedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_invites_users_used_by");
+                });
+
+            modelBuilder.Entity("Convy.Domain.Entities.ListItem", b =>
+                {
+                    b.HasOne("Convy.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CompletedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_list_items_users_completed_by");
+
+                    b.HasOne("Convy.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_list_items_users_created_by");
+
+                    b.HasOne("Convy.Domain.Entities.HouseholdList", null)
+                        .WithMany()
+                        .HasForeignKey("ListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_list_items_household_lists_list_id");
+
+                    b.HasOne("Convy.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReturnedToPendingBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_list_items_users_returned_to_pending_by");
+                });
+
+            modelBuilder.Entity("Convy.Domain.Entities.NotificationPreferences", b =>
+                {
+                    b.HasOne("Convy.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_notification_preferences_users_user_id");
+                });
+
+            modelBuilder.Entity("Convy.Domain.Entities.TaskItem", b =>
+                {
+                    b.HasOne("Convy.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("AssignedToUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_task_items_users_assigned_to_user_id");
+
+                    b.HasOne("Convy.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CompletedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_task_items_users_completed_by");
+
+                    b.HasOne("Convy.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_task_items_users_created_by");
+
+                    b.HasOne("Convy.Domain.Entities.HouseholdList", null)
+                        .WithMany()
+                        .HasForeignKey("ListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_task_items_household_lists_list_id");
                 });
 
             modelBuilder.Entity("Convy.Domain.Entities.Household", b =>

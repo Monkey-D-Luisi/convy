@@ -38,7 +38,29 @@ services:
       Firebase__ProjectId: ${FIREBASE_PROJECT_ID}
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase-admin.json
       OpenAI__ApiKey: ${OPENAI_API_KEY}
+      Features__VoiceParsingEnabled: ${VOICE_PARSING_ENABLED:-true}
       Database__MigrateOnStartup: ${DATABASE_MIGRATE_ON_STARTUP:-true}
+    volumes:
+      - /opt/convy/shared/firebase-admin.json:/run/secrets/firebase-admin.json:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - convy
+
+  worker:
+    build:
+      context: ../backend
+      dockerfile: ../docker/worker/Dockerfile
+    container_name: convy-worker
+    restart: unless-stopped
+    env_file: *convy-env-file
+    environment:
+      DOTNET_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Firebase__ProjectId: ${FIREBASE_PROJECT_ID}
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase-admin.json
+      Operations__DataPath: /opt/convy
     volumes:
       - /opt/convy/shared/firebase-admin.json:/run/secrets/firebase-admin.json:ro
     depends_on:

@@ -47,17 +47,52 @@ fun normalizeTaskDateInputs(
     )
 }
 
-fun formatTaskReminderLocal(
+fun normalizeTaskDateSelection(
+    dueDate: LocalDate?,
+    reminderLocalDateTime: LocalDateTime?,
+    timeZone: TimeZone = TimeZone.currentSystemDefault(),
+    now: Instant = Clock.System.now(),
+): TaskDateInputValidation {
+    val reminder = reminderLocalDateTime?.toInstant(timeZone)
+
+    if (reminder != null && reminder <= now) {
+        return TaskDateInputValidation.PastReminder
+    }
+
+    return TaskDateInputValidation.Success(
+        NormalizedTaskDateInputs(
+            dueDate = dueDate?.toString(),
+            reminderAtUtc = reminder?.toString(),
+        ),
+    )
+}
+
+fun parseTaskDueDate(dueDate: String?): LocalDate? =
+    dueDate
+        ?.takeIf { it.isNotBlank() }
+        ?.let { value -> runCatching { LocalDate.parse(value) }.getOrNull() }
+
+fun parseTaskReminderLocal(
     reminderAtUtc: String?,
     timeZone: TimeZone = TimeZone.currentSystemDefault(),
-): String? =
+): LocalDateTime? =
     reminderAtUtc
         ?.takeIf { it.isNotBlank() }
         ?.let { value ->
             runCatching {
-                Instant.parse(value).toLocalDateTime(timeZone).toDisplayDateTime()
+                Instant.parse(value).toLocalDateTime(timeZone)
             }.getOrNull()
         }
+
+fun formatTaskDate(date: LocalDate?): String? = date?.toString()
+
+fun formatTaskDateTime(dateTime: LocalDateTime?): String? = dateTime?.toDisplayDateTime()
+
+fun formatTaskReminderLocal(
+    reminderAtUtc: String?,
+    timeZone: TimeZone = TimeZone.currentSystemDefault(),
+): String? =
+    formatTaskDateTime(parseTaskReminderLocal(reminderAtUtc, timeZone))
 
 fun formatInstantLocal(
     instantUtc: String?,

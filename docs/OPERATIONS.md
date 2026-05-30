@@ -36,6 +36,7 @@ On the VPS:
 cd /opt/convy/current/docker
 docker compose --env-file /opt/convy/shared/api.env -f docker-compose.vps.yml ps
 docker compose --env-file /opt/convy/shared/api.env -f docker-compose.vps.yml logs --tail=200 api
+docker compose --env-file /opt/convy/shared/api.env -f docker-compose.vps.yml logs --tail=200 worker
 docker compose --env-file /opt/convy/shared/api.env -f docker-compose.vps.yml logs --tail=200 mcp
 docker compose --env-file /opt/convy/shared/api.env -f docker-compose.vps.yml logs --tail=200 auth
 docker compose --env-file /opt/convy/shared/api.env -f docker-compose.vps.yml logs --tail=200 dashboard
@@ -60,8 +61,26 @@ Primary scripts:
 - `ops/vps/backups/restore-verify-postgres.sh`
 - `ops/vps/backups/prune-backups.sh`
 - `ops/vps/backups/install-backup-timers.sh`
+- `ops/vps/db/check-orphan-references.sql`
 
-See [backup and restore runbook](operations/backup-restore-runbook.md).
+Encrypted offsite backup upload is enabled by configuring `/opt/convy/shared/backup.env` with restic-compatible S3 settings. See [backup and restore runbook](operations/backup-restore-runbook.md).
+
+## External Alerting
+
+Install the health check timer after the first healthy deploy:
+
+```bash
+sudo bash /opt/convy/current/ops/vps/monitoring/install-monitoring-timers.sh
+```
+
+Optional `/opt/convy/shared/monitoring.env` values:
+
+- `ALERT_WEBHOOK_URL`
+- `ALERT_WEBHOOK_BEARER`
+- `API_HEALTH_URL`
+- `AUTH_HEALTH_URL`
+- `MCP_HEALTH_URL`
+- `EXTRA_HEALTH_URLS`
 
 ## DNS And Caddy
 
@@ -97,6 +116,6 @@ Common rotations:
 - MCP audit API key
 - PostgreSQL password, with planned downtime and connection string update
 
-## Monitoring Gaps
+## Monitoring Limits
 
-The current controlled release relies on health endpoints, dashboard views, logs, and scheduled backup verification. External alerting and encrypted offsite backups are required before broader public onboarding.
+The current controlled release uses health endpoints, external health alerts, dashboard views, worker/API logs, and scheduled backup verification. MCP rate limiting is process-local; see [ADR 008](adr/008-mcp-rate-limiting-scale-limits.md) before scaling MCP horizontally.

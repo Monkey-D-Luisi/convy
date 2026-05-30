@@ -100,6 +100,42 @@ public class McpWriteIdempotencyServiceTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_RejectsExpiredKeyWithoutExecutingWrite()
+    {
+        await using var context = CreateContext();
+        var service = new McpWriteIdempotencyService(context);
+        var httpContext = CreateMcpContext("expired-key");
+
+        await service.ExecuteAsync(
+            httpContext,
+            "convy_add_tasks",
+            new { listId = Guid.Parse("11111111-1111-4111-8111-111111111111"), title = "Clean kitchen" },
+            () => Task.FromResult(McpIdempotencySnapshot.Json(201, "/tasks/abc", new { id = "abc" })),
+            CancellationToken.None);
+
+        var record = await context.McpIdempotencyRecords.SingleAsync();
+        context.Entry(record).Property(r => r.ExpiresAt).CurrentValue = DateTime.UtcNow.AddMinutes(-1);
+        await context.SaveChangesAsync();
+        var executed = false;
+
+        var expired = await service.ExecuteAsync(
+            httpContext,
+            "convy_add_tasks",
+            new { listId = Guid.Parse("11111111-1111-4111-8111-111111111111"), title = "Clean kitchen" },
+            () =>
+            {
+                executed = true;
+                return Task.FromResult(McpIdempotencySnapshot.Json(201, "/tasks/other", new { id = "other" }));
+            },
+            CancellationToken.None);
+
+        executed.Should().BeFalse();
+        expired.StatusCode.Should().Be(StatusCodes.Status409Conflict);
+        expired.ResponseJson.Should().Contain("idempotency_key_expired");
+        (await context.McpIdempotencyRecords.CountAsync()).Should().Be(1);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_DoesNotRequireIdempotencyForFirebaseRequests()
     {
         await using var context = CreateContext();

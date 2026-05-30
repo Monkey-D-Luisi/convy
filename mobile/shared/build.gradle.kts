@@ -32,6 +32,7 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.ktor.client.mock)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
@@ -44,7 +45,7 @@ android {
     namespace = "com.convy.shared"
     compileSdk = 35
     defaultConfig {
-        minSdk = 26
+        minSdk = 31
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

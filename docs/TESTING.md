@@ -12,6 +12,7 @@ Projects:
 | `Convy.Application.Tests` | CQRS handlers, validators, services, user-facing normalization, smart batch behavior. |
 | `Convy.Infrastructure.Tests` | EF Core repositories, metrics readers, PostgreSQL integration through Testcontainers. |
 | `Convy.API.Tests` | Minimal API contracts, auth/authorization behavior, OAuth/MCP contracts, ops contracts. |
+| `Convy.Worker.Tests` | Worker service registration and API/worker background-job boundary. |
 
 Commands:
 
@@ -79,6 +80,7 @@ Coverage includes:
 - scope enforcement
 - tool definitions and schemas
 - API client behavior and redacted audit logging
+- task metadata schema support for assignment, due date, reminder, and priority
 
 ## Mobile Unit And Build Checks
 
@@ -145,6 +147,7 @@ Docker build validation:
 
 ```bash
 docker build -f docker/backend/Dockerfile backend
+docker build -f docker/worker/Dockerfile backend
 docker build -f dashboard/Dockerfile dashboard
 docker build -f auth/Dockerfile auth
 docker build -f mcp/Dockerfile mcp
@@ -158,9 +161,15 @@ CI jobs:
 - `dashboard`: install, test, lint, build.
 - `auth`: install, test, lint, build.
 - `mcp`: install, test, lint, build.
+- `mobile`: shared tests, Compose tests, and local debug assemble.
+- `dependency-review`: dependency diff review on pull requests.
+- `secret-scan`: Gitleaks repository scan.
+- `codeql`: GitHub CodeQL SAST for C# and TypeScript.
 - `infra`: Compose config validation, script syntax validation, Docker builds.
 
-CD runs only after CI completes successfully and performs an external staging health check against `STAGING_API_HOSTNAME` or `STAGING_PUBLIC_HOSTNAME`.
+The backend solution includes `Convy.Worker`, so backend CI builds and tests the worker project and its registration tests with the rest of the .NET stack.
+
+CD runs only after CI completes successfully, uses pinned `STAGING_SSH_KNOWN_HOSTS`, and performs an external staging health check against `STAGING_API_HOSTNAME` or `STAGING_PUBLIC_HOSTNAME`.
 
 ## Staging Smoke Checks
 

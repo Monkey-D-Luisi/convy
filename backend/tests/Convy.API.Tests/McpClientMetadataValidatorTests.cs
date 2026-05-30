@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using Convy.API.Services;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Convy.API.Tests;
@@ -24,7 +25,8 @@ public class McpClientMetadataValidatorTests
         var validator = new McpClientMetadataValidator(
             new StaticHttpClientFactory(httpClient),
             NullLogger<McpClientMetadataValidator>.Instance,
-            new StaticDnsResolver(IPAddress.Parse("1.1.1.1")));
+            new StaticDnsResolver(IPAddress.Parse("1.1.1.1")),
+            CreateConfiguration("chat.openai.com", "chatgpt.com"));
 
         var result = await validator.ValidateAsync(
             "https://chat.openai.com/mcp/client.json",
@@ -33,6 +35,25 @@ public class McpClientMetadataValidatorTests
 
         result.IsValid.Should().BeTrue();
         result.Metadata!.ClientName.Should().Be("ChatGPT");
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WithHostOutsideAllowlist_ReturnsInvalid()
+    {
+        using var httpClient = CreateHttpClient("{}");
+        var validator = new McpClientMetadataValidator(
+            new StaticHttpClientFactory(httpClient),
+            NullLogger<McpClientMetadataValidator>.Instance,
+            new StaticDnsResolver(IPAddress.Parse("1.1.1.1")),
+            CreateConfiguration("chat.openai.com", "chatgpt.com"));
+
+        var result = await validator.ValidateAsync(
+            "https://metadata.example.com/mcp/client.json",
+            "https://metadata.example.com/aip/callback",
+            CancellationToken.None);
+
+        result.IsValid.Should().BeFalse();
+        result.Error.Should().Be("client_metadata_host_not_allowed");
     }
 
     [Theory]
@@ -49,7 +70,8 @@ public class McpClientMetadataValidatorTests
         var validator = new McpClientMetadataValidator(
             new StaticHttpClientFactory(httpClient),
             NullLogger<McpClientMetadataValidator>.Instance,
-            new StaticDnsResolver(IPAddress.Parse("1.1.1.1")));
+            new StaticDnsResolver(IPAddress.Parse("1.1.1.1")),
+            CreateConfiguration("chat.openai.com", "chatgpt.com"));
 
         var result = await validator.ValidateAsync(clientId, "https://chat.openai.com/aip/callback", CancellationToken.None);
 
@@ -63,7 +85,8 @@ public class McpClientMetadataValidatorTests
         var validator = new McpClientMetadataValidator(
             new StaticHttpClientFactory(httpClient),
             NullLogger<McpClientMetadataValidator>.Instance,
-            new StaticDnsResolver(IPAddress.Parse("::ffff:10.0.0.5")));
+            new StaticDnsResolver(IPAddress.Parse("::ffff:10.0.0.5")),
+            CreateConfiguration("metadata.example.com"));
 
         var result = await validator.ValidateAsync(
             "https://metadata.example.com/client.json",
@@ -80,7 +103,8 @@ public class McpClientMetadataValidatorTests
         var validator = new McpClientMetadataValidator(
             new StaticHttpClientFactory(httpClient),
             NullLogger<McpClientMetadataValidator>.Instance,
-            new StaticDnsResolver(IPAddress.Parse("2001:0db8:0000:0000:0000:0000:0000:0001")));
+            new StaticDnsResolver(IPAddress.Parse("2001:0db8:0000:0000:0000:0000:0000:0001")),
+            CreateConfiguration("metadata.example.com"));
 
         var result = await validator.ValidateAsync(
             "https://metadata.example.com/client.json",
@@ -122,7 +146,8 @@ public class McpClientMetadataValidatorTests
         var validator = new McpClientMetadataValidator(
             new StaticHttpClientFactory(httpClient),
             NullLogger<McpClientMetadataValidator>.Instance,
-            new StaticDnsResolver(IPAddress.Parse("1.1.1.1")));
+            new StaticDnsResolver(IPAddress.Parse("1.1.1.1")),
+            CreateConfiguration("chat.openai.com"));
 
         var result = await validator.ValidateAsync(
             "https://chat.openai.com/mcp/client.json",
@@ -139,7 +164,8 @@ public class McpClientMetadataValidatorTests
         var validator = new McpClientMetadataValidator(
             new StaticHttpClientFactory(httpClient),
             NullLogger<McpClientMetadataValidator>.Instance,
-            new StaticDnsResolver(IPAddress.Parse("10.0.0.5")));
+            new StaticDnsResolver(IPAddress.Parse("10.0.0.5")),
+            CreateConfiguration("metadata.example.com"));
 
         var result = await validator.ValidateAsync(
             "https://metadata.example.com/client.json",
@@ -201,6 +227,14 @@ public class McpClientMetadataValidatorTests
 
         public Task<IReadOnlyList<IPAddress>> GetHostAddressesAsync(string host, CancellationToken cancellationToken) =>
             Task.FromResult(_addresses);
+    }
+
+    private static IConfiguration CreateConfiguration(params string[] allowedHosts)
+    {
+        var values = allowedHosts
+            .Select((host, index) => new KeyValuePair<string, string?>($"McpAuth:AllowedClientMetadataHosts:{index}", host))
+            .ToDictionary(pair => pair.Key, pair => pair.Value);
+        return new ConfigurationBuilder().AddInMemoryCollection(values).Build();
     }
 
     private static string FindRepoRoot()

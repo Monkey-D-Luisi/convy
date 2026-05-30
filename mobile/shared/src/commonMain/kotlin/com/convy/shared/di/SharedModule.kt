@@ -104,7 +104,7 @@ val repositoryModule = module {
     single<ActiveHouseholdRepository> { ActiveHouseholdRepositoryImpl(get()) }
     single<ListRepository> { ListRepositoryImpl(get()) }
     single<ItemRepository> { ItemRepositoryImpl(get(), get()) }
-    single<TaskRepository> { TaskRepositoryImpl(get()) }
+    single<TaskRepository> { TaskRepositoryImpl(get(), get()) }
     single<InviteRepository> { InviteRepositoryImpl(get()) }
     single<ActivityRepository> { ActivityRepositoryImpl(get()) }
 }

@@ -15,6 +15,7 @@ The VPS Compose stack runs:
 
 - `db`: PostgreSQL 16
 - `api`: ASP.NET Core API
+- `worker`: .NET worker for recurring items, task reminders, and system metric snapshots
 - `dashboard`: Next.js admin dashboard
 - `auth`: Next.js OAuth consent app
 - `mcp`: Node/TypeScript MCP service
@@ -47,6 +48,7 @@ Repository secrets:
 
 - `STAGING_DEPLOY_HOST`
 - `STAGING_SSH_PRIVATE_KEY`
+- `STAGING_SSH_KNOWN_HOSTS`
 - `STAGING_API_HOSTNAME` or `STAGING_PUBLIC_HOSTNAME`
 
 Repository variables:
@@ -88,7 +90,7 @@ Rollback is release-directory based:
 
 1. Identify the previous healthy release under `/opt/convy/releases`.
 2. Run the previous release's `ops/vps/deploy-release.sh <previous-sha>`.
-3. Confirm API, auth, MCP, dashboard, legal, public, and legacy health checks.
+3. Confirm API, auth, MCP, dashboard, legal, public, and legacy health checks, then confirm the `worker` service is running.
 4. If database migrations have already changed schema, treat rollback as an incident and validate compatibility before downgrading application code.
 
 ## Android Versioning

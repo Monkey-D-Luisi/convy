@@ -135,6 +135,118 @@ jobs:
         working-directory: mcp
         run: npm run build
 
+  mobile:
+    name: Mobile Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x mobile/gradlew
+
+      - name: Unit tests
+        working-directory: mobile
+        run: ./gradlew :shared:testDebugUnitTest :composeApp:testDebugUnitTest --console=plain
+
+      - name: Assemble local debug
+        working-directory: mobile
+        run: ./gradlew :androidApp:assembleLocalDebug --console=plain
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Review dependency changes
+        id: dependency-review
+        uses: actions/dependency-review-action@v4
+        continue-on-error: true
+
+      - name: Fallback dependency audit
+        if: steps.dependency-review.outcome == 'failure'
+        run: |
+          echo "::warning::GitHub Dependency Review is unavailable for this repository. Running package-manager vulnerability checks instead."
+          dotnet list backend/Convy.slnx package --vulnerable --include-transitive
+          cd dashboard && npm audit --audit-level=high
+          cd ../auth && npm audit --audit-level=high
+          cd ../mcp && npm audit --audit-level=high
+
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp,javascript-typescript
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+
   infra:
     name: Infrastructure Config
     runs-on: ubuntu-latest
@@ -164,6 +276,7 @@ jobs:
       - name: Validate Docker builds
         run: |
           docker build -f docker/backend/Dockerfile backend
+          docker build -f docker/worker/Dockerfile backend
           docker build -f dashboard/Dockerfile dashboard
           docker build -f auth/Dockerfile auth
           docker build -f mcp/Dockerfile mcp

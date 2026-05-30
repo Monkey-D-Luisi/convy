@@ -1,6 +1,6 @@
 # VPS PostgreSQL Backups
 
-Backups run locally on the Hetzner VPS and write PostgreSQL custom-format dumps under `/opt/convy/backups/postgres`.
+Backups run locally on the Hetzner VPS and write PostgreSQL custom-format dumps under `/opt/convy/backups/postgres`. When `/opt/convy/shared/backup.env` configures `RESTIC_REPOSITORY`, the backup script also uploads the dump and metadata with restic.
 
 Install timers after the first successful deploy:
 

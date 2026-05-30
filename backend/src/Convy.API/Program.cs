@@ -63,6 +63,12 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 // Authentication: route Firebase and Convy MCP JWTs behind the normal Bearer header.
+var mcpPublicKey = McpJwtKeyLoader.LoadPublicKey(builder.Configuration);
+if (mcpPublicKey is null && !builder.Environment.IsDevelopment())
+{
+    throw new InvalidOperationException("MCP public key is required outside Development.");
+}
+
 builder.Services.AddAuthentication(AuthSchemes.DefaultBearer)
     .AddPolicyScheme(AuthSchemes.DefaultBearer, AuthSchemes.DefaultBearer, options =>
     {
@@ -91,8 +97,7 @@ builder.Services.AddAuthentication(AuthSchemes.DefaultBearer)
     {
         var issuer = builder.Configuration["McpAuth:Issuer"] ?? "https://auth.convyapp.com";
         var audience = builder.Configuration["McpAuth:Audience"] ?? "https://mcp.convyapp.com";
-        SecurityKey publicKey = (SecurityKey?)McpJwtKeyLoader.LoadPublicKey(builder.Configuration)
-            ?? new RsaSecurityKey(RSA.Create(2048));
+        SecurityKey publicKey = (SecurityKey?)mcpPublicKey ?? CreateDevelopmentMcpPublicKey();
 
         options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
@@ -143,6 +148,13 @@ builder.Services.AddAuthorization(options =>
     {
         options.AddPolicy(scope, policy =>
         {
+            policy.RequireAuthenticatedUser();
+            policy.AddRequirements(new McpScopeRequirement(scope));
+        });
+
+        options.AddPolicy(McpPolicyNames.OnlyScope(scope), policy =>
+        {
+            policy.AddAuthenticationSchemes(AuthSchemes.McpBearer);
             policy.RequireAuthenticatedUser();
             policy.AddRequirements(new McpScopeRequirement(scope));
         });
@@ -290,6 +302,8 @@ static string GetUserOrIpPartition(HttpContext context)
 
 static string GetIpPartition(HttpContext context) =>
     $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+
+static SecurityKey CreateDevelopmentMcpPublicKey() => new RsaSecurityKey(RSA.Create(2048));
 
 // Make Program class accessible for WebApplicationFactory in tests
 public partial class Program { }

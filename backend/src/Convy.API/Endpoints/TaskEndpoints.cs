@@ -117,11 +117,11 @@ public static class TaskEndpoints
             .RequireAuthorization("FirebaseOnly");
 
         group.MapPost("/smart-batch", SmartBatchCreateTasksWithMcpIdempotencyAsync)
-            .RequireAuthorization(McpScopes.TasksWrite)
+            .RequireAuthorization(McpPolicyNames.OnlyScope(McpScopes.TasksWrite))
             .RequireRateLimiting("mcp-write");
 
         group.MapPost("/status-batch", UpdateTasksStatusWithMcpIdempotencyAsync)
-            .RequireAuthorization(McpScopes.TasksWrite)
+            .RequireAuthorization(McpPolicyNames.OnlyScope(McpScopes.TasksWrite))
             .RequireRateLimiting("mcp-write");
     }
 

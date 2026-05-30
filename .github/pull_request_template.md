@@ -17,6 +17,10 @@
 - [ ] Tests added/updated
 - [ ] Backend build passes: `dotnet build backend/Convy.slnx`
 - [ ] Backend tests pass: `dotnet test backend/Convy.slnx`
+- [ ] Worker changes include registration tests and Docker/Compose validation
+- [ ] MCP checks pass when MCP code changed: `cd mcp && npm test && npm run lint && npm run build`
 - [ ] Mobile checks pass when mobile code changed: `cd mobile && ./gradlew :shared:testDebugUnitTest :composeApp:testDebugUnitTest :androidApp:assembleLocalDebug`
+- [ ] Database changes include migration, rollback consideration, and orphan preflight when adding FKs
+- [ ] Security-sensitive changes update `docs/SECURITY.md` and relevant runbooks
 - [ ] No new warnings
 - [ ] Architecture layers respected (Domain has no infra dependencies)

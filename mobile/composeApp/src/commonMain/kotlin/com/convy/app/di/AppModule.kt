@@ -6,7 +6,9 @@ import com.convy.app.ui.screens.auth.AuthStore
 import com.convy.app.ui.screens.households.HouseholdsStore
 import com.convy.app.ui.screens.householdsetup.HouseholdSetupStore
 import com.convy.app.ui.screens.item.ItemFormStore
+import com.convy.app.ui.screens.listdetail.ListDetailEntryActions
 import com.convy.app.ui.screens.listdetail.ListDetailStore
+import com.convy.app.ui.screens.listdetail.ListDetailVoiceCoordinator
 import com.convy.app.ui.screens.lists.HouseholdListsStore
 import com.convy.app.ui.screens.members.MembersStore
 import com.convy.app.ui.screens.settings.SettingsStore
@@ -16,6 +18,8 @@ import org.koin.dsl.module
 
 val appModule = module {
     single { AppNavigator() }
+    single { ListDetailEntryActions(get(), get()) }
+    single { ListDetailVoiceCoordinator(get(), get()) }
 
     factory { AuthStore(get(), get(), get(), get(), get()) }
     factory { StartupStore(get(), get(), get(), get(), get()) }

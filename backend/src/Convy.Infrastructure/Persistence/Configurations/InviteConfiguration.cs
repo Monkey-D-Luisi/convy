@@ -44,6 +44,29 @@ public class InviteConfiguration : IEntityTypeConfiguration<Invite>
             .IsRequired();
 
         builder.HasIndex(i => i.Code).IsUnique();
-        builder.HasIndex(i => i.HouseholdId);
+        builder.HasIndex(i => i.HouseholdId)
+            .HasDatabaseName("ix_invites_household_id");
+        builder.HasIndex(i => i.CreatedBy)
+            .HasDatabaseName("ix_invites_created_by");
+        builder.HasIndex(i => i.UsedBy)
+            .HasDatabaseName("ix_invites_used_by");
+
+        builder.HasOne<Household>()
+            .WithMany()
+            .HasForeignKey(i => i.HouseholdId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("fk_invites_households_household_id");
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(i => i.CreatedBy)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_invites_users_created_by");
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(i => i.UsedBy)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_invites_users_used_by");
     }
 }

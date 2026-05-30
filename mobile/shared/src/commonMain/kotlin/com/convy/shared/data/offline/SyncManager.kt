@@ -79,6 +79,18 @@ class SyncManager(
                     api.deleteItem(action.listId, action.itemId)
                     true
                 }
+                is OfflineAction.CompleteTask -> {
+                    api.completeTask(action.listId, action.taskId)
+                    true
+                }
+                is OfflineAction.UncompleteTask -> {
+                    api.uncompleteTask(action.listId, action.taskId)
+                    true
+                }
+                is OfflineAction.DeleteTask -> {
+                    api.deleteTask(action.listId, action.taskId)
+                    true
+                }
             }
         } catch (e: CancellationException) {
             throw e

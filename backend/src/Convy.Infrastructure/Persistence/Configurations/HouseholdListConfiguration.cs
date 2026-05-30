@@ -50,5 +50,20 @@ public class HouseholdListConfiguration : IEntityTypeConfiguration<HouseholdList
 
         builder.HasIndex(l => new { l.HouseholdId, l.IsArchived })
             .HasDatabaseName("ix_household_lists_household_id_is_archived");
+
+        builder.HasIndex(l => l.CreatedBy)
+            .HasDatabaseName("ix_household_lists_created_by");
+
+        builder.HasOne<Household>()
+            .WithMany()
+            .HasForeignKey(l => l.HouseholdId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("fk_household_lists_households_household_id");
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(l => l.CreatedBy)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_household_lists_users_created_by");
     }
 }

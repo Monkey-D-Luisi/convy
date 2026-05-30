@@ -92,12 +92,28 @@ test("Convy API client sends smart write calls with idempotency keys", async () 
     status: "Pending",
     idempotencyKey: "uncomplete-key",
   });
+  await client.addTasks("token", "33333333-3333-4333-8333-333333333333", {
+    tasks: [{
+      title: "Clean kitchen",
+      note: "Before dinner",
+      assignedToUserId: "55555555-5555-4555-8555-555555555555",
+      dueDate: "2026-05-30",
+      reminderAtUtc: "2026-05-30T07:00:00Z",
+      priority: "High",
+    }],
+    idempotencyKey: "task-key",
+  });
 
   assert.deepEqual(requests.map((request) => [request.method, request.url, request.key]), [
     ["POST", "https://api.convyapp.com/api/v1/lists/11111111-1111-4111-8111-111111111111/items/smart-batch", "stable-key"],
     ["POST", "https://api.convyapp.com/api/v1/lists/11111111-1111-4111-8111-111111111111/items/status-batch", "complete-key"],
     ["POST", "https://api.convyapp.com/api/v1/lists/33333333-3333-4333-8333-333333333333/tasks/status-batch", "uncomplete-key"],
+    ["POST", "https://api.convyapp.com/api/v1/lists/33333333-3333-4333-8333-333333333333/tasks/smart-batch", "task-key"],
   ]);
   assert.match(requests[0]?.body ?? "", /"title":"Milk"/);
+  assert.match(requests[3]?.body ?? "", /"assignedToUserId":"55555555-5555-4555-8555-555555555555"/);
+  assert.match(requests[3]?.body ?? "", /"dueDate":"2026-05-30"/);
+  assert.match(requests[3]?.body ?? "", /"reminderAtUtc":"2026-05-30T07:00:00Z"/);
+  assert.match(requests[3]?.body ?? "", /"priority":"High"/);
   assert.doesNotMatch(requests[0]?.body ?? "", /idempotencyKey/);
 });
