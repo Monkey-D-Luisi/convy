@@ -177,8 +177,8 @@
     <string name="task_reminder_label">Recordatorio</string>
     <string name="task_reminder_placeholder">AAAA-MM-DD HH:MM</string>
     <string name="task_reminder_none">Sin recordatorio</string>
-    <string name="task_picker_previous_day">Dia anterior</string>
-    <string name="task_picker_next_day">Dia siguiente</string>
+    <string name="task_picker_previous_day">Día anterior</string>
+    <string name="task_picker_next_day">Día siguiente</string>
     <string name="task_picker_previous_hour">Hora anterior</string>
     <string name="task_picker_next_hour">Hora siguiente</string>
     <string name="task_picker_previous_15_minutes">-15 min</string>
@@ -193,8 +193,8 @@
     <string name="task_add">Añadir tarea</string>
     <string name="task_not_found">Tarea no encontrada</string>
     <string name="task_save_failed">Error al guardar la tarea</string>
-    <string name="task_due_date_invalid">Usa una fecha valida.</string>
-    <string name="task_reminder_invalid">Usa una fecha y hora de recordatorio validas.</string>
+    <string name="task_due_date_invalid">Usa una fecha válida.</string>
+    <string name="task_reminder_invalid">Usa una fecha y hora de recordatorio válidas.</string>
     <string name="task_reminder_past">El recordatorio debe estar en el futuro.</string>
     <string name="task_delete_failed">Error al eliminar la tarea</string>
 

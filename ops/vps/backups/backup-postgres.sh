@@ -151,7 +151,7 @@ run_offsite_backup() {
   fi
 
   local -a restic_args
-  restic_args=(backup "$backup_path" "$metadata_path" --tag convy --tag postgres --tag "$BUCKET")
+  restic_args=(backup "$backup_path" "$metadata_path" --tag convy --tag postgres --tag "$BUCKET" --tag "$BACKUP_TYPE")
   for tag in ${RESTIC_BACKUP_TAGS:-}; do
     restic_args+=(--tag "$tag")
   done
