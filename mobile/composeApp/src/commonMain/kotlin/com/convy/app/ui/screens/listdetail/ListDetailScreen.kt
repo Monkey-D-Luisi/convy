@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -680,15 +681,23 @@ private fun ListEntryCard(
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = if (entry.isCompleted) {
-                MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f)
+                MaterialTheme.colorScheme.surfaceContainerLow
             } else {
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
+                MaterialTheme.colorScheme.surface
             },
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (entry.isCompleted) 1.dp else 3.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(
+            1.dp,
+            if (entry.isCompleted) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.24f)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.64f)
+            },
+        ),
     ) {
         Row(
-            modifier = Modifier.padding(start = 8.dp, end = 16.dp, top = 14.dp, bottom = 14.dp),
+            modifier = Modifier.padding(start = 8.dp, end = 14.dp, top = 13.dp, bottom = 13.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Checkbox(
@@ -837,12 +846,20 @@ private fun ShoppingModeEntry(
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = if (entry.isCompleted) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.34f)
+                MaterialTheme.colorScheme.surfaceContainerLow
             } else {
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
+                MaterialTheme.colorScheme.surface
             },
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (entry.isCompleted) 1.dp else 3.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(
+            1.dp,
+            if (entry.isCompleted) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.24f)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.64f)
+            },
+        ),
     ) {
         Row(
             modifier = Modifier

@@ -42,6 +42,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.convy.app.generated.resources.*
 import com.convy.app.ui.components.ConvyBackground
+import com.convy.app.ui.components.ConvyFormSection
 import com.convy.app.ui.components.ConvyPrimaryBottomBar
 import com.convy.app.ui.components.ConvyPrimaryButton
 import com.convy.app.ui.components.ConvySpacing
@@ -133,49 +134,46 @@ fun TaskFormContent(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(ConvySpacing.ScreenHorizontal),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                TextField(
-                    value = state.title,
-                    onValueChange = { onIntent(TaskFormIntent.UpdateTitle(it)) },
-                    label = { Text(stringResource(Res.string.task_title_label)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().testTag("Task title"),
-                    shape = MaterialTheme.shapes.large,
-                    colors = convyTextFieldColors(),
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Sentences,
-                        imeAction = ImeAction.Next,
-                    ),
-                )
+                ConvyFormSection(title = stringResource(Res.string.task_details_section)) {
+                    TextField(
+                        value = state.title,
+                        onValueChange = { onIntent(TaskFormIntent.UpdateTitle(it)) },
+                        label = { Text(stringResource(Res.string.task_title_label)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().testTag("Task title"),
+                        shape = MaterialTheme.shapes.large,
+                        colors = convyTextFieldColors(),
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
+                            imeAction = ImeAction.Next,
+                        ),
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    TextField(
+                        value = state.note,
+                        onValueChange = { onIntent(TaskFormIntent.UpdateNote(it)) },
+                        label = { Text(stringResource(Res.string.task_note_label)) },
+                        placeholder = { Text(stringResource(Res.string.task_note_placeholder)) },
+                        modifier = Modifier.fillMaxWidth().testTag("Task note"),
+                        shape = MaterialTheme.shapes.large,
+                        colors = convyTextFieldColors(),
+                        minLines = 3,
+                        maxLines = 6,
+                    )
+                }
 
-                TextField(
-                    value = state.note,
-                    onValueChange = { onIntent(TaskFormIntent.UpdateNote(it)) },
-                    label = { Text(stringResource(Res.string.task_note_label)) },
-                    placeholder = { Text(stringResource(Res.string.task_note_placeholder)) },
-                    modifier = Modifier.fillMaxWidth().testTag("Task note"),
-                    shape = MaterialTheme.shapes.large,
-                    colors = convyTextFieldColors(),
-                    minLines = 3,
-                    maxLines = 6,
-                )
+                ConvyFormSection(title = stringResource(Res.string.task_assignment_section)) {
+                    TaskAssigneeSelector(state = state, onIntent = onIntent)
+                    TaskPrioritySelector(priority = state.priority, onIntent = onIntent)
+                }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                TaskAssigneeSelector(state = state, onIntent = onIntent)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                TaskDateControls(state = state, onIntent = onIntent)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                TaskPrioritySelector(priority = state.priority, onIntent = onIntent)
+                ConvyFormSection(title = stringResource(Res.string.task_schedule_section)) {
+                    TaskDateControls(state = state, onIntent = onIntent)
+                }
 
                 if (state.error != null) {
-                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = state.error.asString(),
                         color = MaterialTheme.colorScheme.error,
@@ -183,7 +181,7 @@ fun TaskFormContent(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(104.dp))
+                Spacer(modifier = Modifier.height(88.dp))
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.convy.app.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,14 +60,15 @@ fun ListCard(
         modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+            containerColor = MaterialTheme.colorScheme.surface,
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.64f)),
     ) {
         Row(
             modifier = Modifier
-                .clickable(onClick = onClick)
-                .padding(18.dp),
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -78,8 +80,8 @@ fun ListCard(
                 contentDescription = null,
                 tint = accent,
                 containerColor = accent.copy(alpha = 0.12f),
-                size = 58.dp,
-                iconSize = 31.dp,
+                size = 48.dp,
+                iconSize = 24.dp,
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -100,7 +102,7 @@ fun ListCard(
                         },
                         style = MaterialTheme.typography.labelMedium,
                         color = accent,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                     )
                 }
             }
@@ -109,7 +111,7 @@ fun ListCard(
                     shape = MaterialTheme.shapes.extraLarge,
                     color = accent.copy(alpha = 0.13f),
                     contentColor = accent,
-                    modifier = Modifier.size(44.dp),
+                    modifier = Modifier.size(38.dp),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text("$pendingCount", style = MaterialTheme.typography.titleMedium)

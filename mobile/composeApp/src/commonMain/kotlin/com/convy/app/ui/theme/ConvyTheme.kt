@@ -15,16 +15,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-val ConvyEmerald = Color(0xFF006F4E)
-val ConvyEmeraldDeep = Color(0xFF063F32)
-val ConvyMint = Color(0xFFB8F3CC)
-val ConvyMintSoft = Color(0xFFE7F7EC)
-val ConvyLavender = Color(0xFFF1ECF9)
-val ConvyLavenderDeep = Color(0xFF5B438A)
-val ConvyWarmWhite = Color(0xFFFFFCF8)
-val ConvyInk = Color(0xFF17201D)
-val ConvySlate = Color(0xFF65716D)
-val ConvyLine = Color(0xFFD9DED8)
+val ConvyEmerald = Color(0xFF006B55)
+val ConvyEmeraldDeep = Color(0xFF083B31)
+val ConvyMint = Color(0xFFC5EBDD)
+val ConvyMintSoft = Color(0xFFEFF8F3)
+val ConvyLavender = Color(0xFFE6DFF0)
+val ConvyLavenderDeep = Color(0xFF5A5278)
+val ConvyWarmWhite = Color(0xFFFCFAF6)
+val ConvyInk = Color(0xFF17211D)
+val ConvySlate = Color(0xFF5E6A64)
+val ConvyLine = Color(0xFFD8DED7)
 
 private val ConvyLightColorScheme = lightColorScheme(
     primary = ConvyEmerald,
@@ -35,10 +35,10 @@ private val ConvyLightColorScheme = lightColorScheme(
     onSecondary = Color.White,
     secondaryContainer = ConvyLavender,
     onSecondaryContainer = ConvyLavenderDeep,
-    tertiary = Color(0xFF2F6C72),
+    tertiary = Color(0xFF6F5A32),
     onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFDDF5F0),
-    onTertiaryContainer = Color(0xFF0C4E47),
+    tertiaryContainer = Color(0xFFFFE3B0),
+    onTertiaryContainer = Color(0xFF4C390B),
     error = Color(0xFFB3261E),
     onError = Color.White,
     errorContainer = Color(0xFFFFDAD6),
@@ -47,7 +47,7 @@ private val ConvyLightColorScheme = lightColorScheme(
     onBackground = ConvyInk,
     surface = Color.White,
     onSurface = ConvyInk,
-    surfaceVariant = ConvyLavender,
+    surfaceVariant = Color(0xFFE1E7E0),
     onSurfaceVariant = ConvySlate,
     outline = Color(0xFF8C9691),
     outlineVariant = ConvyLine,
@@ -56,10 +56,10 @@ private val ConvyLightColorScheme = lightColorScheme(
     inversePrimary = ConvyMint,
     surfaceTint = ConvyEmerald,
     surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFFBFAF7),
-    surfaceContainer = Color(0xFFF6F3F8),
-    surfaceContainerHigh = Color(0xFFF0ECF4),
-    surfaceContainerHighest = Color(0xFFE7F2EA),
+    surfaceContainerLow = Color(0xFFF8F6F1),
+    surfaceContainer = Color(0xFFF1F0EA),
+    surfaceContainerHigh = Color(0xFFECE9E2),
+    surfaceContainerHighest = Color(0xFFE1E7E0),
 )
 
 private val ConvyDarkColorScheme = darkColorScheme(
@@ -94,46 +94,46 @@ private val ConvyDarkColorScheme = darkColorScheme(
 )
 
 private val ConvyShapes = Shapes(
-    small = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(6.dp),
     medium = RoundedCornerShape(8.dp),
     large = RoundedCornerShape(12.dp),
-    extraLarge = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(20.dp),
 )
 
 private val ConvyTypography = Typography(
     displayMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 44.sp,
-        lineHeight = 48.sp,
+        fontSize = 40.sp,
+        lineHeight = 44.sp,
         letterSpacing = 0.sp,
     ),
     headlineLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 32.sp,
-        lineHeight = 38.sp,
+        fontSize = 30.sp,
+        lineHeight = 36.sp,
         letterSpacing = 0.sp,
     ),
     headlineMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 28.sp,
-        lineHeight = 34.sp,
+        fontSize = 25.sp,
+        lineHeight = 31.sp,
         letterSpacing = 0.sp,
     ),
     titleLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
+        fontSize = 20.sp,
+        lineHeight = 26.sp,
         letterSpacing = 0.sp,
     ),
     titleMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 18.sp,
-        lineHeight = 24.sp,
+        fontSize = 16.sp,
+        lineHeight = 22.sp,
         letterSpacing = 0.sp,
     ),
     titleSmall = TextStyle(
@@ -146,15 +146,15 @@ private val ConvyTypography = Typography(
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
-        fontSize = 17.sp,
-        lineHeight = 24.sp,
+        fontSize = 16.sp,
+        lineHeight = 23.sp,
         letterSpacing = 0.sp,
     ),
     bodyMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
-        fontSize = 15.sp,
-        lineHeight = 21.sp,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
         letterSpacing = 0.sp,
     ),
     bodySmall = TextStyle(
@@ -167,8 +167,8 @@ private val ConvyTypography = Typography(
     labelLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 15.sp,
-        lineHeight = 20.sp,
+        fontSize = 14.sp,
+        lineHeight = 19.sp,
         letterSpacing = 0.sp,
     ),
     labelMedium = TextStyle(

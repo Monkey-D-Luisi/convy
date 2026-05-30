@@ -2,11 +2,11 @@ package com.convy.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -22,7 +22,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,10 +41,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.convy.app.ui.theme.ConvyLavender
 import com.convy.app.ui.theme.ConvyLine
-import com.convy.app.ui.theme.ConvyMintSoft
-import com.convy.app.ui.theme.ConvyWarmWhite
 
 object ConvySpacing {
     val ScreenHorizontal = 20.dp
@@ -65,14 +61,14 @@ fun ConvyBackground(
     val backgroundColors = if (isDarkTheme) {
         listOf(
             colorScheme.background,
-            colorScheme.surfaceContainerLowest,
             colorScheme.surfaceContainerLow,
+            colorScheme.surfaceContainer,
         )
     } else {
         listOf(
-            ConvyWarmWhite,
-            ConvyLavender.copy(alpha = 0.54f),
-            ConvyMintSoft.copy(alpha = 0.44f),
+            colorScheme.background,
+            colorScheme.surfaceContainerLowest,
+            colorScheme.surfaceContainerLow,
         )
     }
 
@@ -90,14 +86,15 @@ fun ConvyBackground(
 @Composable
 fun ConvyPanel(
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+    containerColor: Color = MaterialTheme.colorScheme.surface,
     content: @Composable () -> Unit,
 ) {
-    ElevatedCard(
+    Card(
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.58f)),
         content = { content() },
     )
 }
@@ -109,13 +106,11 @@ fun ConvySoftCard(
     content: @Composable () -> Unit,
 ) {
     Card(
-        modifier = modifier.border(
-            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)),
-            MaterialTheme.shapes.large,
-        ),
+        modifier = modifier,
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.62f)),
         content = { content() },
     )
 }
@@ -127,12 +122,12 @@ fun ConvyIconBubble(
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.primary,
     containerColor: Color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-    size: Dp = 48.dp,
-    iconSize: Dp = 25.dp,
+    size: Dp = 44.dp,
+    iconSize: Dp = 22.dp,
 ) {
     Surface(
         modifier = modifier.size(size),
-        shape = MaterialTheme.shapes.large,
+        shape = MaterialTheme.shapes.medium,
         color = containerColor,
     ) {
         Box(contentAlignment = Alignment.Center) {
@@ -204,6 +199,32 @@ fun ConvySectionHeader(
 }
 
 @Composable
+fun ConvyFormSection(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        )
+        ConvyPanel(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                content = content,
+            )
+        }
+    }
+}
+
+@Composable
 fun ConvyMetric(
     icon: ImageVector,
     value: String,
@@ -212,21 +233,21 @@ fun ConvyMetric(
     tint: Color = MaterialTheme.colorScheme.primary,
 ) {
     Column(
-        modifier = modifier.padding(vertical = 16.dp),
+        modifier = modifier.padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         ConvyIconBubble(
             icon = icon,
             contentDescription = null,
-            size = 52.dp,
-            iconSize = 27.dp,
+            size = 40.dp,
+            iconSize = 21.dp,
             tint = tint,
             containerColor = tint.copy(alpha = 0.12f),
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.titleLarge,
             color = tint,
         )
         Text(
@@ -245,8 +266,8 @@ fun ConvyPrimaryBottomBar(
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-        tonalElevation = 4.dp,
-        shadowElevation = 6.dp,
+        tonalElevation = 2.dp,
+        shadowElevation = 0.dp,
     ) {
         Row(
             modifier = Modifier
@@ -270,7 +291,7 @@ fun ConvyPrimaryButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(56.dp),
+        modifier = modifier.height(52.dp),
         enabled = enabled,
         shape = MaterialTheme.shapes.large,
         colors = ButtonDefaults.buttonColors(
@@ -284,8 +305,8 @@ fun ConvyPrimaryButton(
 
 @Composable
 fun convyTextFieldColors() = TextFieldDefaults.colors(
-    focusedContainerColor = MaterialTheme.colorScheme.surface,
-    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
     disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
     errorContainerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.22f),
     focusedIndicatorColor = Color.Transparent,
@@ -297,8 +318,8 @@ fun convyTextFieldColors() = TextFieldDefaults.colors(
 
 @Composable
 fun convyOutlinedTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedContainerColor = MaterialTheme.colorScheme.surface,
-    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
     disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
     focusedBorderColor = MaterialTheme.colorScheme.primary,
     unfocusedBorderColor = ConvyLine,
@@ -308,8 +329,8 @@ fun convyOutlinedTextFieldColors() = OutlinedTextFieldDefaults.colors(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun convyTopAppBarColors() = TopAppBarDefaults.topAppBarColors(
-    containerColor = Color.Transparent,
-    scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+    containerColor = MaterialTheme.colorScheme.background,
+    scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
     titleContentColor = MaterialTheme.colorScheme.onSurface,
     navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
     actionIconContentColor = MaterialTheme.colorScheme.onSurface,

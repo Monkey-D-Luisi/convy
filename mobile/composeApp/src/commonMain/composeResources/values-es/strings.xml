@@ -144,6 +144,8 @@
     <!-- Item Form -->
     <string name="item_edit_title">Editar artículo</string>
     <string name="item_new_title">Nuevo artículo</string>
+    <string name="item_details_section">Detalles del artículo</string>
+    <string name="item_recurrence_section">Recurrencia</string>
     <string name="item_title_label">Título *</string>
     <string name="item_qty_label">Cant.</string>
     <string name="item_unit_label">Unidad</string>
@@ -166,6 +168,9 @@
     <!-- Task Form -->
     <string name="task_edit_title">Editar tarea</string>
     <string name="task_new_title">Nueva tarea</string>
+    <string name="task_details_section">Detalles de la tarea</string>
+    <string name="task_assignment_section">Asignación</string>
+    <string name="task_schedule_section">Programación</string>
     <string name="task_title_label">Título *</string>
     <string name="task_note_label">Nota</string>
     <string name="task_note_placeholder">Nota opcional…</string>

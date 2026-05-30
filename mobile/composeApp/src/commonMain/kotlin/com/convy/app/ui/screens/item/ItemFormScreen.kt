@@ -1,11 +1,9 @@
 package com.convy.app.ui.screens.item
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,6 +27,7 @@ import com.convy.app.ui.components.ItemHistorySheet
 import com.convy.app.ui.components.LoadingContent
 import com.convy.app.generated.resources.*
 import com.convy.app.ui.components.ConvyBackground
+import com.convy.app.ui.components.ConvyFormSection
 import com.convy.app.ui.components.ConvyPrimaryBottomBar
 import com.convy.app.ui.components.ConvyPrimaryButton
 import com.convy.app.ui.components.ConvySpacing
@@ -129,184 +128,180 @@ fun ItemFormContent(
 
         ConvyBackground(modifier = Modifier.padding(padding)) {
             Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(ConvySpacing.ScreenHorizontal),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(ConvySpacing.ScreenHorizontal),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-            TextField(
-                value = state.title,
-                onValueChange = { onIntent(ItemFormIntent.UpdateTitle(it)) },
-                label = { Text(stringResource(Res.string.item_title_label)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large,
-                colors = convyTextFieldColors(),
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Sentences,
-                    imeAction = ImeAction.Next,
-                ),
-            )
-
-            if (state.suggestions.isNotEmpty() && !state.isEditing) {
-                Spacer(modifier = Modifier.height(8.dp))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(state.suggestions) { suggestion ->
-                        SuggestionChip(
-                            onClick = { onIntent(ItemFormIntent.SelectSuggestion(suggestion)) },
-                            label = { Text(suggestion) },
-                        )
-                    }
-                }
-            }
-
-            if (state.duplicateWarning.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                    ),
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = stringResource(Res.string.item_duplicates_found),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                        )
-                        state.duplicateWarning.forEach { dup ->
-                            Text(
-                                text = "- ${dup.title}${dup.quantity?.let { " ($it${dup.unit?.let { u -> " $u" } ?: ""})" } ?: ""}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        TextButton(
-                            onClick = { onIntent(ItemFormIntent.DismissDuplicateWarning) },
-                        ) {
-                            Text(stringResource(Res.string.dismiss))
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                TextField(
-                    value = state.quantity,
-                    onValueChange = { onIntent(ItemFormIntent.UpdateQuantity(it)) },
-                    label = { Text(stringResource(Res.string.item_qty_label)) },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                    shape = MaterialTheme.shapes.large,
-                    colors = convyTextFieldColors(),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number,
-                        imeAction = ImeAction.Next,
-                    ),
-                )
-                TextField(
-                    value = state.unit,
-                    onValueChange = { onIntent(ItemFormIntent.UpdateUnit(it)) },
-                    label = { Text(stringResource(Res.string.item_unit_label)) },
-                    placeholder = { Text(stringResource(Res.string.item_unit_placeholder)) },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                    shape = MaterialTheme.shapes.large,
-                    colors = convyTextFieldColors(),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            TextField(
-                value = state.note,
-                onValueChange = { onIntent(ItemFormIntent.UpdateNote(it)) },
-                label = { Text(stringResource(Res.string.item_note_label)) },
-                placeholder = { Text(stringResource(Res.string.item_note_placeholder)) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large,
-                colors = convyTextFieldColors(),
-                minLines = 2,
-                maxLines = 4,
-            )
-
-            // Recurrence section
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(stringResource(Res.string.item_recurring), style = MaterialTheme.typography.bodyLarge)
-                Switch(
-                    checked = state.recurrenceFrequency != null,
-                    onCheckedChange = { enabled ->
-                        if (enabled) {
-                            onIntent(ItemFormIntent.UpdateRecurrenceFrequency(1))
-                            onIntent(ItemFormIntent.UpdateRecurrenceInterval(1))
-                        } else {
-                            onIntent(ItemFormIntent.UpdateRecurrenceFrequency(null))
-                            onIntent(ItemFormIntent.UpdateRecurrenceInterval(null))
-                        }
-                    },
-                )
-            }
-
-            if (state.recurrenceFrequency != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    OutlinedTextField(
-                        value = (state.recurrenceInterval ?: 1).toString(),
-                        onValueChange = { value ->
-                            val interval = value.toIntOrNull()
-                            if (interval != null && interval > 0) {
-                                onIntent(ItemFormIntent.UpdateRecurrenceInterval(interval))
-                            }
-                        },
-                        label = { Text(stringResource(Res.string.item_every)) },
-                        modifier = Modifier.weight(1f),
+                ConvyFormSection(title = stringResource(Res.string.item_details_section)) {
+                    TextField(
+                        value = state.title,
+                        onValueChange = { onIntent(ItemFormIntent.UpdateTitle(it)) },
+                        label = { Text(stringResource(Res.string.item_title_label)) },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.large,
+                        colors = convyTextFieldColors(),
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
+                            imeAction = ImeAction.Next,
+                        ),
                     )
 
-                    val frequencies = listOf(stringResource(Res.string.item_freq_daily), stringResource(Res.string.item_freq_weekly), stringResource(Res.string.item_freq_monthly))
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.weight(2f)) {
-                        frequencies.forEachIndexed { index, label ->
-                            SegmentedButton(
-                                selected = state.recurrenceFrequency == index,
-                                onClick = { onIntent(ItemFormIntent.UpdateRecurrenceFrequency(index)) },
-                                shape = SegmentedButtonDefaults.itemShape(index, frequencies.size),
-                            ) { Text(label, style = MaterialTheme.typography.labelSmall) }
+                    if (state.suggestions.isNotEmpty() && !state.isEditing) {
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(state.suggestions) { suggestion ->
+                                SuggestionChip(
+                                    onClick = { onIntent(ItemFormIntent.SelectSuggestion(suggestion)) },
+                                    label = { Text(suggestion) },
+                                )
+                            }
+                        }
+                    }
+
+                    if (state.duplicateWarning.isNotEmpty()) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                            ),
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = stringResource(Res.string.item_duplicates_found),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                )
+                                state.duplicateWarning.forEach { dup ->
+                                    Text(
+                                        text = "- ${dup.title}${dup.quantity?.let { " ($it${dup.unit?.let { u -> " $u" } ?: ""})" } ?: ""}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                }
+                                TextButton(
+                                    onClick = { onIntent(ItemFormIntent.DismissDuplicateWarning) },
+                                ) {
+                                    Text(stringResource(Res.string.dismiss))
+                                }
+                            }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        TextField(
+                            value = state.quantity,
+                            onValueChange = { onIntent(ItemFormIntent.UpdateQuantity(it)) },
+                            label = { Text(stringResource(Res.string.item_qty_label)) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            shape = MaterialTheme.shapes.large,
+                            colors = convyTextFieldColors(),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Next,
+                            ),
+                        )
+                        TextField(
+                            value = state.unit,
+                            onValueChange = { onIntent(ItemFormIntent.UpdateUnit(it)) },
+                            label = { Text(stringResource(Res.string.item_unit_label)) },
+                            placeholder = { Text(stringResource(Res.string.item_unit_placeholder)) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            shape = MaterialTheme.shapes.large,
+                            colors = convyTextFieldColors(),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        )
+                    }
+
+                    TextField(
+                        value = state.note,
+                        onValueChange = { onIntent(ItemFormIntent.UpdateNote(it)) },
+                        label = { Text(stringResource(Res.string.item_note_label)) },
+                        placeholder = { Text(stringResource(Res.string.item_note_placeholder)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.large,
+                        colors = convyTextFieldColors(),
+                        minLines = 2,
+                        maxLines = 4,
+                    )
+                }
+
+                ConvyFormSection(title = stringResource(Res.string.item_recurrence_section)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(stringResource(Res.string.item_recurring), style = MaterialTheme.typography.bodyLarge)
+                        Switch(
+                            checked = state.recurrenceFrequency != null,
+                            onCheckedChange = { enabled ->
+                                if (enabled) {
+                                    onIntent(ItemFormIntent.UpdateRecurrenceFrequency(1))
+                                    onIntent(ItemFormIntent.UpdateRecurrenceInterval(1))
+                                } else {
+                                    onIntent(ItemFormIntent.UpdateRecurrenceFrequency(null))
+                                    onIntent(ItemFormIntent.UpdateRecurrenceInterval(null))
+                                }
+                            },
+                        )
+                    }
+
+                    if (state.recurrenceFrequency != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            OutlinedTextField(
+                                value = (state.recurrenceInterval ?: 1).toString(),
+                                onValueChange = { value ->
+                                    val interval = value.toIntOrNull()
+                                    if (interval != null && interval > 0) {
+                                        onIntent(ItemFormIntent.UpdateRecurrenceInterval(interval))
+                                    }
+                                },
+                                label = { Text(stringResource(Res.string.item_every)) },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            )
+
+                            val frequencies = listOf(stringResource(Res.string.item_freq_daily), stringResource(Res.string.item_freq_weekly), stringResource(Res.string.item_freq_monthly))
+                            SingleChoiceSegmentedButtonRow(modifier = Modifier.weight(2f)) {
+                                frequencies.forEachIndexed { index, label ->
+                                    SegmentedButton(
+                                        selected = state.recurrenceFrequency == index,
+                                        onClick = { onIntent(ItemFormIntent.UpdateRecurrenceFrequency(index)) },
+                                        shape = SegmentedButtonDefaults.itemShape(index, frequencies.size),
+                                    ) { Text(label, style = MaterialTheme.typography.labelSmall) }
+                                }
+                            }
                         }
                     }
                 }
-            }
 
-            if (state.error != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = state.error.asString(),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-
-            if (state.isEditing) {
-                Spacer(modifier = Modifier.height(24.dp))
-                TextButton(onClick = { onIntent(ItemFormIntent.ShowHistory) }) {
-                    Text(stringResource(Res.string.item_view_history))
+                if (state.error != null) {
+                    Text(
+                        text = state.error.asString(),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(104.dp))
-        }
+                if (state.isEditing) {
+                    TextButton(onClick = { onIntent(ItemFormIntent.ShowHistory) }) {
+                        Text(stringResource(Res.string.item_view_history))
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(88.dp))
+            }
         }
     }
 }

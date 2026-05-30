@@ -1,9 +1,7 @@
 package com.convy.app.ui.screens.auth
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -22,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.convy.app.generated.resources.*
 import com.convy.app.ui.components.ConvyBackground
@@ -65,35 +62,41 @@ fun AuthContent(
     ConvyBackground {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = ConvySpacing.ScreenHorizontal)
-                .padding(top = 72.dp, bottom = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .padding(top = 34.dp, bottom = 24.dp),
+            horizontalAlignment = Alignment.Start,
         ) {
-            ConvyIconBubble(
-                icon = Icons.Default.Home,
-                contentDescription = null,
-                size = 72.dp,
-                iconSize = 38.dp,
-                containerColor = MaterialTheme.colorScheme.primary,
-                tint = MaterialTheme.colorScheme.onPrimary,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                ConvyIconBubble(
+                    icon = Icons.Default.Home,
+                    contentDescription = null,
+                    size = 44.dp,
+                    iconSize = 22.dp,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Convy",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            Spacer(modifier = Modifier.height(42.dp))
             Text(
-                text = "Convy",
+                text = if (state.isSignUp) stringResource(Res.string.auth_create_account) else stringResource(Res.string.auth_sign_in),
                 style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onSurface,
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(Res.string.app_tagline),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 18.dp),
             )
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             ConvyPanel(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -220,7 +223,7 @@ fun AuthContent(
                 text = stringResource(Res.string.auth_terms),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }

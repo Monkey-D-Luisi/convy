@@ -1,5 +1,6 @@
 package com.convy.app.ui.screens.settings
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
@@ -104,31 +105,34 @@ fun SettingsContent(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                    containerColor = MaterialTheme.colorScheme.surface,
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.64f)),
             ) {
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                        .padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     ConvyAvatar(
                         label = state.displayName,
-                        size = 64.dp,
-                        textStyle = MaterialTheme.typography.headlineMedium,
+                        size = 52.dp,
+                        textStyle = MaterialTheme.typography.titleLarge,
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = state.displayName.ifEmpty { stringResource(Res.string.settings_unknown_name) },
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-                    Text(
-                        text = state.email.ifEmpty { stringResource(Res.string.settings_no_email) },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = state.displayName.ifEmpty { stringResource(Res.string.settings_unknown_name) },
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                        Text(
+                            text = state.email.ifEmpty { stringResource(Res.string.settings_no_email) },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
 
@@ -138,9 +142,10 @@ fun SettingsContent(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                        containerColor = MaterialTheme.colorScheme.surface,
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.64f)),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(stringResource(Res.string.settings_household), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -182,9 +187,10 @@ fun SettingsContent(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                    containerColor = MaterialTheme.colorScheme.surface,
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.64f)),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
@@ -207,9 +213,10 @@ fun SettingsContent(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                    containerColor = MaterialTheme.colorScheme.surface,
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.64f)),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(

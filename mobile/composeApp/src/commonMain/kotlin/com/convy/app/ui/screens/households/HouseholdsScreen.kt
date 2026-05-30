@@ -1,5 +1,6 @@
 package com.convy.app.ui.screens.households
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -225,9 +226,17 @@ private fun HouseholdRow(
         modifier = Modifier.fillMaxWidth().testTag("Household ${household.name}"),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.62f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+            containerColor = if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.32f) else MaterialTheme.colorScheme.surface,
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isActive) 3.dp else 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(
+            1.dp,
+            if (isActive) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.36f)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.64f)
+            },
+        ),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),

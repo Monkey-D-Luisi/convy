@@ -13,7 +13,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.convy.app.generated.resources.*
 import com.convy.app.ui.components.ConvyBackground
@@ -54,25 +53,32 @@ fun HouseholdSetupContent(
     ConvyBackground {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = ConvySpacing.ScreenHorizontal)
-                .padding(top = 78.dp, bottom = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .padding(top = 34.dp, bottom = 24.dp),
+            horizontalAlignment = Alignment.Start,
         ) {
-            ConvyIconBubble(
-                icon = Icons.Default.Home,
-                contentDescription = null,
-                size = 72.dp,
-                iconSize = 38.dp,
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f),
-            )
-            Spacer(modifier = Modifier.height(18.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                ConvyIconBubble(
+                    icon = Icons.Default.Home,
+                    contentDescription = null,
+                    size = 44.dp,
+                    iconSize = 22.dp,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.76f),
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Convy",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            Spacer(modifier = Modifier.height(42.dp))
             Text(
                 text = stringResource(Res.string.setup_title),
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -80,9 +86,8 @@ fun HouseholdSetupContent(
                 else stringResource(Res.string.setup_join_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
             )
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             ConvyPanel(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(18.dp)) {
