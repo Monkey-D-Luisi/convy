@@ -47,6 +47,7 @@
 | 22 | 0.1.19 | 2026-05-29 | Mobile app and landing redesign |
 | 23 | 0.1.20 | 2026-05-29 | Post-redesign release artifact build |
 | 24 | 0.1.21 | 2026-05-29 | Landing copy and list detail bug fixes |
+| 25 | 0.1.22 | 2026-05-30 | Smart task reminders and voice task parsing |
 
 ## Release Procedure
 
