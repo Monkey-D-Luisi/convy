@@ -70,6 +70,13 @@ test("smart write tool schemas are strict and idempotency keys are optional", ()
   }).success, true);
   assert.equal(addTasks.inputSchema.safeParse({
     listId,
+    tasks: [{
+      title: "Limpiar cocina",
+      reminderAtUtc: "2026-05-30T09:00:00+02:00",
+    }],
+  }).success, false);
+  assert.equal(addTasks.inputSchema.safeParse({
+    listId,
     tasks: [{ title: "Limpiar cocina", priority: "Urgent" }],
   }).success, false);
 });

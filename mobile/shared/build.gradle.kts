@@ -45,7 +45,7 @@ android {
     namespace = "com.convy.shared"
     compileSdk = 35
     defaultConfig {
-        minSdk = 31
+        minSdk = 26
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

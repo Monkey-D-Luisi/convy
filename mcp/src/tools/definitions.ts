@@ -19,6 +19,9 @@ const activitySchema = z.object({
   limit: z.number().int().min(1).max(50).default(20),
 }).strict();
 const idempotencyKey = z.string().trim().min(8).max(128).optional();
+const utcDateTime = z.string()
+  .datetime({ offset: true })
+  .refine((value) => value.endsWith("Z"), "Reminder timestamp must be UTC.");
 const shoppingItemInputSchema = z.object({
   title: z.string().trim().min(1).max(200),
   quantity: z.number().int().min(1).max(999).optional(),
@@ -41,7 +44,7 @@ const taskInputSchema = z.object({
   note: z.string().trim().max(500).optional(),
   assignedToUserId: uuid.optional(),
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  reminderAtUtc: z.string().datetime({ offset: true }).optional(),
+  reminderAtUtc: utcDateTime.optional(),
   priority: z.enum(["Low", "Normal", "High"]).optional(),
 }).strict();
 const addTasksSchema = z.object({
