@@ -2,6 +2,7 @@ package com.convy.app.ui.screens.listdetail
 
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SwipeToDismissBoxValue
+import com.convy.app.util.UiText
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -54,5 +55,18 @@ class ListDetailSwipeAffordanceTest {
     @Test
     fun `dismissed confirmation snackbar maps to no intent`() {
         assertNull(deleteConfirmationIntentForSnackbarResult(SnackbarResult.Dismissed, "item-1"))
+    }
+
+    @Test
+    fun `duplicate delete confirmation for same item is not queued`() {
+        val pendingMessages = listOf(
+            PendingSnackbarMessage(
+                id = 1,
+                message = UiText.DynamicString("Delete Milk?"),
+                action = SnackbarAction.ConfirmDelete("item-1"),
+            ),
+        )
+
+        assertFalse(shouldQueueDeleteConfirmation(pendingMessages, "item-1"))
     }
 }
