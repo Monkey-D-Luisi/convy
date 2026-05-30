@@ -105,6 +105,7 @@ mobile/keystore.properties
 # Firebase (contains project config)
 # =====================
 google-services.json
+!mobile/androidApp/src/localDebug/google-services.json
 GoogleService-Info.plist
 
 # =====================
