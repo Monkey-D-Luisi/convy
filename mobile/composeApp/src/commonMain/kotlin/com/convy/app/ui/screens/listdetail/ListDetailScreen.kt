@@ -154,6 +154,16 @@ fun ListDetailScreen(
                     pendingSnackbarMessages.add(PendingSnackbarMessage(nextSnackbarId, effect.message))
                     nextSnackbarId += 1
                 }
+                is ListDetailSideEffect.ShowDeleteConfirmation -> {
+                    pendingSnackbarMessages.add(
+                        PendingSnackbarMessage(
+                            id = nextSnackbarId,
+                            message = effect.message,
+                            action = SnackbarAction.ConfirmDelete(effect.itemId),
+                        ),
+                    )
+                    nextSnackbarId += 1
+                }
                 is ListDetailSideEffect.ShowUndo -> {
                     pendingSnackbarMessages.add(
                         PendingSnackbarMessage(
@@ -184,7 +194,9 @@ fun ListDetailScreen(
         val resolvedMessage = pendingMessage.message.asString()
         val undoLabel = stringResource(Res.string.detail_undo)
         val redoLabel = stringResource(Res.string.detail_redo)
+        val deleteLabel = stringResource(Res.string.detail_delete_confirm_action)
         val actionLabel = when (pendingMessage.action) {
+            is SnackbarAction.ConfirmDelete -> deleteLabel
             is SnackbarAction.Undo -> undoLabel
             SnackbarAction.Redo -> redoLabel
             null -> null
@@ -198,6 +210,9 @@ fun ListDetailScreen(
             )
             pendingSnackbarMessages.remove(pendingMessage)
             when (val action = pendingMessage.action) {
+                is SnackbarAction.ConfirmDelete -> {
+                    deleteConfirmationIntentForSnackbarResult(result, action.itemId)?.let(store::processIntent)
+                }
                 is SnackbarAction.Undo -> {
                     if (result == SnackbarResult.ActionPerformed && pendingMessage.operationId != null) {
                         store.processIntent(ListDetailIntent.UndoOperation(pendingMessage.operationId))
@@ -254,6 +269,7 @@ private data class PendingSnackbarMessage(
 )
 
 private sealed interface SnackbarAction {
+    data class ConfirmDelete(val itemId: String) : SnackbarAction
     data class Undo(val isPendingDelete: Boolean) : SnackbarAction
     data object Redo : SnackbarAction
 }
@@ -564,7 +580,7 @@ private fun NormalEntryList(
                 ) {
                     DismissibleEntry(
                         entry = entry,
-                        onDelete = { onIntent(ListDetailIntent.DeleteItem(entry.id)) },
+                        onDeleteRequest = { onIntent(ListDetailIntent.RequestDeleteItem(entry.id)) },
                     ) {
                         ListEntryCard(
                             entry = entry,
@@ -601,7 +617,7 @@ private fun NormalEntryList(
                 items(completedEntries, key = { it.id }) { entry ->
                     DismissibleEntry(
                         entry = entry,
-                        onDelete = { onIntent(ListDetailIntent.DeleteItem(entry.id)) },
+                        onDeleteRequest = { onIntent(ListDetailIntent.RequestDeleteItem(entry.id)) },
                     ) {
                         ListEntryCard(
                             entry = entry,
@@ -619,27 +635,21 @@ private fun NormalEntryList(
 @Composable
 private fun DismissibleEntry(
     entry: ListEntryUi,
-    onDelete: () -> Unit,
+    onDeleteRequest: () -> Unit,
     content: @Composable () -> Unit,
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
-        positionalThreshold = { it * 0.65f },
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                onDelete()
-                true
-            } else {
-                false
-            }
-        },
+        positionalThreshold = { it * 0.85f },
+        confirmValueChange = { value -> confirmDeleteSwipeRequest(value, onDeleteRequest) },
     )
     SwipeToDismissBox(
         state = dismissState,
         backgroundContent = {
             val showDeleteAffordance = shouldShowDeleteSwipeAffordance(dismissState.targetValue)
+            val deleteRequestLabel = stringResource(Res.string.detail_delete_request_affordance)
             val color by animateColorAsState(
                 if (showDeleteAffordance) {
-                    MaterialTheme.colorScheme.errorContainer
+                    MaterialTheme.colorScheme.secondaryContainer
                 } else {
                     Color.Transparent
                 },
@@ -652,11 +662,20 @@ private fun DismissibleEntry(
                 contentAlignment = Alignment.CenterEnd,
             ) {
                 if (showDeleteAffordance) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = stringResource(Res.string.delete),
-                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = deleteRequestLabel,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
                 }
             }
         },
@@ -667,6 +686,26 @@ private fun DismissibleEntry(
 
 internal fun shouldShowDeleteSwipeAffordance(targetValue: SwipeToDismissBoxValue): Boolean =
     targetValue == SwipeToDismissBoxValue.EndToStart
+
+internal fun confirmDeleteSwipeRequest(
+    value: SwipeToDismissBoxValue,
+    onDeleteRequest: () -> Unit,
+): Boolean {
+    if (value == SwipeToDismissBoxValue.EndToStart) {
+        onDeleteRequest()
+    }
+    return false
+}
+
+internal fun deleteConfirmationIntentForSnackbarResult(
+    result: SnackbarResult,
+    itemId: String,
+): ListDetailIntent? =
+    if (result == SnackbarResult.ActionPerformed) {
+        ListDetailIntent.DeleteItem(itemId)
+    } else {
+        null
+    }
 
 @Composable
 private fun ListEntryCard(
