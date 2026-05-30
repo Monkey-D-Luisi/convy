@@ -94,6 +94,8 @@ import com.convy.app.ui.components.VoiceInputSheet
 import com.convy.app.ui.components.convyOutlinedTextFieldColors
 import com.convy.app.ui.components.convyTopAppBarColors
 import com.convy.app.util.UiText
+import com.convy.app.util.formatInstantLocal
+import com.convy.app.util.formatTaskReminderLocal
 import com.convy.app.util.rememberRecordAudioPermissionState
 import com.convy.shared.domain.model.TaskPriority
 import org.jetbrains.compose.resources.stringResource
@@ -789,7 +791,7 @@ private fun TaskMetadataChips(entry: ListEntryUi) {
         chips.add(entry.dueDate)
     }
     if (entry.reminderAtUtc != null) {
-        chips.add(formatTimestamp(entry.reminderAtUtc))
+        chips.add(formatTaskReminderLocal(entry.reminderAtUtc) ?: entry.reminderAtUtc)
     }
     if (entry.priority != TaskPriority.Normal) {
         chips.add(
@@ -881,5 +883,5 @@ private fun ShoppingModeEntry(
 }
 
 private fun formatTimestamp(iso: String): String {
-    return iso.take(16).replace("T", " ")
+    return formatInstantLocal(iso) ?: iso.take(16).replace("T", " ")
 }

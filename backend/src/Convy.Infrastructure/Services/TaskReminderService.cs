@@ -11,6 +11,7 @@ namespace Convy.Infrastructure.Services;
 public class TaskReminderService : BackgroundService
 {
     private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(5);
+    internal const int BatchSize = 100;
 
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<TaskReminderService> _logger;
@@ -45,50 +46,104 @@ public class TaskReminderService : BackgroundService
         var listRepository = scope.ServiceProvider.GetRequiredService<IHouseholdListRepository>();
         var householdRepository = scope.ServiceProvider.GetRequiredService<IHouseholdRepository>();
         var pushService = scope.ServiceProvider.GetRequiredService<IPushNotificationService>();
+        var processingLock = scope.ServiceProvider.GetRequiredService<ITaskReminderProcessingLock>();
+
+        await using var acquiredLock = await processingLock.TryAcquireAsync(cancellationToken);
+        if (acquiredLock is null)
+        {
+            _logger.LogInformation("Task reminder processing skipped because another instance holds the lock");
+            return;
+        }
 
         var now = DateTime.UtcNow;
-        var dueTasks = await taskRepository.GetDueRemindersAsync(now, cancellationToken);
+        var dueTasks = await taskRepository.GetDueRemindersAsync(now, BatchSize, cancellationToken);
+        var listCache = new Dictionary<Guid, HouseholdList?>();
+        var householdCache = new Dictionary<Guid, Household?>();
 
         foreach (var task in dueTasks)
         {
-            if (task.IsCompleted)
-                continue;
+            try
+            {
+                if (task.IsCompleted)
+                    continue;
 
-            var list = await listRepository.GetByIdAsync(task.ListId, cancellationToken);
-            if (list is null)
-                continue;
+                var list = await GetListAsync(task.ListId, listRepository, listCache, cancellationToken);
+                if (list is null)
+                {
+                    _logger.LogWarning("Skipping task reminder because list was not found taskId={TaskId} listId={ListId}", task.Id, task.ListId);
+                    continue;
+                }
 
-            var household = await householdRepository.GetByIdWithMembersAsync(list.HouseholdId, cancellationToken);
-            if (household is null)
-                continue;
+                var household = await GetHouseholdAsync(list.HouseholdId, householdRepository, householdCache, cancellationToken);
+                if (household is null)
+                {
+                    _logger.LogWarning("Skipping task reminder because household was not found taskId={TaskId} householdId={HouseholdId}", task.Id, list.HouseholdId);
+                    continue;
+                }
 
-            var recipients = ResolveRecipients(task, household);
-            if (recipients.Count == 0)
-                continue;
+                var recipients = ResolveRecipients(task, household);
+                if (recipients.Count == 0)
+                {
+                    _logger.LogWarning("Skipping task reminder because no recipients were resolved taskId={TaskId}", task.Id);
+                    continue;
+                }
 
-            await pushService.SendLocalizedAsync(
-                recipients,
-                NotificationCategory.TaskReminders,
-                new PushNotificationTemplate(
-                    NotificationTemplateKey.TaskReminderDue,
+                await pushService.SendLocalizedAsync(
+                    recipients,
+                    NotificationCategory.TaskReminders,
+                    new PushNotificationTemplate(
+                        NotificationTemplateKey.TaskReminderDue,
+                        new Dictionary<string, string>
+                        {
+                            ["title"] = task.Title,
+                            ["listName"] = list.Name
+                        }),
                     new Dictionary<string, string>
                     {
-                        ["title"] = task.Title,
-                        ["listName"] = list.Name
-                    }),
-                new Dictionary<string, string>
-                {
-                    ["type"] = "task-reminder",
-                    ["listId"] = list.Id.ToString(),
-                    ["taskId"] = task.Id.ToString()
-                },
-                cancellationToken);
+                        ["type"] = "task-reminder",
+                        ["listId"] = list.Id.ToString(),
+                        ["taskId"] = task.Id.ToString()
+                    },
+                    cancellationToken);
 
-            task.MarkReminderSent(now);
+                task.MarkReminderSent(now);
+                await taskRepository.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex, "Failed to process task reminder taskId={TaskId}", task.Id);
+            }
+        }
+    }
+
+    private static async Task<HouseholdList?> GetListAsync(
+        Guid listId,
+        IHouseholdListRepository repository,
+        Dictionary<Guid, HouseholdList?> cache,
+        CancellationToken cancellationToken)
+    {
+        if (!cache.TryGetValue(listId, out var list))
+        {
+            list = await repository.GetByIdAsync(listId, cancellationToken);
+            cache[listId] = list;
         }
 
-        if (dueTasks.Count > 0)
-            await taskRepository.SaveChangesAsync(cancellationToken);
+        return list;
+    }
+
+    private static async Task<Household?> GetHouseholdAsync(
+        Guid householdId,
+        IHouseholdRepository repository,
+        Dictionary<Guid, Household?> cache,
+        CancellationToken cancellationToken)
+    {
+        if (!cache.TryGetValue(householdId, out var household))
+        {
+            household = await repository.GetByIdWithMembersAsync(householdId, cancellationToken);
+            cache[householdId] = household;
+        }
+
+        return household;
     }
 
     private static IReadOnlyList<Guid> ResolveRecipients(TaskItem task, Household household)

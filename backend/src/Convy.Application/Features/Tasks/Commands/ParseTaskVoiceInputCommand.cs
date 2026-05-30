@@ -23,4 +23,5 @@ public record ParsedTaskDto(
     DateOnly? DueDate,
     DateTime? ReminderAtUtc,
     TaskPriority Priority,
-    string? MatchedExistingTask);
+    string? MatchedExistingTask,
+    string? AssignedToUserName = null);

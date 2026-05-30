@@ -40,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<IFirebaseMessagingClient, FirebaseMessagingClient>();
         services.AddScoped<IPushNotificationTextProvider, PushNotificationTextProvider>();
         services.AddScoped<IPushNotificationService, PushNotificationService>();
+        services.AddScoped<ITaskReminderProcessingLock, PostgresTaskReminderProcessingLock>();
         services.AddScoped<IActivityLogger, ActivityLogger>();
         services.AddScoped<IAdminMetricsReader, AdminMetricsReader>();
         services.AddScoped<IAdminBackupFileService, AdminBackupFileService>();

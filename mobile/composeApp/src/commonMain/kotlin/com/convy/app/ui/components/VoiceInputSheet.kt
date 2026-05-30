@@ -38,11 +38,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.convy.app.generated.resources.Res
 import com.convy.app.generated.resources.cancel
+import com.convy.app.generated.resources.task_priority_high
+import com.convy.app.generated.resources.task_priority_low
+import com.convy.app.generated.resources.task_priority_normal
 import com.convy.app.generated.resources.voice_add_items
 import com.convy.app.generated.resources.voice_add_tasks
 import com.convy.app.generated.resources.voice_matches
 import com.convy.app.generated.resources.voice_parsed_items
 import com.convy.app.generated.resources.voice_parsed_tasks
+import com.convy.app.generated.resources.voice_task_assignee
 import com.convy.app.generated.resources.voice_task_due
 import com.convy.app.generated.resources.voice_task_matches
 import com.convy.app.generated.resources.voice_task_note
@@ -50,6 +54,8 @@ import com.convy.app.generated.resources.voice_task_reminder
 import com.convy.app.generated.resources.voice_title
 import com.convy.app.ui.screens.listdetail.ParsedVoiceItem
 import com.convy.app.ui.screens.listdetail.ParsedVoiceTask
+import com.convy.app.util.formatTaskReminderLocal
+import com.convy.shared.domain.model.TaskPriority
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -188,13 +194,16 @@ private fun VoiceTaskRow(
                 if (!task.note.isNullOrBlank()) {
                     details.add(stringResource(Res.string.voice_task_note, task.note))
                 }
+                if (!task.assignedToUserName.isNullOrBlank()) {
+                    details.add(stringResource(Res.string.voice_task_assignee, task.assignedToUserName))
+                }
                 if (task.dueDate != null) {
                     details.add(stringResource(Res.string.voice_task_due, task.dueDate))
                 }
                 if (task.reminderAtUtc != null) {
-                    details.add(stringResource(Res.string.voice_task_reminder, task.reminderAtUtc.take(16).replace("T", " ")))
+                    details.add(stringResource(Res.string.voice_task_reminder, formatTaskReminderLocal(task.reminderAtUtc) ?: task.reminderAtUtc))
                 }
-                details.add(task.priority.name)
+                details.add(taskPriorityLabel(task.priority))
                 if (details.isNotEmpty()) {
                     Text(
                         text = details.joinToString(" / "),
@@ -220,6 +229,14 @@ private fun VoiceTaskRow(
         }
     }
 }
+
+@Composable
+private fun taskPriorityLabel(priority: TaskPriority): String =
+    when (priority) {
+        TaskPriority.Low -> stringResource(Res.string.task_priority_low)
+        TaskPriority.Normal -> stringResource(Res.string.task_priority_normal)
+        TaskPriority.High -> stringResource(Res.string.task_priority_high)
+    }
 
 @Composable
 private fun VoiceHero(transcription: String) {

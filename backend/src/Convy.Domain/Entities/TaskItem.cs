@@ -161,9 +161,13 @@ public class TaskItem : Entity
         value.HasValue ? NormalizeUtc(value.Value) : null;
 
     private static DateTime NormalizeUtc(DateTime value) =>
-        value.Kind == DateTimeKind.Utc
-            ? value
-            : value.ToUniversalTime();
+        value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            DateTimeKind.Unspecified => DateTime.SpecifyKind(value, DateTimeKind.Utc),
+            _ => value
+        };
 
     private static void ValidatePriority(TaskPriority priority)
     {

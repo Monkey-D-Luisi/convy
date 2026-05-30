@@ -153,6 +153,7 @@ data class ParsedTaskDto(
     @SerialName("title") val title: String,
     @SerialName("note") val note: String? = null,
     @SerialName("assignedToUserId") val assignedToUserId: String? = null,
+    @SerialName("assignedToUserName") val assignedToUserName: String? = null,
     @SerialName("dueDate") val dueDate: String? = null,
     @SerialName("reminderAtUtc") val reminderAtUtc: String? = null,
     @SerialName("priority") val priority: String = "Normal",

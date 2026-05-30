@@ -119,6 +119,7 @@ fun ParsedTaskDto.toDomain(): ParsedTask = ParsedTask(
     title = title,
     note = note,
     assignedToUserId = assignedToUserId,
+    assignedToUserName = assignedToUserName,
     dueDate = dueDate,
     reminderAtUtc = reminderAtUtc,
     priority = priority.toTaskPriority(),

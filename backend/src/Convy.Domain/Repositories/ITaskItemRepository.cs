@@ -16,6 +16,7 @@ public interface ITaskItemRepository
 
     Task<IReadOnlyList<TaskItem>> GetDueRemindersAsync(
         DateTime asOfUtc,
+        int limit,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(TaskItem task, CancellationToken cancellationToken = default);

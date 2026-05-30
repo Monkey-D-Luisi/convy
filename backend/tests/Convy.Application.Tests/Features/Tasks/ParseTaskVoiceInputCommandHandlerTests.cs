@@ -1,6 +1,7 @@
 using Convy.Application.Common.Interfaces;
 using Convy.Application.Common.Services;
 using Convy.Application.Features.Tasks.Commands;
+using Convy.Domain.Common;
 using Convy.Domain.Entities;
 using Convy.Domain.Repositories;
 using Convy.Domain.ValueObjects;
@@ -16,6 +17,7 @@ public class ParseTaskVoiceInputCommandHandlerTests
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
     private readonly ITaskVoiceParsingService _voiceParsing = Substitute.For<ITaskVoiceParsingService>();
     private readonly ITaskItemRepository _taskRepository = Substitute.For<ITaskItemRepository>();
+    private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IUserFacingTextNormalizer _textNormalizer = new UserFacingTextNormalizer();
     private readonly Guid _userId = Guid.NewGuid();
 
@@ -38,6 +40,8 @@ public class ParseTaskVoiceInputCommandHandlerTests
         var household = new Household("Home", _userId);
         var assignee = Guid.NewGuid();
         household.AddMember(assignee);
+        _userRepository.GetByIdsAsync(Arg.Is<IEnumerable<Guid>>(ids => ids.Contains(assignee)), Arg.Any<CancellationToken>())
+            .Returns([CreateUser(assignee, "Marina")]);
         var list = new HouseholdList("Chores", ListType.Tasks, household.Id, _userId);
         _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
         _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
@@ -70,7 +74,8 @@ public class ParseTaskVoiceInputCommandHandlerTests
                 _currentUser,
                 _voiceParsing,
                 _taskRepository,
-                _textNormalizer)
+                _textNormalizer,
+                _userRepository)
             .Handle(
                 new ParseTaskVoiceAudioCommand(
                     list.Id,
@@ -82,6 +87,7 @@ public class ParseTaskVoiceInputCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Tasks.Should().ContainSingle(task => task.Title == "Limpiar la cocina");
+        result.Value.Tasks.Should().ContainSingle(task => task.AssignedToUserName == "Marina");
     }
 
     [Fact]
@@ -175,5 +181,12 @@ public class ParseTaskVoiceInputCommandHandlerTests
             Arg.Any<string>(),
             Arg.Any<DateTimeOffset>(),
             Arg.Any<CancellationToken>());
+    }
+
+    private static User CreateUser(Guid id, string displayName)
+    {
+        var user = new User($"firebase-{id}", displayName, $"{displayName}@example.com");
+        typeof(Entity).GetProperty(nameof(Entity.Id))!.SetValue(user, id);
+        return user;
     }
 }

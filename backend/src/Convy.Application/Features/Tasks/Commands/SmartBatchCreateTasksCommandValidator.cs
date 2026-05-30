@@ -29,6 +29,20 @@ public class SmartBatchCreateTasksCommandValidator : AbstractValidator<SmartBatc
 
             task.RuleFor(i => i.Priority)
                 .IsInEnum().WithMessage("Invalid task priority.");
+
+            task.RuleFor(i => i.ReminderAtUtc)
+                .Must(BeUtc).When(i => i.ReminderAtUtc.HasValue)
+                .WithMessage("Reminder timestamp must be UTC.");
+
+            task.RuleFor(i => i.ReminderAtUtc)
+                .Must(BeFutureReminder).When(i => i.ReminderAtUtc.HasValue)
+                .WithMessage("Reminder timestamp must be in the future.");
         });
     }
+
+    private static bool BeUtc(DateTime? value) =>
+        value is null || value.Value.Kind == DateTimeKind.Utc;
+
+    private static bool BeFutureReminder(DateTime? value) =>
+        value is null || value.Value > DateTime.UtcNow;
 }

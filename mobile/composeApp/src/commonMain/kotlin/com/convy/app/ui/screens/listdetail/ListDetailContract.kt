@@ -89,6 +89,7 @@ data class ParsedVoiceTask(
     val title: String,
     val note: String?,
     val assignedToUserId: String?,
+    val assignedToUserName: String?,
     val dueDate: String?,
     val reminderAtUtc: String?,
     val priority: TaskPriority,
