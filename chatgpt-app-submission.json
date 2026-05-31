@@ -226,7 +226,7 @@
     },
     {
       "description": "Add multiple shopping items after confirmation.",
-      "user_prompt": "Add milk, bread, and eggs to my grocery list.",
+      "user_prompt": "Add apples, yogurt, and pasta to my grocery list.",
       "file_attachment_urls": null,
       "tools_triggered": "convy_add_shopping_items",
       "expected_output": "Requests confirmation, then adds the requested items in one batch and reports created, reused, or uncompleted items.",
@@ -250,7 +250,7 @@
     },
     {
       "description": "Create multiple tasks after confirmation.",
-      "user_prompt": "Create tasks to clean the kitchen and take out trash.",
+      "user_prompt": "Create tasks to wash towels and water plants.",
       "file_attachment_urls": null,
       "tools_triggered": "convy_add_tasks",
       "expected_output": "Requests confirmation, then creates the requested private Convy tasks in one batch.",

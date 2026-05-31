@@ -46,10 +46,10 @@ Please use the provided email/password reviewer account. The reviewer account in
 - Which Convy shopping lists can I use?
 - Show pending items in my grocery list.
 - Show completed items in my grocery list.
-- Add milk, bread, and eggs to my grocery list.
+- Add apples, yogurt, and pasta to my grocery list.
 - Mark milk and bread as bought in Convy.
 - Show my Convy tasks.
-- Create tasks to clean the kitchen and take out trash.
+- Create tasks to wash towels and water plants.
 - Mark the trash task as complete.
 - Show recent Convy activity.
 
