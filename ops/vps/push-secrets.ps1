@@ -322,7 +322,7 @@ try {
     scp -i $SshKeyPath $apiEnv "${SshUser}@${HostName}:/tmp/convy-api.env"
     scp -i $SshKeyPath $FirebaseAdminJsonPath "${SshUser}@${HostName}:/tmp/convy-firebase-admin.json"
 
-    ssh -i $SshKeyPath "${SshUser}@${HostName}" "sed -i 's/\r$//' /tmp/convy-api.env && install -m 600 -o root -g root /tmp/convy-api.env /opt/convy/shared/api.env && install -m 600 -o root -g root /tmp/convy-firebase-admin.json /opt/convy/shared/firebase-admin.json && chmod 600 /opt/convy/shared/firebase-admin.json && rm -f /tmp/convy-api.env /tmp/convy-firebase-admin.json"
+    ssh -i $SshKeyPath "${SshUser}@${HostName}" "sed -i 's/\r$//' /tmp/convy-api.env && install -m 600 -o root -g root /tmp/convy-api.env /opt/convy/shared/api.env && install -m 640 -o root -g 1654 /tmp/convy-firebase-admin.json /opt/convy/shared/firebase-admin.json && chmod 640 /opt/convy/shared/firebase-admin.json && rm -f /tmp/convy-api.env /tmp/convy-firebase-admin.json"
 }
 finally {
     Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue

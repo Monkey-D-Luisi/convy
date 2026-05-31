@@ -136,7 +136,9 @@ public class OpsContractTests
         var hetznerVariables = ReadRepoFile("infra", "hetzner", "variables.tf");
         var ociVariables = ReadRepoFile("infra", "oci", "variables.tf");
 
-        vpsSecrets.Should().Contain("chmod 600 /opt/convy/shared/firebase-admin.json");
+        vpsSecrets.Should().Contain("install -m 600 -o root -g root /tmp/convy-api.env /opt/convy/shared/api.env");
+        vpsSecrets.Should().Contain("install -m 640 -o root -g 1654 /tmp/convy-firebase-admin.json /opt/convy/shared/firebase-admin.json");
+        vpsSecrets.Should().Contain("chmod 640 /opt/convy/shared/firebase-admin.json");
         ociSecrets.Should().Contain("chmod 600 /opt/convy/shared/firebase-admin.json");
         vpsBootstrap.Should().Contain("ALLOW_FORMAT_DATA_DEVICE");
         ociBootstrap.Should().Contain("ALLOW_FORMAT_DATA_DEVICE");
