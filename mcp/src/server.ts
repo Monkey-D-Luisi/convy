@@ -20,6 +20,15 @@ export function createApp(config: McpConfig) {
     res.json(createProtectedResourceMetadata(config));
   });
 
+  app.get("/.well-known/openai-apps-challenge", (_req, res) => {
+    if (!config.openAiAppsChallengeToken) {
+      res.status(404).type("text/plain").send("Not found");
+      return;
+    }
+
+    res.type("text/plain").send(config.openAiAppsChallengeToken);
+  });
+
   const sendDocs = (_req: express.Request, res: express.Response) => {
     res.type("text/plain").send([
       "Convy MCP beta",

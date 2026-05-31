@@ -9,6 +9,7 @@ export type McpConfig = {
   jwtAudience: string;
   jwtPublicKeyPem: string;
   auditApiKey?: string;
+  openAiAppsChallengeToken?: string;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): McpConfig {
@@ -28,6 +29,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): McpConfig {
     jwtAudience: env.MCP_JWT_AUDIENCE ?? mcpPublicUrl,
     jwtPublicKeyPem: readPublicKey(env),
     auditApiKey,
+    openAiAppsChallengeToken: env.OPENAI_APPS_CHALLENGE_TOKEN || undefined,
   };
 }
 

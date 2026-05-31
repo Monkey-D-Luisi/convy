@@ -135,6 +135,7 @@ services:
       MCP_JWT_AUDIENCE: https://${CONVY_MCP_HOSTNAME}
       MCP_JWT_PUBLIC_KEY_BASE64: ${McpAuth__PublicKeyPemBase64}
       CONVY_MCP_AUDIT_API_KEY: ${McpAudit__ApiKey}
+      OPENAI_APPS_CHALLENGE_TOKEN: ${OPENAI_APPS_CHALLENGE_TOKEN:-}
     depends_on:
       - api
     networks:

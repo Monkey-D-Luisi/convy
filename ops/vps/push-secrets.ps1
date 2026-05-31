@@ -265,6 +265,8 @@ if ([string]::IsNullOrWhiteSpace($mcpAuditApiKey)) {
     $mcpAuditApiKey = New-RandomSecret
 }
 
+$openAiAppsChallengeToken = Get-SecretValue -LocalName "OPENAI_APPS_CHALLENGE_TOKEN" -RemoteName "OPENAI_APPS_CHALLENGE_TOKEN"
+
 $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("convy-vps-" + [Guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $tempDir | Out-Null
 
@@ -295,6 +297,7 @@ try {
         "FIREBASE_AUTH_DOMAIN=$firebaseAuthDomain"
         "FIREBASE_WEB_APP_ID=$firebaseWebAppId"
         "OPENAI_API_KEY=$openAiApiKey"
+        "OPENAI_APPS_CHALLENGE_TOKEN=$openAiAppsChallengeToken"
         "VOICE_PARSING_ENABLED=true"
         "DATABASE_MIGRATE_ON_STARTUP=true"
         "ADMIN_BASIC_AUTH_USER=$adminBasicAuthUser"

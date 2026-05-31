@@ -22,11 +22,18 @@ const idempotencyKey = z.string().trim().min(8).max(128).optional();
 const utcDateTime = z.string()
   .datetime({ offset: true })
   .refine((value) => value.endsWith("Z"), "Reminder timestamp must be UTC.");
+const dateOnly = z.string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine(isValidDateOnly, "Due date must be a valid calendar date in YYYY-MM-DD format.");
 const shoppingItemInputSchema = z.object({
-  title: z.string().trim().min(1).max(200),
-  quantity: z.number().int().min(1).max(999).optional(),
-  unit: z.string().trim().min(1).max(50).optional(),
-  note: z.string().trim().max(500).optional(),
+  title: z.string().trim().min(1).max(200)
+    .describe("Shopping item title exactly as requested by the user, using a concise product name."),
+  quantity: z.number().int().min(1).max(999).nullable()
+    .describe("Positive integer quantity. Send null when the user did not specify a quantity, and never invent it."),
+  unit: z.string().trim().min(1).max(50).nullable()
+    .describe("Quantity unit such as kg, liters, pack, or box. Send null when absent, and never invent it."),
+  note: z.string().trim().max(500).nullable()
+    .describe("Optional user-provided shopping note. Send null unless the user explicitly provided a note."),
 }).strict();
 const addShoppingItemsSchema = z.object({
   listId: uuid,
@@ -40,12 +47,18 @@ const shoppingStatusSchema = z.object({
   idempotencyKey,
 }).strict();
 const taskInputSchema = z.object({
-  title: z.string().trim().min(1).max(200),
-  note: z.string().trim().max(500).optional(),
-  assignedToUserId: uuid.optional(),
-  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  reminderAtUtc: utcDateTime.optional(),
-  priority: z.enum(["Low", "Normal", "High"]).optional(),
+  title: z.string().trim().min(1).max(200)
+    .describe("Task title exactly as requested by the user, written as a concise action."),
+  note: z.string().trim().max(500).nullable()
+    .describe("Optional user-provided task note. Send null when omitted, and never invent it."),
+  assignedToUserId: uuid.nullable()
+    .describe("Assignee user UUID from Convy data. Send null when omitted or unknown, and never invent it."),
+  dueDate: dateOnly.nullable()
+    .describe("Task due date as YYYY-MM-DD. Send null when omitted, and never invent it."),
+  reminderAtUtc: utcDateTime.nullable()
+    .describe("UTC RFC3339 reminder timestamp ending in Z. Send null when omitted, and never invent it."),
+  priority: z.enum(["Low", "Normal", "High"]).nullable()
+    .describe("Task priority. Send null when omitted, and never invent it."),
 }).strict();
 const addTasksSchema = z.object({
   listId: uuid,
@@ -113,7 +126,10 @@ const generalGuidance = [
 const shoppingGuidance = [
   "Extract all requested shopping products and send them in one call.",
   "Support Spanish and English.",
-  "Do not invent quantities or units.",
+  "For each item, title is required.",
+  "For quantity, send null when the user did not specify a quantity and never invent it.",
+  "For unit, send null when absent and never invent it.",
+  "For note, send null unless explicitly provided.",
   "Do not include negated items.",
   "Do not include items the user corrected away.",
   "Prefer concise item titles with natural capitalization.",
@@ -123,6 +139,7 @@ const shoppingGuidance = [
 const taskGuidance = [
   "Extract only tasks the user clearly wants to add or update.",
   "Use concise task titles.",
+  "For note, assignedToUserId, dueDate, reminderAtUtc, and priority, send null when the user omits the value and never invent it.",
   "Include assignee IDs, due dates, reminders, and priority only when the user explicitly provided them or chose them from Convy data.",
   "Do not include negated tasks or tasks the user corrected away.",
   "The Convy API normalizes titles and avoids safe duplicates.",
@@ -523,4 +540,16 @@ function pick(value: unknown, keys: string[]) {
 
   const record = value as Record<string, unknown>;
   return Object.fromEntries(keys.filter((key) => key in record).map((key) => [key, record[key]]));
+}
+
+function isValidDateOnly(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) {
+    return false;
+  }
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year
+    && date.getUTCMonth() === month - 1
+    && date.getUTCDate() === day;
 }

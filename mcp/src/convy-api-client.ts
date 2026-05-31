@@ -15,9 +15,9 @@ export type AuditEvent = {
 export type AddShoppingItemsRequest = {
   items: Array<{
     title: string;
-    quantity?: number;
-    unit?: string;
-    note?: string;
+    quantity: number | null;
+    unit: string | null;
+    note: string | null;
   }>;
   idempotencyKey: string;
 };
@@ -31,11 +31,11 @@ export type UpdateShoppingItemsStatusRequest = {
 export type AddTasksRequest = {
   tasks: Array<{
     title: string;
-    note?: string;
-    assignedToUserId?: string;
-    dueDate?: string;
-    reminderAtUtc?: string;
-    priority?: "Low" | "Normal" | "High";
+    note: string | null;
+    assignedToUserId: string | null;
+    dueDate: string | null;
+    reminderAtUtc: string | null;
+    priority: "Low" | "Normal" | "High" | null;
   }>;
   idempotencyKey: string;
 };

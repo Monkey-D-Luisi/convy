@@ -12,6 +12,7 @@ Convy MCP cannot be used outside Developer Mode until the ChatGPT app is submitt
 ## Production-Like URLs
 
 - MCP URL: `https://mcp.convyapp.com/mcp`
+- OpenAI Apps domain challenge: `https://mcp.convyapp.com/.well-known/openai-apps-challenge`
 - Auth URL: `https://auth.convyapp.com`
 - Privacy URL: `https://legal.convyapp.com/privacy`
 - Terms URL: `https://legal.convyapp.com/terms`
@@ -36,6 +37,7 @@ Prepare:
 ## Tool Review Checklist
 
 - Tools advertise correct annotations.
+- Tool annotation justifications are maintained in [openai-tool-justifications.md](openai-tool-justifications.md) for copy/paste into the OpenAI submission form.
 - Write tools are non-destructive, idempotent, and closed-world.
 - Tool outputs are relevant, concise, and structured.
 - Tool outputs do not include secrets, tokens, admin metrics, backups, or unnecessary personal identifiers.
@@ -65,6 +67,7 @@ Prepare:
 - OAuth demo login must succeed without MFA, SMS, or external account challenge.
 - Firebase authorized domains must include `auth.convyapp.com`.
 - MCP endpoint must be publicly reachable.
+- OpenAI Apps domain verification requires `OPENAI_APPS_CHALLENGE_TOKEN` to be set in the MCP environment and reachable as plain text at `https://mcp.convyapp.com/.well-known/openai-apps-challenge`.
 - Legal docs must disclose ChatGPT MCP data access and revocation.
 - Public site and legal pages must be reachable.
 - React Apps SDK widget must render through `ui://widget/convy-summary-v1.html` only for render tools.

@@ -79,7 +79,7 @@ test("Convy API client sends smart write calls with idempotency keys", async () 
   });
 
   await client.addShoppingItems("token", "11111111-1111-4111-8111-111111111111", {
-    items: [{ title: "Milk", quantity: 2, unit: "l", note: "Whole" }],
+    items: [{ title: "Milk", quantity: null, unit: null, note: null }],
     idempotencyKey: "stable-key",
   });
   await client.updateShoppingItemsStatus("token", "11111111-1111-4111-8111-111111111111", {
@@ -95,11 +95,11 @@ test("Convy API client sends smart write calls with idempotency keys", async () 
   await client.addTasks("token", "33333333-3333-4333-8333-333333333333", {
     tasks: [{
       title: "Clean kitchen",
-      note: "Before dinner",
-      assignedToUserId: "55555555-5555-4555-8555-555555555555",
-      dueDate: "2026-05-30",
-      reminderAtUtc: "2026-05-30T07:00:00Z",
-      priority: "High",
+      note: null,
+      assignedToUserId: null,
+      dueDate: null,
+      reminderAtUtc: null,
+      priority: null,
     }],
     idempotencyKey: "task-key",
   });
@@ -111,9 +111,12 @@ test("Convy API client sends smart write calls with idempotency keys", async () 
     ["POST", "https://api.convyapp.com/api/v1/lists/33333333-3333-4333-8333-333333333333/tasks/smart-batch", "task-key"],
   ]);
   assert.match(requests[0]?.body ?? "", /"title":"Milk"/);
-  assert.match(requests[3]?.body ?? "", /"assignedToUserId":"55555555-5555-4555-8555-555555555555"/);
-  assert.match(requests[3]?.body ?? "", /"dueDate":"2026-05-30"/);
-  assert.match(requests[3]?.body ?? "", /"reminderAtUtc":"2026-05-30T07:00:00Z"/);
-  assert.match(requests[3]?.body ?? "", /"priority":"High"/);
+  assert.match(requests[0]?.body ?? "", /"quantity":null/);
+  assert.match(requests[0]?.body ?? "", /"unit":null/);
+  assert.match(requests[0]?.body ?? "", /"note":null/);
+  assert.match(requests[3]?.body ?? "", /"assignedToUserId":null/);
+  assert.match(requests[3]?.body ?? "", /"dueDate":null/);
+  assert.match(requests[3]?.body ?? "", /"reminderAtUtc":null/);
+  assert.match(requests[3]?.body ?? "", /"priority":null/);
   assert.doesNotMatch(requests[0]?.body ?? "", /idempotencyKey/);
 });

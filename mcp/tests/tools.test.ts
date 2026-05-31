@@ -61,11 +61,19 @@ test("smart write tool schemas are strict and idempotency keys are optional", ()
   const listId = "11111111-1111-4111-8111-111111111111";
   assert.equal(addShoppingItems.inputSchema.safeParse({
     listId,
-    items: [{ title: "Leche", quantity: 2, unit: "litros" }],
+    items: [{ title: "Leche", quantity: 2, unit: "litros", note: null }],
   }).success, true);
   assert.equal(addShoppingItems.inputSchema.safeParse({
     listId,
-    items: Array.from({ length: 21 }, () => ({ title: "Leche" })),
+    items: [{ title: "Leche", quantity: null, unit: null, note: null }],
+  }).success, true);
+  assert.equal(addShoppingItems.inputSchema.safeParse({
+    listId,
+    items: [{ title: "Leche" }],
+  }).success, false);
+  assert.equal(addShoppingItems.inputSchema.safeParse({
+    listId,
+    items: Array.from({ length: 21 }, () => ({ title: "Leche", quantity: null, unit: null, note: null })),
   }).success, false);
   assert.equal(updateShoppingStatus.inputSchema.safeParse({
     listId,
@@ -74,7 +82,15 @@ test("smart write tool schemas are strict and idempotency keys are optional", ()
   }).success, false);
   assert.equal(addTasks.inputSchema.safeParse({
     listId,
-    tasks: [{ title: "Limpiar cocina", unexpected: true }],
+    tasks: [{
+      title: "Limpiar cocina",
+      note: null,
+      assignedToUserId: null,
+      dueDate: null,
+      reminderAtUtc: null,
+      priority: null,
+      unexpected: true,
+    }],
   }).success, false);
   assert.equal(addTasks.inputSchema.safeParse({
     listId,
@@ -91,21 +107,63 @@ test("smart write tool schemas are strict and idempotency keys are optional", ()
     listId,
     tasks: [{
       title: "Limpiar cocina",
-      reminderAtUtc: "2026-05-30T09:00:00+02:00",
+      note: null,
+      assignedToUserId: null,
+      dueDate: null,
+      reminderAtUtc: null,
+      priority: null,
+    }],
+  }).success, true);
+  assert.equal(addTasks.inputSchema.safeParse({
+    listId,
+    tasks: [{ title: "Limpiar cocina" }],
+  }).success, false);
+  assert.equal(addTasks.inputSchema.safeParse({
+    listId,
+    tasks: [{
+      title: "Limpiar cocina",
+      note: null,
+      assignedToUserId: null,
+      dueDate: "2026-02-30",
+      reminderAtUtc: null,
+      priority: null,
     }],
   }).success, false);
   assert.equal(addTasks.inputSchema.safeParse({
     listId,
-    tasks: [{ title: "Limpiar cocina", priority: "Urgent" }],
+    tasks: [{
+      title: "Limpiar cocina",
+      note: null,
+      assignedToUserId: null,
+      dueDate: null,
+      reminderAtUtc: "2026-05-30T09:00:00+02:00",
+      priority: null,
+    }],
+  }).success, false);
+  assert.equal(addTasks.inputSchema.safeParse({
+    listId,
+    tasks: [{
+      title: "Limpiar cocina",
+      note: null,
+      assignedToUserId: null,
+      dueDate: null,
+      reminderAtUtc: null,
+      priority: "Urgent",
+    }],
   }).success, false);
 });
 
-test("smart shopping guidance is present in tool descriptions", () => {
+test("smart write tool descriptions explain null and invention rules", () => {
   const addShoppingItems = toolDefinitions.find((tool) => tool.name === "convy_add_shopping_items");
+  const addTasks = toolDefinitions.find((tool) => tool.name === "convy_add_tasks");
   assert.ok(addShoppingItems);
+  assert.ok(addTasks);
   assert.match(addShoppingItems.description, /^Use this when/);
-  assert.match(addShoppingItems.description, /Do not invent quantities or units/);
+  assert.match(addShoppingItems.description, /send null when the user did not specify a quantity/i);
+  assert.match(addShoppingItems.description, /never invent/i);
   assert.match(addShoppingItems.description, /Do not include negated items/);
+  assert.match(addTasks.description, /send null/i);
+  assert.match(addTasks.description, /never invent/i);
 });
 
 test("task list responses include smart task metadata", async () => {

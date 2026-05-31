@@ -31,6 +31,56 @@ test("MCP endpoint returns OAuth challenge when token is missing", async () => {
   }
 });
 
+test("OpenAI Apps challenge endpoint returns 404 when token is unset", async () => {
+  const { publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const app = createApp({
+    port: 0,
+    apiBaseUrl: "https://api.convyapp.com",
+    mcpPublicUrl: "https://mcp.convyapp.com",
+    authPublicUrl: "https://auth.convyapp.com",
+    jwtIssuer: "https://auth.convyapp.com",
+    jwtAudience: "https://mcp.convyapp.com",
+    jwtPublicKeyPem: await exportSPKI(publicKey),
+  });
+  const server = app.listen(0);
+
+  try {
+    const port = (server.address() as AddressInfo).port;
+    const response = await fetch(`http://127.0.0.1:${port}/.well-known/openai-apps-challenge`);
+
+    assert.equal(response.status, 404);
+    assert.match(response.headers.get("content-type") ?? "", /^text\/plain\b/);
+  } finally {
+    server.close();
+  }
+});
+
+test("OpenAI Apps challenge endpoint returns configured plain text token", async () => {
+  const { publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const app = createApp({
+    port: 0,
+    apiBaseUrl: "https://api.convyapp.com",
+    mcpPublicUrl: "https://mcp.convyapp.com",
+    authPublicUrl: "https://auth.convyapp.com",
+    jwtIssuer: "https://auth.convyapp.com",
+    jwtAudience: "https://mcp.convyapp.com",
+    jwtPublicKeyPem: await exportSPKI(publicKey),
+    openAiAppsChallengeToken: "challenge-token",
+  });
+  const server = app.listen(0);
+
+  try {
+    const port = (server.address() as AddressInfo).port;
+    const response = await fetch(`http://127.0.0.1:${port}/.well-known/openai-apps-challenge`);
+
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type") ?? "", /^text\/plain\b/);
+    assert.equal(await response.text(), "challenge-token");
+  } finally {
+    server.close();
+  }
+});
+
 test("MCP endpoint rejects tokens missing Convy scopes", async () => {
   const { publicKey, privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
   const token = await new SignJWT({

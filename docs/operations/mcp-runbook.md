@@ -17,6 +17,14 @@ curl -fsS https://mcp.convyapp.com/.well-known/oauth-protected-resource
 curl -fsS https://auth.convyapp.com/.well-known/oauth-authorization-server
 ```
 
+Expected OpenAI Apps domain challenge when `OPENAI_APPS_CHALLENGE_TOKEN` is configured:
+
+```bash
+curl -fsS https://mcp.convyapp.com/.well-known/openai-apps-challenge
+```
+
+Response should be `200 OK`, `text/plain`, and the exact configured token body. If the token is not configured, the endpoint intentionally returns `404` as `text/plain`.
+
 Expected OAuth challenge:
 
 ```bash
@@ -43,8 +51,9 @@ Response should be `401` with `WWW-Authenticate` pointing to protected resource 
 - `MCP_JWT_AUDIENCE`
 - `MCP_JWT_PUBLIC_KEY_BASE64`
 - `CONVY_MCP_AUDIT_API_KEY`
+- `OPENAI_APPS_CHALLENGE_TOKEN` when OpenAI Apps domain verification is pending or being rechecked
 
-`ops/vps/push-secrets.ps1` preserves existing MCP keys and audit key from `/opt/convy/shared/api.env` when present. If both MCP keys are missing, it generates a new RSA key pair.
+`ops/vps/push-secrets.ps1` preserves existing MCP keys, audit key, and OpenAI Apps challenge token from `/opt/convy/shared/api.env` when present. If both MCP keys are missing, it generates a new RSA key pair.
 
 ## Deploy
 

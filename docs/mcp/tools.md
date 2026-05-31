@@ -75,9 +75,9 @@ The widget is display-only. It has no refresh button, no write controls, no empt
 
 | Tool | Scopes | Input | API path used | Output | Idempotency | Expected errors |
 | --- | --- | --- | --- | --- | --- | --- |
-| `convy_add_shopping_items` | `convy.items.write` | `listId`, `items[]` with `title`, optional integer `quantity`, optional `unit`, optional `note`, optional `idempotencyKey` | `POST /api/v1/lists/{listId}/items/smart-batch` | Created, reused, uncompleted, duplicate, and warning summaries from the API. | MCP sends/generates an idempotency key. API stores hashed key and request hash. | `400`, `401`, `403`, `404`, `409`, API errors. |
+| `convy_add_shopping_items` | `convy.items.write` | `listId`, `items[]` with required `title`, nullable positive integer `quantity`, nullable `unit`, nullable `note`, optional `idempotencyKey` | `POST /api/v1/lists/{listId}/items/smart-batch` | Created, reused, uncompleted, duplicate, and warning summaries from the API. | MCP sends/generates an idempotency key. API stores hashed key and request hash. | `400`, `401`, `403`, `404`, `409`, API errors. |
 | `convy_update_shopping_items_status` | `convy.items.write` | `listId`, `itemIds[]`, `status` of `Pending` or `Completed`, optional `idempotencyKey` | `POST /api/v1/lists/{listId}/items/status-batch` | Updated item status summary. | MCP sends/generates an idempotency key. | `400`, `401`, `403`, `404`, `409`, API errors. |
-| `convy_add_tasks` | `convy.tasks.write` | `listId`, `tasks[]` with `title`, optional `note`, optional `assignedToUserId`, optional `dueDate` as `YYYY-MM-DD`, optional `reminderAtUtc` ISO instant, optional `priority` of `Low`, `Normal`, or `High`, optional `idempotencyKey` | `POST /api/v1/lists/{listId}/tasks/smart-batch` | Created, reused, uncompleted, duplicate, and warning summaries from the API. | MCP sends/generates an idempotency key. Expired keys return `409 idempotency_key_expired` without executing. | `400`, `401`, `403`, `404`, `409`, API errors. |
+| `convy_add_tasks` | `convy.tasks.write` | `listId`, `tasks[]` with required `title`, nullable `note`, nullable `assignedToUserId`, nullable `dueDate` as `YYYY-MM-DD`, nullable `reminderAtUtc` as UTC RFC3339 ending in `Z`, nullable `priority` of `Low`, `Normal`, or `High`, optional `idempotencyKey` | `POST /api/v1/lists/{listId}/tasks/smart-batch` | Created, reused, uncompleted, duplicate, and warning summaries from the API. | MCP sends/generates an idempotency key. Expired keys return `409 idempotency_key_expired` without executing. | `400`, `401`, `403`, `404`, `409`, API errors. |
 | `convy_update_tasks_status` | `convy.tasks.write` | `listId`, `taskIds[]`, `status` of `Pending` or `Completed`, optional `idempotencyKey` | `POST /api/v1/lists/{listId}/tasks/status-batch` | Updated task status summary. | MCP sends/generates an idempotency key. | `400`, `401`, `403`, `404`, `409`, API errors. |
 
 Write annotations:
@@ -107,6 +107,7 @@ Implemented backend behavior:
 - Exact normalized pending matches are reused instead of duplicated.
 - Exact normalized completed matches are returned to pending instead of duplicated.
 - Quantity, unit, or note conflicts are reported as warnings and are not silently edited.
+- Smart add schemas require nullable semantic fields to be sent as `null` when the user omitted the value; ChatGPT must not invent quantities, units, notes, assignees, due dates, reminders, or priorities.
 - Task assignment, due date, reminder, and priority are accepted when explicitly provided and are echoed in compact task read responses.
 - Duplicate entries inside one batch create one record and report later duplicates.
 - The same pattern exists for shopping items and tasks.
