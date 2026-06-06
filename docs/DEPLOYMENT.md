@@ -107,6 +107,6 @@ applicationId = com.monkeydluisi.convy
 Current `origin/master` values:
 
 ```text
-versionCode = 23
-versionName = 0.1.20
+versionCode = 28
+versionName = 0.1.24
 ```
