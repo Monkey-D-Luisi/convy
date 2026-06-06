@@ -26,7 +26,7 @@ val appModule = module {
     factory { HouseholdSetupStore(get(), get(), get()) }
 
     factory { (householdId: String) ->
-        HouseholdListsStore(householdId, get(), get(), get(), get(), get())
+        HouseholdListsStore(householdId, get(), get(), get(), get(), get(), get())
     }
     factory { (activeHouseholdId: String?) ->
         HouseholdsStore(activeHouseholdId, get(), get(), get())

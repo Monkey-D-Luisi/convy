@@ -11,6 +11,7 @@ import com.convy.shared.domain.repository.ActiveHouseholdRepository
 import com.convy.shared.domain.repository.HouseholdRepository
 import com.convy.shared.domain.repository.ItemRepository
 import com.convy.shared.domain.repository.ListRepository
+import com.convy.shared.domain.repository.TaskRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -19,6 +20,7 @@ class HouseholdListsStore(
     private val householdRepository: HouseholdRepository,
     private val listRepository: ListRepository,
     private val itemRepository: ItemRepository,
+    private val taskRepository: TaskRepository,
     private val realtimeService: HouseholdRealtimeService,
     private val activeHouseholdRepository: ActiveHouseholdRepository,
 ) : MviStore() {
@@ -135,8 +137,13 @@ class HouseholdListsStore(
         scope.launch {
             val counts = mutableMapOf<String, Int>()
             for (list in lists) {
-                itemRepository.getByList(list.id).onSuccess { items ->
-                    counts[list.id] = items.count { !it.isCompleted }
+                when (list.type) {
+                    ListType.Shopping -> itemRepository.getByList(list.id, status = "Pending").onSuccess { items ->
+                        counts[list.id] = items.size
+                    }
+                    ListType.Tasks -> taskRepository.getByList(list.id, status = "Pending").onSuccess { tasks ->
+                        counts[list.id] = tasks.size
+                    }
                 }
             }
             _state.update { it.copy(pendingCounts = counts) }
@@ -203,9 +210,26 @@ class HouseholdListsStore(
                     is HouseholdEvent.MemberJoined,
                     is HouseholdEvent.HouseholdRenamed,
                     is HouseholdEvent.MemberLeft -> loadData()
-                    else -> {}
+                    else -> if (shouldRefreshPendingCountsForEvent(event)) {
+                        loadData()
+                    }
                 }
             }
         }
     }
 }
+
+internal fun shouldRefreshPendingCountsForEvent(event: HouseholdEvent): Boolean =
+    when (event) {
+        is HouseholdEvent.ItemCreated,
+        is HouseholdEvent.ItemUpdated,
+        is HouseholdEvent.ItemCompleted,
+        is HouseholdEvent.ItemUncompleted,
+        is HouseholdEvent.ItemDeleted,
+        is HouseholdEvent.TaskCreated,
+        is HouseholdEvent.TaskUpdated,
+        is HouseholdEvent.TaskCompleted,
+        is HouseholdEvent.TaskUncompleted,
+        is HouseholdEvent.TaskDeleted -> true
+        else -> false
+    }
