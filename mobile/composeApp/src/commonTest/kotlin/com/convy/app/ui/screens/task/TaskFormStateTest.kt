@@ -34,4 +34,13 @@ class TaskFormStateTest {
         assertEquals(LocalDateTime(2026, 5, 30, 9, 0), state.reminderLocalDateTime)
         assertEquals(TaskPriority.High, state.priority)
     }
+
+    @Test
+    fun `task title longer than supported limit cannot be saved`() {
+        val state = TaskFormState(title = "a".repeat(81))
+
+        assertFalse(state.canSave)
+        assertEquals(81, state.titleLength)
+        assertEquals(80, TaskTitleMaxLength)
+    }
 }

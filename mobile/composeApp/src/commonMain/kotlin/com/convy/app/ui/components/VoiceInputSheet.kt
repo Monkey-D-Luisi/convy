@@ -52,6 +52,7 @@ import com.convy.app.generated.resources.voice_task_matches
 import com.convy.app.generated.resources.voice_task_note
 import com.convy.app.generated.resources.voice_task_reminder
 import com.convy.app.generated.resources.voice_title
+import com.convy.app.generated.resources.voice_no_tasks_detected
 import com.convy.app.ui.screens.listdetail.ParsedVoiceItem
 import com.convy.app.ui.screens.listdetail.ParsedVoiceTask
 import com.convy.app.util.formatTaskReminderLocal
@@ -127,11 +128,22 @@ fun VoiceInputSheet(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (isTaskMode) {
-                    itemsIndexed(tasks) { index, task ->
-                        VoiceTaskRow(
-                            task = task,
-                            onToggle = { onToggleItem(index) },
-                        )
+                    if (tasks.isEmpty()) {
+                        item {
+                            Text(
+                                text = stringResource(Res.string.voice_no_tasks_detected),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 8.dp),
+                            )
+                        }
+                    } else {
+                        itemsIndexed(tasks) { index, task ->
+                            VoiceTaskRow(
+                                task = task,
+                                onToggle = { onToggleItem(index) },
+                            )
+                        }
                     }
                 } else {
                     itemsIndexed(items) { index, item ->

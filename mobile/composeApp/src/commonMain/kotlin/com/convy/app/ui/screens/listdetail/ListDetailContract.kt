@@ -29,6 +29,9 @@ data class ListDetailState(
     val pendingSyncCount: Int = 0,
 )
 
+val ListDetailState.hasEntries: Boolean
+    get() = pendingEntries.isNotEmpty() || completedEntries.isNotEmpty()
+
 data class ListEntryUi(
     val id: String,
     val title: String,

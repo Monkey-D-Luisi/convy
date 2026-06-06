@@ -170,6 +170,8 @@
     <string name="task_edit_title">Editar tarea</string>
     <string name="task_new_title">Nueva tarea</string>
     <string name="task_title_label">Título *</string>
+    <string name="task_title_counter">%1$d / %2$d</string>
+    <string name="task_title_too_long">El título debe tener %1$d caracteres o menos. Mueve los detalles a la nota.</string>
     <string name="task_note_label">Nota</string>
     <string name="task_note_placeholder">Nota opcional…</string>
     <string name="task_assignee_label">Responsable</string>
@@ -267,6 +269,7 @@
     <string name="voice_task_due">Fecha: %1$s</string>
     <string name="voice_task_reminder">Recordatorio: %1$s</string>
     <string name="voice_task_note">Nota: %1$s</string>
+    <string name="voice_no_tasks_detected">No se detectaron tareas. Prueba a decir algo accionable, o añade un título breve manualmente y deja los detalles en la nota.</string>
 
     <!-- Item Card -->
     <string name="item_card_completed_by">Completado por %1$s</string>

@@ -22,6 +22,7 @@ import com.convy.shared.domain.repository.TaskRepository
 import com.convy.shared.platform.AudioRecorder
 import com.convy.shared.platform.FileStorage
 import com.convy.shared.platform.NetworkMonitor
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -172,6 +173,35 @@ class ListDetailStoreTest {
         }
     }
 
+    @Test
+    fun `refresh with existing entries keeps list content visible while request is in flight`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val itemRepository = RefreshingItemRepository(
+                initialItems = listOf(listItem(id = "item-1")),
+            )
+            val store = createStore(itemRepository = itemRepository)
+            runCurrent()
+            assertEquals(listOf("item-1"), store.state.value.pendingEntries.map { it.id })
+            assertEquals(false, store.state.value.isLoading)
+
+            val refreshResult = CompletableDeferred<Result<List<ListItem>>>()
+            itemRepository.nextLoad = refreshResult
+            store.processIntent(ListDetailIntent.Refresh)
+            runCurrent()
+
+            assertEquals(listOf("item-1"), store.state.value.pendingEntries.map { it.id })
+            assertEquals(false, store.state.value.isLoading)
+
+            refreshResult.complete(Result.success(listOf(listItem(id = "item-2"))))
+            runCurrent()
+            assertEquals(listOf("item-2"), store.state.value.pendingEntries.map { it.id })
+            store.close()
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     private fun createStore(
         itemRepository: ItemRepository = FakeItemRepository(),
         taskRepository: TaskRepository = FakeTaskRepository(),
@@ -272,6 +302,63 @@ class ListDetailStoreTest {
             items.removeAll { it.id == itemId }
             return Result.success(Unit)
         }
+
+        override suspend fun complete(listId: String, itemId: String): Result<Unit> =
+            error("Not needed in this test")
+
+        override suspend fun uncomplete(listId: String, itemId: String): Result<Unit> =
+            error("Not needed in this test")
+
+        override suspend fun checkDuplicate(listId: String, title: String): Result<DuplicateCheck> =
+            error("Not needed in this test")
+
+        override suspend fun getSuggestions(householdId: String, query: String?): Result<List<String>> =
+            error("Not needed in this test")
+
+        override suspend fun parseVoiceAudio(listId: String, audioData: ByteArray): Result<VoiceParseResult> =
+            error("Not needed in this test")
+
+        override suspend fun batchCreate(listId: String, items: List<ParsedItem>, source: String): Result<List<String>> =
+            error("Not needed in this test")
+    }
+
+    private class RefreshingItemRepository(
+        private val initialItems: List<ListItem>,
+    ) : ItemRepository {
+        var nextLoad: CompletableDeferred<Result<List<ListItem>>>? = null
+
+        override suspend fun getByList(listId: String, status: String?, createdBy: String?): Result<List<ListItem>> {
+            val deferred = nextLoad
+            if (deferred != null) {
+                nextLoad = null
+                return deferred.await()
+            }
+            return Result.success(initialItems)
+        }
+
+        override suspend fun create(
+            listId: String,
+            title: String,
+            quantity: Int?,
+            unit: String?,
+            note: String?,
+            recurrenceFrequency: Int?,
+            recurrenceInterval: Int?,
+        ): Result<String> = error("Not needed in this test")
+
+        override suspend fun update(
+            listId: String,
+            itemId: String,
+            title: String,
+            quantity: Int?,
+            unit: String?,
+            note: String?,
+            recurrenceFrequency: Int?,
+            recurrenceInterval: Int?,
+        ): Result<Unit> = error("Not needed in this test")
+
+        override suspend fun delete(listId: String, itemId: String): Result<Unit> =
+            error("Not needed in this test")
 
         override suspend fun complete(listId: String, itemId: String): Result<Unit> =
             error("Not needed in this test")

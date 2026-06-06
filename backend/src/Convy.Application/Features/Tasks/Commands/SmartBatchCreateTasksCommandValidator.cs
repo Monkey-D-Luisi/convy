@@ -17,10 +17,10 @@ public class SmartBatchCreateTasksCommandValidator : AbstractValidator<SmartBatc
         {
             task.RuleFor(i => i.Title)
                 .NotNull().WithMessage("Task title is required.")
-                .MaximumLength(200).WithMessage("Task title must not exceed 200 characters.");
+                .MaximumLength(TaskInputLimits.TitleMaxLength).WithMessage("Task title must not exceed 80 characters.");
 
             task.RuleFor(i => i.Note)
-                .MaximumLength(500).When(i => i.Note is not null)
+                .MaximumLength(TaskInputLimits.NoteMaxLength).When(i => i.Note is not null)
                 .WithMessage("Note must not exceed 500 characters.");
 
             task.RuleFor(i => i.AssignedToUserId)

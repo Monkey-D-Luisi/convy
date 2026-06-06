@@ -5,6 +5,9 @@ import com.convy.shared.domain.model.TaskPriority
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 
+const val TaskTitleMaxLength = 80
+const val TaskNoteMaxLength = 500
+
 data class TaskFormState(
     val listId: String = "",
     val householdId: String = "",
@@ -24,6 +27,15 @@ data class TaskFormState(
     val isReminderPickerOpen: Boolean = false,
     val priority: TaskPriority = TaskPriority.Normal,
 )
+
+val TaskFormState.titleLength: Int
+    get() = title.length
+
+val TaskFormState.isTitleWithinLimit: Boolean
+    get() = titleLength <= TaskTitleMaxLength
+
+val TaskFormState.canSave: Boolean
+    get() = title.isNotBlank() && isTitleWithinLimit && !isSaving
 
 data class TaskAssigneeUi(
     val userId: String,

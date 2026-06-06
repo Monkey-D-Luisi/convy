@@ -19,8 +19,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -371,6 +373,8 @@ fun ListDetailContent(
             val filteredCompleted = if (query.isBlank()) state.completedEntries else state.completedEntries.filter { it.title.lowercase().contains(query) }
 
             Column(modifier = Modifier.fillMaxSize()) {
+                val normalListState = rememberLazyListState()
+                val shoppingListState = rememberLazyListState()
                 val filterAll = stringResource(Res.string.detail_filter_all)
                 val filterPending = stringResource(Res.string.detail_filter_pending)
                 val filterCompleted = stringResource(Res.string.detail_filter_completed)
@@ -411,6 +415,7 @@ fun ListDetailContent(
                     state.isShoppingMode -> ShoppingModeList(
                         pendingEntries = state.pendingEntries,
                         completedEntries = state.completedEntries,
+                        listState = shoppingListState,
                         onIntent = onIntent,
                     )
                     else -> NormalEntryList(
@@ -418,6 +423,8 @@ fun ListDetailContent(
                         completedEntries = filteredCompleted,
                         completionExitEntryIds = state.completionExitEntryIds,
                         showCompleted = state.showCompleted,
+                        isTaskList = state.isTaskList,
+                        listState = normalListState,
                         onIntent = onIntent,
                     )
                 }
@@ -495,6 +502,7 @@ private fun VoiceFloatingAction(
 private fun ShoppingModeList(
     pendingEntries: List<ListEntryUi>,
     completedEntries: List<ListEntryUi>,
+    listState: LazyListState,
     onIntent: (ListDetailIntent) -> Unit,
 ) {
     val allItems = pendingEntries + completedEntries
@@ -522,6 +530,7 @@ private fun ShoppingModeList(
             }
         }
         LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(
                 start = ConvySpacing.ScreenHorizontal,
                 top = 8.dp,
@@ -557,9 +566,12 @@ private fun NormalEntryList(
     completedEntries: List<ListEntryUi>,
     completionExitEntryIds: Set<String>,
     showCompleted: Boolean,
+    isTaskList: Boolean,
+    listState: LazyListState,
     onIntent: (ListDetailIntent) -> Unit,
 ) {
     LazyColumn(
+        state = listState,
         contentPadding = PaddingValues(
             start = ConvySpacing.ScreenHorizontal,
             top = 14.dp,
@@ -586,6 +598,7 @@ private fun NormalEntryList(
                     ) {
                         ListEntryCard(
                             entry = entry,
+                            isTaskList = isTaskList,
                             onToggleComplete = { onIntent(ListDetailIntent.ToggleItem(entry.id, entry.isCompleted)) },
                             onClick = { onIntent(ListDetailIntent.OpenItem(entry.id)) },
                         )
@@ -623,6 +636,7 @@ private fun NormalEntryList(
                     ) {
                         ListEntryCard(
                             entry = entry,
+                            isTaskList = isTaskList,
                             onToggleComplete = { onIntent(ListDetailIntent.ToggleItem(entry.id, entry.isCompleted)) },
                             onClick = { onIntent(ListDetailIntent.OpenItem(entry.id)) },
                         )
@@ -721,6 +735,7 @@ internal fun shouldQueueDeleteConfirmation(
 @Composable
 private fun ListEntryCard(
     entry: ListEntryUi,
+    isTaskList: Boolean,
     onToggleComplete: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -761,7 +776,7 @@ private fun ListEntryCard(
                         } else {
                             MaterialTheme.colorScheme.onSurface
                         },
-                        maxLines = 1,
+                        maxLines = if (isTaskList) 2 else 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
                     )
@@ -775,23 +790,34 @@ private fun ListEntryCard(
                         )
                     }
                 }
-                val details = buildList {
-                    if (entry.quantity != null) {
-                        add("${entry.quantity}${entry.unit?.let { " $it" } ?: ""}")
-                    }
-                    if (entry.note != null) {
-                        add(entry.note)
-                    }
-                }
-                if (details.isNotEmpty()) {
+                if (isTaskList && !entry.note.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = details.joinToString(" / "),
+                        text = entry.note,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
+                } else {
+                    val details = buildList {
+                        if (entry.quantity != null) {
+                            add("${entry.quantity}${entry.unit?.let { " $it" } ?: ""}")
+                        }
+                        if (entry.note != null) {
+                            add(entry.note)
+                        }
+                    }
+                    if (details.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = details.joinToString(" / "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
                 TaskMetadataChips(entry = entry)
                 Spacer(modifier = Modifier.height(2.dp))

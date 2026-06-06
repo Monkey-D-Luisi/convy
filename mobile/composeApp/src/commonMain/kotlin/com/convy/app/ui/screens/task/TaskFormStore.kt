@@ -142,6 +142,12 @@ class TaskFormStore(
     private fun save() {
         val current = _state.value
         if (current.title.isBlank() || current.isSaving) return
+        if (!current.isTitleWithinLimit) {
+            _state.update {
+                it.copy(error = UiText.StringResourceText(Res.string.task_title_too_long, listOf(TaskTitleMaxLength)))
+            }
+            return
+        }
 
         val dateInputs = when (val validation = normalizeTaskDateSelection(current.dueDate, current.reminderLocalDateTime)) {
             TaskDateInputValidation.InvalidDueDate -> {

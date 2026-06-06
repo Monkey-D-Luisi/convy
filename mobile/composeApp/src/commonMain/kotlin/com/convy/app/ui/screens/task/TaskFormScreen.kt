@@ -116,7 +116,7 @@ fun TaskFormContent(
                 TaskFormPrimaryAction(
                     isEditing = state.isEditing,
                     isSaving = state.isSaving,
-                    enabled = state.title.isNotBlank() && !state.isSaving,
+                    enabled = state.canSave,
                     onClick = { onIntent(TaskFormIntent.Save) },
                 )
             }
@@ -138,7 +138,18 @@ fun TaskFormContent(
                     value = state.title,
                     onValueChange = { onIntent(TaskFormIntent.UpdateTitle(it)) },
                     label = { Text(stringResource(Res.string.task_title_label)) },
-                    singleLine = true,
+                    isError = !state.isTitleWithinLimit,
+                    supportingText = {
+                        Text(
+                            stringResource(
+                                Res.string.task_title_counter,
+                                state.titleLength,
+                                TaskTitleMaxLength,
+                            ),
+                        )
+                    },
+                    minLines = 1,
+                    maxLines = 2,
                     modifier = Modifier.fillMaxWidth().testTag("Task title"),
                     shape = MaterialTheme.shapes.large,
                     colors = convyTextFieldColors(),
