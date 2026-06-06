@@ -129,6 +129,92 @@ public class BatchCreateItemsCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WithExistingPendingMatch_ReusesItemWithoutCreatingDuplicate()
+    {
+        // Arrange
+        var household = new Household("Home", _userId);
+        var list = new HouseholdList("Shopping", ListType.Shopping, household.Id, _userId);
+        var existing = new ListItem("Leche", "leche", list.Id, _userId);
+        _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
+        _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
+        _itemRepository.GetByListIdAsync(list.Id, "All", null, null, null, Arg.Any<CancellationToken>())
+            .Returns([existing]);
+
+        var command = new BatchCreateItemsCommand(list.Id, new List<BatchItemDto>
+        {
+            new(" leche ", null, null, null)
+        });
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.CreatedIds.Should().BeEmpty();
+        await _itemRepository.DidNotReceive().AddAsync(Arg.Any<ListItem>(), Arg.Any<CancellationToken>());
+        await _itemRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _notifications.DidNotReceive().NotifyItemCreated(Arg.Any<Guid>(), Arg.Any<ListItemDto>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WithExistingCompletedMatch_UncompletesItemWithoutCreatingDuplicate()
+    {
+        // Arrange
+        var household = new Household("Home", _userId);
+        var list = new HouseholdList("Shopping", ListType.Shopping, household.Id, _userId);
+        var existing = new ListItem("Leche", "leche", list.Id, _userId);
+        existing.Complete(_userId);
+        _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
+        _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
+        _itemRepository.GetByListIdAsync(list.Id, "All", null, null, null, Arg.Any<CancellationToken>())
+            .Returns([existing]);
+        _itemRepository.GetByIdAsync(existing.Id, Arg.Any<CancellationToken>()).Returns(existing);
+
+        var command = new BatchCreateItemsCommand(list.Id, new List<BatchItemDto>
+        {
+            new("LECHE", null, null, null)
+        });
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.CreatedIds.Should().BeEmpty();
+        existing.IsCompleted.Should().BeFalse();
+        await _itemRepository.DidNotReceive().AddAsync(Arg.Any<ListItem>(), Arg.Any<CancellationToken>());
+        await _itemRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await _notifications.Received(1).NotifyItemUncompleted(household.Id, Arg.Any<ListItemDto>(), Arg.Any<CancellationToken>());
+        await _notifications.DidNotReceive().NotifyItemCreated(Arg.Any<Guid>(), Arg.Any<ListItemDto>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WithDuplicateInSameRequest_CreatesOnlyOnce()
+    {
+        // Arrange
+        var household = new Household("Home", _userId);
+        var list = new HouseholdList("Shopping", ListType.Shopping, household.Id, _userId);
+        _listRepository.GetByIdAsync(list.Id, Arg.Any<CancellationToken>()).Returns(list);
+        _householdRepository.GetByIdWithMembersAsync(household.Id, Arg.Any<CancellationToken>()).Returns(household);
+        _itemRepository.GetByListIdAsync(list.Id, "All", null, null, null, Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<ListItem>());
+
+        var command = new BatchCreateItemsCommand(list.Id, new List<BatchItemDto>
+        {
+            new("leche", null, null, null),
+            new(" LECHE ", null, null, null)
+        });
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.CreatedIds.Should().ContainSingle();
+        await _itemRepository.Received(1).AddAsync(Arg.Any<ListItem>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Handle_WhenListNotFound_ReturnsNotFound()
     {
         // Arrange

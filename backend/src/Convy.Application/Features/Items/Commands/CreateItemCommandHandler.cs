@@ -55,6 +55,30 @@ public class CreateItemCommandHandler : IRequestHandler<CreateItemCommand, Resul
 
         var title = _textNormalizer.NormalizeTitle(request.Title);
         var normalizedTitle = _textNormalizer.NormalizeForComparison(title);
+        var existing = await FindExistingByNormalizedTitleAsync(request.ListId, normalizedTitle, cancellationToken);
+        if (existing is not null)
+        {
+            if (!existing.IsCompleted)
+                return Result<Guid>.Success(existing.Id);
+
+            var tracked = await _itemRepository.GetByIdAsync(existing.Id, cancellationToken);
+            if (tracked is null)
+                return Result<Guid>.Failure(Error.NotFound("Item not found."));
+
+            if (!tracked.IsCompleted)
+                return Result<Guid>.Success(tracked.Id);
+
+            tracked.Uncomplete(_currentUser.UserId);
+            await _itemRepository.SaveChangesAsync(cancellationToken);
+
+            var returningUser = await _userRepository.GetByIdAsync(_currentUser.UserId, cancellationToken);
+            var returningUserName = returningUser?.DisplayName ?? "Unknown";
+            await _notifications.NotifyItemUncompleted(list.HouseholdId, ToDto(tracked, returningUserName), cancellationToken);
+            await _activityLogger.LogAsync(list.HouseholdId, ActivityEntityType.Item, tracked.Id, ActivityActionType.Uncompleted, _currentUser.UserId, tracked.Title, cancellationToken);
+
+            return Result<Guid>.Success(tracked.Id);
+        }
+
         var item = new ListItem(title, normalizedTitle, request.ListId, _currentUser.UserId, request.Quantity, request.Unit, request.Note);
 
         if (request.RecurrenceFrequency.HasValue && request.RecurrenceInterval.HasValue)
@@ -74,4 +98,27 @@ public class CreateItemCommandHandler : IRequestHandler<CreateItemCommand, Resul
 
         return Result<Guid>.Success(item.Id);
     }
+
+    private async Task<ListItem?> FindExistingByNormalizedTitleAsync(Guid listId, string normalizedTitle, CancellationToken cancellationToken)
+    {
+        var existingItems = await _itemRepository.GetByListIdAsync(listId, "All", null, null, null, cancellationToken)
+            ?? Array.Empty<ListItem>();
+
+        return existingItems
+            .Where(item => string.Equals(GetNormalizedTitle(item), normalizedTitle, StringComparison.Ordinal))
+            .OrderBy(item => item.IsCompleted)
+            .FirstOrDefault();
+    }
+
+    private string GetNormalizedTitle(ListItem item) =>
+        string.IsNullOrWhiteSpace(item.NormalizedTitle)
+            ? _textNormalizer.NormalizeForComparison(item.Title)
+            : item.NormalizedTitle;
+
+    private static ListItemDto ToDto(ListItem item, string userName) =>
+        new(item.Id, item.Title, item.Quantity, item.Unit, item.Note,
+            item.ListId, item.CreatedBy, userName, item.CreatedAt,
+            item.IsCompleted, item.CompletedBy, userName, item.CompletedAt,
+            item.ReturnedToPendingBy, userName, item.ReturnedToPendingAt,
+            item.RecurrenceFrequency?.ToString(), item.RecurrenceInterval, item.NextDueDate);
 }
