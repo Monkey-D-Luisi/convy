@@ -48,6 +48,9 @@
 | 23 | 0.1.20 | 2026-05-29 | Post-redesign release artifact build |
 | 24 | 0.1.21 | 2026-05-29 | Landing copy and list detail bug fixes |
 | 25 | 0.1.22 | 2026-05-30 | Smart task reminders and voice task parsing |
+| 26 | 0.1.23 | 2026-05-30 | Full review remediation and worker split |
+| 27 | 0.1.23 | 2026-05-30 | Re-upload with incremented Android version code |
+| 28 | 0.1.24 | 2026-06-06 | Home counters and duplicate item reuse |
 
 ## Release Procedure
 
