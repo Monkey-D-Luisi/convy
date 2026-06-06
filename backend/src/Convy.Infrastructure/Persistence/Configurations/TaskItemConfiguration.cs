@@ -15,12 +15,12 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
 
         builder.Property(t => t.Title)
             .HasColumnName("title")
-            .HasMaxLength(200)
+            .HasMaxLength(80)
             .IsRequired();
 
         builder.Property(t => t.NormalizedTitle)
             .HasColumnName("normalized_title")
-            .HasMaxLength(200);
+            .HasMaxLength(80);
 
         builder.Property(t => t.Note)
             .HasColumnName("note")

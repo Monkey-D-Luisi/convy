@@ -17,6 +17,9 @@ internal static class OpenAiTaskVoiceParsingPromptFactory
         Parsing rules:
         - Support Spanish and English naturally.
         - Split compound household requests into separate tasks.
+        - Standalone issue descriptions or reminders should become tasks when they describe something the user likely wants to track.
+        - Write each task as a concise actionable title, maximum 80 characters.
+        - Put extra context in note instead of the title.
         - Ignore shopping items unless they are clearly household tasks.
         - Match assignees only to exact householdMembers by name or obvious spoken reference.
         - If a task has a date but no time, set reminderAtUtc to 09:00 in the supplied timeZoneId converted to UTC.
@@ -37,7 +40,7 @@ internal static class OpenAiTaskVoiceParsingPromptFactory
               "items": {
                 "type": "object",
                 "properties": {
-                  "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+                  "title": { "type": "string", "minLength": 1, "maxLength": 80 },
                   "note": { "type": ["string", "null"], "maxLength": 500 },
                   "assignedToUserId": { "type": ["string", "null"], "maxLength": 36 },
                   "dueDate": { "type": ["string", "null"], "description": "YYYY-MM-DD local date" },

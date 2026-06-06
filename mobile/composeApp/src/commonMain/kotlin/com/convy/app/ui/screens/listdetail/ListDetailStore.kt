@@ -99,7 +99,7 @@ class ListDetailStore(
             }
             is ListDetailIntent.SetFilter -> {
                 _state.update { it.copy(activeFilter = intent.filter) }
-                loadItems()
+                loadItems(forceFullLoading = true)
             }
             is ListDetailIntent.ToggleShoppingMode -> {
                 var shouldReloadItems = false
@@ -109,7 +109,7 @@ class ListDetailStore(
                     transition.state
                 }
                 if (shouldReloadItems) {
-                    loadItems()
+                    loadItems(forceFullLoading = true)
                 }
             }
             is ListDetailIntent.StartRecording -> startRecording()
@@ -136,8 +136,14 @@ class ListDetailStore(
         }
     }
 
-    fun loadItems() {
-        _state.update { it.copy(isLoading = true, error = null, completionExitEntryIds = emptySet()) }
+    fun loadItems(forceFullLoading: Boolean = false) {
+        _state.update {
+            it.copy(
+                isLoading = forceFullLoading || !it.hasEntries,
+                error = null,
+                completionExitEntryIds = emptySet(),
+            )
+        }
         scope.launch {
             val filter = _state.value.activeFilter
             val status = when (filter) {

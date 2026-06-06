@@ -31,6 +31,24 @@ public class TaskCommandValidatorTests
     }
 
     [Fact]
+    public void Update_WithTitleOver80Characters_FailsValidation()
+    {
+        var result = new UpdateTaskCommandValidator().TestValidate(
+            new UpdateTaskCommand(Guid.NewGuid(), Guid.NewGuid(), new string('a', 81), null));
+
+        result.ShouldHaveValidationErrorFor(x => x.Title);
+    }
+
+    [Fact]
+    public void Create_WithTitleOver80Characters_FailsValidation()
+    {
+        var result = new CreateTaskCommandValidator().TestValidate(
+            new CreateTaskCommand(Guid.NewGuid(), new string('a', 81), null));
+
+        result.ShouldHaveValidationErrorFor(x => x.Title);
+    }
+
+    [Fact]
     public void Update_WithInvalidPriority_FailsValidation()
     {
         var result = new UpdateTaskCommandValidator().TestValidate(
@@ -128,6 +146,19 @@ public class TaskCommandValidatorTests
                 ]));
 
         result.ShouldHaveValidationErrorFor("Tasks[0].ReminderAtUtc");
+    }
+
+    [Fact]
+    public void SmartBatch_WithTitleOver80Characters_FailsValidation()
+    {
+        var result = new SmartBatchCreateTasksCommandValidator().TestValidate(
+            new SmartBatchCreateTasksCommand(
+                Guid.NewGuid(),
+                [
+                    new SmartTaskInput(new string('a', 81), null)
+                ]));
+
+        result.ShouldHaveValidationErrorFor("Tasks[0].Title");
     }
 
     [Fact]

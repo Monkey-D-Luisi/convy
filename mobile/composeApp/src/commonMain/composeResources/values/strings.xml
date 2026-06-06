@@ -170,6 +170,8 @@
     <string name="task_edit_title">Edit task</string>
     <string name="task_new_title">New task</string>
     <string name="task_title_label">Title *</string>
+    <string name="task_title_counter">%1$d / %2$d</string>
+    <string name="task_title_too_long">Task title must be %1$d characters or fewer. Move details to the note.</string>
     <string name="task_note_label">Note</string>
     <string name="task_note_placeholder">Optional note…</string>
     <string name="task_assignee_label">Responsible</string>
@@ -270,6 +272,7 @@
     <string name="voice_task_due">Due %1$s</string>
     <string name="voice_task_reminder">Reminder %1$s</string>
     <string name="voice_task_note">Note: %1$s</string>
+    <string name="voice_no_tasks_detected">No tasks detected. Try phrasing it as something to do, or add a short title manually and put details in the note.</string>
 
     <!-- Item Card -->
     <string name="item_card_completed_by">Completed by %1$s</string>
