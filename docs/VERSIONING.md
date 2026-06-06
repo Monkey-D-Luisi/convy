@@ -51,6 +51,7 @@
 | 26 | 0.1.23 | 2026-05-30 | Full review remediation and worker split |
 | 27 | 0.1.23 | 2026-05-30 | Re-upload with incremented Android version code |
 | 28 | 0.1.24 | 2026-06-06 | Home counters and duplicate item reuse |
+| 29 | 0.1.25 | 2026-06-06 | Task voice, scroll, and short-title UX fixes |
 
 ## Release Procedure
 
