@@ -4,7 +4,7 @@
 
 **Goal:** Publish the signed staging Android App Bundle to Google Play Internal Testing from GitHub Actions without exposing installable app artifacts in this public repository.
 
-**Architecture:** Keep CI validation separate from release publishing. Add a protected Android release workflow that runs only from trusted `master` builds, uses environment secrets, generates the signed AAB, uploads it through the official Google Play Developer API, and does not upload APK/AAB files to GitHub artifacts.
+**Architecture:** Keep CI validation separate from release publishing. Add a protected Android release workflow that runs only from trusted `master` builds with Android version-file changes, uses environment secrets, generates the signed AAB, uploads it through the official Google Play Developer API, and does not upload APK/AAB files to GitHub artifacts.
 
 **Tech Stack:** GitHub Actions, Android Gradle Plugin, Google Play Android Publisher API, Google GitHub Actions authentication, Bash, `curl`, `jq`.
 
@@ -17,7 +17,7 @@
 
 - [x] **Step 1: Create a trusted-only workflow**
 
-Use `workflow_run` after successful CI on `master` and `workflow_dispatch` for manual re-runs. Reference the `android-release` environment so secrets remain gated by GitHub environment protection.
+Use `workflow_run` after successful CI on `master` and `workflow_dispatch` for manual re-runs. Add a non-secret `preflight` job that only enters the `android-release` environment when `mobile/androidApp/build.gradle.kts` changed or the workflow was manually dispatched.
 
 - [x] **Step 2: Recreate ignored Android secret files at runtime**
 

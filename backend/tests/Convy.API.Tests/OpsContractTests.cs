@@ -50,7 +50,7 @@ public class OpsContractTests
     public void VpsDeployScript_ShouldPublishLegalAndCheckReadyEndpoint()
     {
         var source = ReadRepoFile("ops", "vps", "deploy-release.sh");
-        var cd = ReadRepoFile(".github", "workflows", "cd.yml");
+        var backendRelease = ReadRepoFile(".github", "workflows", "backend-staging-release.yml");
 
         source.Should().Contain("/opt/convy/legal");
         source.Should().Contain("/opt/convy/public");
@@ -61,12 +61,40 @@ public class OpsContractTests
         source.Should().Contain("CONVY_MCP_HOSTNAME");
         source.Should().Contain("/health/ready");
         source.Should().Contain("/health");
-        cd.Should().Contain("API_HOSTNAME");
-        cd.Should().Contain("/health/ready");
-        cd.Should().NotContain("PUBLIC_HOSTNAME}/health");
-        cd.Should().Contain("Ensure non-root deploy user");
-        cd.Should().Contain("BOOTSTRAP_DEPLOY_USER");
-        cd.Should().Contain("vars.STAGING_DEPLOY_USER || 'convy-deploy'");
+        backendRelease.Should().Contain("API_HOSTNAME");
+        backendRelease.Should().Contain("/health/ready");
+        backendRelease.Should().NotContain("PUBLIC_HOSTNAME}/health");
+        backendRelease.Should().Contain("Ensure non-root deploy user");
+        backendRelease.Should().Contain("BOOTSTRAP_DEPLOY_USER");
+        backendRelease.Should().Contain("vars.STAGING_DEPLOY_USER || 'convy-deploy'");
+    }
+
+    [Fact]
+    public void AndroidPlayInternalWorkflow_ShouldBeProtectedAndAvoidPublicArtifacts()
+    {
+        var workflow = ReadRepoFile(".github", "workflows", "android-play-internal.yml");
+
+        workflow.Should().Contain("name: Android Play Internal Release");
+        workflow.Should().Contain("workflow_run");
+        workflow.Should().Contain("workflows: [\"Continuous Integration\"]");
+        workflow.Should().Contain("branches: [master]");
+        workflow.Should().Contain("workflow_dispatch");
+        workflow.Should().Contain("environment: android-release");
+        workflow.Should().Contain("permissions:");
+        workflow.Should().Contain("contents: read");
+        workflow.Should().Contain("ANDROID_GOOGLE_SERVICES_JSON_B64");
+        workflow.Should().Contain("ANDROID_KEYSTORE_PROPERTIES_B64");
+        workflow.Should().Contain("ANDROID_RELEASE_KEYSTORE_B64");
+        workflow.Should().Contain("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_B64");
+        workflow.Should().Contain("bundleStagingRelease");
+        workflow.Should().Contain("GOOGLE_PLAY_TRACK");
+        workflow.Should().Contain("internal");
+        workflow.Should().Contain("Remove restored secret files");
+        workflow.Should().NotContain("actions/upload-artifact");
+        workflow.Should().Contain("should_publish");
+        workflow.Should().Contain("mobile/androidApp/build.gradle.kts");
+        workflow.Should().Contain("needs: preflight");
+        workflow.Should().Contain("needs.preflight.outputs.should_publish == 'true'");
     }
 
     [Fact]

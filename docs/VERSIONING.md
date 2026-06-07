@@ -85,7 +85,7 @@
    mobile/build/outputs/qa/<scenario>/
    docs/build/outputs/qa/
    ```
-9. Automated Play publication runs through the protected `Android Play Internal Release` GitHub Actions workflow after CI succeeds on `master`. It uploads only the generated AAB to Google Play Internal Testing and does not publish APK/AAB files as GitHub Actions artifacts while the repository is public. See [Android Play Internal Release runbook](operations/android-play-internal-release.md).
+9. Automated Play publication runs through the protected `Android Play Internal Release` GitHub Actions workflow after CI succeeds on a `master` push that changes `mobile/androidApp/build.gradle.kts`. It uploads only the generated AAB to Google Play Internal Testing and does not publish APK/AAB files as GitHub Actions artifacts while the repository is public. See [Android Play Internal Release runbook](operations/android-play-internal-release.md).
 10. If a manual Play upload is needed, upload the generated AAB from:
    ```text
    mobile/androidApp/build/outputs/bundle/stagingRelease/androidApp-staging-release.aab
