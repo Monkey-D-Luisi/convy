@@ -23,18 +23,21 @@ Workflow file:
 
 Triggers:
 
-- Automatically after the `Continuous Integration` workflow succeeds on a `push` to `master`.
+- Automatically after the `Continuous Integration` workflow succeeds on a `push` to `master`, only when the commit changes `mobile/androidApp/build.gradle.kts`.
 - Manually through `workflow_dispatch`, publishing the current `master` ref.
 
 The workflow:
 
-1. Checks out the exact CI commit or current `master` ref for manual runs.
-2. Restores ignored Android secret files from GitHub environment secrets.
-3. Runs `./gradlew :androidApp:bundleStagingRelease --console=plain`.
-4. Uploads `mobile/androidApp/build/outputs/bundle/stagingRelease/androidApp-staging-release.aab` to Google Play Internal Testing through the Google Play Developer API.
-5. Deletes restored secret files from the runner.
+1. Runs a `preflight` job to decide whether Play publication applies.
+2. Enters the protected `android-release` environment only when publication applies.
+3. Restores ignored Android secret files from GitHub environment secrets.
+4. Runs `./gradlew :androidApp:bundleStagingRelease --console=plain`.
+5. Uploads `mobile/androidApp/build/outputs/bundle/stagingRelease/androidApp-staging-release.aab` to Google Play Internal Testing through the Google Play Developer API.
+6. Deletes restored secret files from the runner.
 
 The workflow intentionally does not call `actions/upload-artifact` for APK or AAB files.
+
+The workflow replaces the active release on the configured Play track with the newly uploaded version code. Keep `GOOGLE_PLAY_TRACK=internal` for this controlled release flow unless the release process is redesigned.
 
 ## GitHub Environment
 
@@ -64,13 +67,13 @@ Secrets must be environment secrets, not plain repository secrets, so the publis
 Encode a secret from PowerShell:
 
 ```powershell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("mobile/androidApp/google-services.json")) | Set-Clipboard
+[Convert]::ToBase64String([System.IO.File]::ReadAllBytes((Join-Path $PWD.Path "mobile/androidApp/google-services.json"))) | Set-Clipboard
 ```
 
 Encode a secret from Bash:
 
 ```bash
-base64 -w0 mobile/androidApp/google-services.json
+base64 mobile/androidApp/google-services.json | tr -d '\n'
 ```
 
 Repeat for each source file and paste the output into the matching GitHub environment secret.
@@ -113,7 +116,7 @@ Normal path:
 1. Bump `versionCode` and `versionName` in `mobile/androidApp/build.gradle.kts`.
 2. Add a matching row to `docs/VERSIONING.md`.
 3. Merge to `master` after CI passes.
-4. The `Android Play Internal Release` workflow runs after CI succeeds.
+4. The `Android Play Internal Release` workflow runs after CI succeeds and the version-file change is detected.
 5. Approve the `android-release` environment deployment when GitHub prompts for review.
 6. Confirm the workflow logs show the expected package, version name, version code, and track.
 7. Open Play Console and confirm the new release appears in Internal Testing.

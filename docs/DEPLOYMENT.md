@@ -103,7 +103,7 @@ Rollback is release-directory based:
 ## Android Versioning
 
 Android release rules live in [VERSIONING.md](VERSIONING.md). Never reuse a `versionCode`.
-Android Play Internal Testing publication is automated by the protected `Android Play Internal Release` workflow after CI succeeds on `master`. See the [Android Play Internal Release runbook](operations/android-play-internal-release.md) for environment secrets, Play service account permissions, and the no-public-artifacts policy.
+Android Play Internal Testing publication is automated by the protected `Android Play Internal Release` workflow after CI succeeds on a `master` push that changes `mobile/androidApp/build.gradle.kts`. See the [Android Play Internal Release runbook](operations/android-play-internal-release.md) for environment secrets, Play service account permissions, and the no-public-artifacts policy.
 
 Current identity:
 
