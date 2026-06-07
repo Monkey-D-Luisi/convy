@@ -1,10 +1,10 @@
-name: CI
+name: Continuous Integration
 
 on:
   push:
-    branches: [main, master]
+    branches: [master]
   pull_request:
-    branches: [main, master]
+    branches: [master]
 
 jobs:
   backend:

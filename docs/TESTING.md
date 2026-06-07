@@ -153,9 +153,9 @@ docker build -f auth/Dockerfile auth
 docker build -f mcp/Dockerfile mcp
 ```
 
-## GitHub Actions CI
+## GitHub Actions Continuous Integration
 
-CI jobs:
+`Continuous Integration` jobs:
 
 - `backend`: restore, build, test with PostgreSQL service.
 - `dashboard`: install, test, lint, build.
@@ -169,7 +169,7 @@ CI jobs:
 
 The backend solution includes `Convy.Worker`, so backend CI builds and tests the worker project and its registration tests with the rest of the .NET stack.
 
-CD runs only after CI completes successfully, uses pinned `STAGING_SSH_KNOWN_HOSTS`, and performs an external staging health check against `STAGING_API_HOSTNAME` or `STAGING_PUBLIC_HOSTNAME`.
+`Backend Staging Release` runs only after `Continuous Integration` completes successfully on a `master` push, uses pinned `STAGING_SSH_KNOWN_HOSTS`, and performs an external staging health check against `STAGING_API_HOSTNAME` or `STAGING_PUBLIC_HOSTNAME`.
 
 ## Staging Smoke Checks
 

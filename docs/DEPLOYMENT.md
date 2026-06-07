@@ -5,9 +5,9 @@ Convy deploys the active controlled-release/staging environment to a Hetzner VPS
 ## Branches And CI
 
 - Pull requests target `master`.
-- GitHub Actions CI runs on `master` and `main`.
-- CD deploys the exact commit that passed CI through `workflow_run`.
-- Staging deployment uses the `staging` GitHub environment.
+- GitHub Actions `Continuous Integration` runs on `master`.
+- `Backend Staging Release` deploys the exact `master` push commit that passed CI through `workflow_run`.
+- Staging deployment uses the `staging` GitHub environment, restricted to the `master` deployment branch.
 
 ## Active Staging Stack
 
@@ -25,6 +25,7 @@ Canonical runbooks:
 
 - [Deployment runbook](operations/deployment-runbook.md)
 - [Hetzner VPS runbook](operations/hetzner-vps-runbook.md)
+- [Android Play Internal Release runbook](operations/android-play-internal-release.md)
 - [MCP runbook](operations/mcp-runbook.md)
 - [Backup and restore runbook](operations/backup-restore-runbook.md)
 
@@ -42,7 +43,13 @@ Canonical runbooks:
 
 Legacy `178.105.70.69.nip.io` hosts remain configured for previously installed staging Android builds and cutover safety.
 
-## GitHub CD Inputs
+## Backend Staging Release Inputs
+
+Workflow file:
+
+```text
+.github/workflows/backend-staging-release.yml
+```
 
 Repository secrets:
 
@@ -96,6 +103,7 @@ Rollback is release-directory based:
 ## Android Versioning
 
 Android release rules live in [VERSIONING.md](VERSIONING.md). Never reuse a `versionCode`.
+Android Play Internal Testing publication is automated by the protected `Android Play Internal Release` workflow after CI succeeds on `master`. See the [Android Play Internal Release runbook](operations/android-play-internal-release.md) for environment secrets, Play service account permissions, and the no-public-artifacts policy.
 
 Current identity:
 
@@ -107,6 +115,6 @@ applicationId = com.monkeydluisi.convy
 Current `origin/master` values:
 
 ```text
-versionCode = 28
-versionName = 0.1.24
+versionCode = 29
+versionName = 0.1.25
 ```

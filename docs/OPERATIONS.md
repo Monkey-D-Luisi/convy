@@ -6,6 +6,7 @@ This page is the operational index for the Convy controlled-release/staging envi
 
 - [Deployment runbook](operations/deployment-runbook.md)
 - [Hetzner VPS runbook](operations/hetzner-vps-runbook.md)
+- [Android Play Internal Release runbook](operations/android-play-internal-release.md)
 - [Backup and restore runbook](operations/backup-restore-runbook.md)
 - [ChatGPT MCP operations runbook](operations/mcp-runbook.md)
 - [Oracle Free Tier fallback runbook](operations/oracle-free-tier-runbook.md)
