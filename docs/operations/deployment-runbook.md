@@ -8,13 +8,13 @@ This runbook covers the active Hetzner staging deploy path. See [oracle-free-tie
 - Firebase authorized domains include `admin.convyapp.com` and `auth.convyapp.com`.
 - `/opt/convy/shared/firebase-admin.json` exists on the VPS.
 - `/opt/convy/shared/api.env` exists and contains service secrets.
-- CI passed for the commit being deployed.
+- `Continuous Integration` passed for the commit being deployed.
 
 ## GitHub Actions Deploy
 
-The CD workflow:
+The `Backend Staging Release` workflow:
 
-1. Runs after successful CI.
+1. Runs after successful `Continuous Integration` on a `master` push.
 2. Checks out the CI commit.
 3. Configures SSH from `STAGING_SSH_PRIVATE_KEY` and pinned `STAGING_SSH_KNOWN_HOSTS`.
 4. Ensures a non-root deploy user if needed.
@@ -23,6 +23,14 @@ The CD workflow:
 7. Extracts under `/opt/convy/releases/<sha>`.
 8. Runs `ops/vps/deploy-release.sh <sha>`.
 9. Checks `https://<staging-api-host>/health/ready`.
+
+Workflow file:
+
+```text
+.github/workflows/backend-staging-release.yml
+```
+
+The `staging` GitHub environment uses a selected-branch deployment policy for `master` only. Do not add `main` or broad wildcard branch policies unless the repository default branch changes and the workflows are updated in the same change.
 
 Required secrets:
 

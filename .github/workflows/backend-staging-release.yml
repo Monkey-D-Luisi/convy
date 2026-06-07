@@ -1,10 +1,17 @@
-name: CD
+name: Backend Staging Release
 
 on:
   workflow_run:
-    workflows: ["CI"]
-    branches: [main, master]
+    workflows: ["Continuous Integration"]
+    branches: [master]
     types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-staging-release
+  cancel-in-progress: false
 
 env:
   DEPLOY_USER: ${{ vars.STAGING_DEPLOY_USER || 'convy-deploy' }}
@@ -15,7 +22,10 @@ jobs:
   deploy-staging:
     name: Deploy staging
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'master'
     environment: staging
 
     steps:

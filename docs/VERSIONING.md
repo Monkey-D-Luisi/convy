@@ -67,7 +67,7 @@
    mobile/keystore/convy-release.keystore
    ```
    If a generated worktree is missing them, copy them from the canonical local checkout before building. Do not commit these files.
-6. Build the local debug APK, signed staging APK, and signed staging AAB:
+6. Build the local debug APK, signed staging APK, and signed staging AAB when generating local validation artifacts:
    ```powershell
    cd mobile
    .\gradlew :androidApp:assembleLocalDebug
@@ -85,11 +85,12 @@
    mobile/build/outputs/qa/<scenario>/
    docs/build/outputs/qa/
    ```
-9. Upload the generated AAB from:
+9. Automated Play publication runs through the protected `Android Play Internal Release` GitHub Actions workflow after CI succeeds on `master`. It uploads only the generated AAB to Google Play Internal Testing and does not publish APK/AAB files as GitHub Actions artifacts while the repository is public. See [Android Play Internal Release runbook](operations/android-play-internal-release.md).
+10. If a manual Play upload is needed, upload the generated AAB from:
    ```text
    mobile/androidApp/build/outputs/bundle/stagingRelease/androidApp-staging-release.aab
    ```
-10. Commit with a conventional message such as `chore: bump versionCode to X (vN.N.N)`.
+11. Commit with a conventional message such as `chore: bump versionCode to X (vN.N.N)`.
 
 ## Artifact Troubleshooting
 

@@ -1,0 +1,187 @@
+name: Android Play Internal Release
+
+on:
+  workflow_run:
+    workflows: ["Continuous Integration"]
+    branches: [master]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-play-internal
+  cancel-in-progress: false
+
+jobs:
+  publish-internal:
+    name: Publish AAB to Play Internal Testing
+    runs-on: ubuntu-latest
+    environment: android-release
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'master'
+      )
+    env:
+      ANDROID_PACKAGE_NAME: ${{ vars.GOOGLE_PLAY_PACKAGE_NAME || 'com.monkeydluisi.convy' }}
+      GOOGLE_PLAY_TRACK: ${{ vars.GOOGLE_PLAY_TRACK || 'internal' }}
+      GOOGLE_PLAY_RELEASE_STATUS: ${{ vars.GOOGLE_PLAY_RELEASE_STATUS || 'completed' }}
+      PUBLISH_REF: ${{ github.event.workflow_run.head_sha || 'master' }}
+
+    steps:
+      - name: Checkout release ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.PUBLISH_REF }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Restore Android release secrets
+        env:
+          ANDROID_GOOGLE_SERVICES_JSON_B64: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON_B64 }}
+          ANDROID_KEYSTORE_PROPERTIES_B64: ${{ secrets.ANDROID_KEYSTORE_PROPERTIES_B64 }}
+          ANDROID_RELEASE_KEYSTORE_B64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_B64 }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_B64: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_B64 }}
+        run: |
+          set -euo pipefail
+
+          require_secret() {
+            local name="$1"
+            local value="$2"
+            if [ -z "${value}" ]; then
+              echo "Missing required android-release environment secret: ${name}" >&2
+              exit 1
+            fi
+          }
+
+          require_secret "ANDROID_GOOGLE_SERVICES_JSON_B64" "${ANDROID_GOOGLE_SERVICES_JSON_B64}"
+          require_secret "ANDROID_KEYSTORE_PROPERTIES_B64" "${ANDROID_KEYSTORE_PROPERTIES_B64}"
+          require_secret "ANDROID_RELEASE_KEYSTORE_B64" "${ANDROID_RELEASE_KEYSTORE_B64}"
+          require_secret "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_B64" "${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_B64}"
+
+          mkdir -p mobile/androidApp mobile/keystore
+          printf '%s' "${ANDROID_GOOGLE_SERVICES_JSON_B64}" | base64 --decode > mobile/androidApp/google-services.json
+          printf '%s' "${ANDROID_KEYSTORE_PROPERTIES_B64}" | base64 --decode > mobile/keystore.properties
+          printf '%s' "${ANDROID_RELEASE_KEYSTORE_B64}" | base64 --decode > mobile/keystore/convy-release.keystore
+          printf '%s' "${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_B64}" | base64 --decode > "${RUNNER_TEMP}/google-play-service-account.json"
+
+      - name: Build signed staging bundle
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :androidApp:bundleStagingRelease --console=plain
+
+      - name: Publish bundle to Play Internal Testing
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/google-play-service-account.json
+        run: |
+          set -euo pipefail
+
+          aab_path="mobile/androidApp/build/outputs/bundle/stagingRelease/androidApp-staging-release.aab"
+          if [ ! -f "${aab_path}" ]; then
+            echo "Expected AAB was not generated at ${aab_path}" >&2
+            exit 1
+          fi
+
+          version_code="$(sed -nE 's/^[[:space:]]*versionCode[[:space:]]*=[[:space:]]*([0-9]+).*$/\1/p' mobile/androidApp/build.gradle.kts | head -n 1)"
+          version_name="$(sed -nE 's/^[[:space:]]*versionName[[:space:]]*=[[:space:]]*"([^"]+)".*$/\1/p' mobile/androidApp/build.gradle.kts | head -n 1)"
+          if [ -z "${version_code}" ] || [ -z "${version_name}" ]; then
+            echo "Unable to read Android versionCode/versionName from mobile/androidApp/build.gradle.kts" >&2
+            exit 1
+          fi
+
+          gcloud auth activate-service-account --key-file="${GOOGLE_APPLICATION_CREDENTIALS}" --quiet
+          access_token="$(gcloud auth print-access-token --scopes=https://www.googleapis.com/auth/androidpublisher)"
+          api_root="https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${ANDROID_PACKAGE_NAME}"
+          upload_root="https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/${ANDROID_PACKAGE_NAME}"
+          edit_id=""
+
+          discard_edit() {
+            if [ -n "${edit_id}" ]; then
+              curl -fsS \
+                -X DELETE \
+                -H "Authorization: Bearer ${access_token}" \
+                "${api_root}/edits/${edit_id}" >/dev/null || true
+            fi
+          }
+          trap discard_edit ERR
+
+          edit_response="$(curl -fsS \
+            -X POST \
+            -H "Authorization: Bearer ${access_token}" \
+            -H "Content-Type: application/json" \
+            "${api_root}/edits")"
+          edit_id="$(printf '%s' "${edit_response}" | jq -r '.id')"
+          if [ -z "${edit_id}" ] || [ "${edit_id}" = "null" ]; then
+            echo "Google Play did not return an edit id." >&2
+            exit 1
+          fi
+
+          upload_response="$(curl -fsS \
+            -X POST \
+            -H "Authorization: Bearer ${access_token}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"${aab_path}" \
+            "${upload_root}/edits/${edit_id}/bundles?uploadType=media")"
+          uploaded_version_code="$(printf '%s' "${upload_response}" | jq -r '.versionCode')"
+          if [ "${uploaded_version_code}" != "${version_code}" ]; then
+            echo "Uploaded bundle versionCode ${uploaded_version_code} does not match build.gradle.kts ${version_code}." >&2
+            exit 1
+          fi
+
+          track_body="$(jq -n \
+            --arg track "${GOOGLE_PLAY_TRACK}" \
+            --arg release_name "${version_name} (${version_code})" \
+            --arg version_code "${version_code}" \
+            --arg status "${GOOGLE_PLAY_RELEASE_STATUS}" \
+            '{
+              track: $track,
+              releases: [
+                {
+                  name: $release_name,
+                  versionCodes: [$version_code],
+                  status: $status
+                }
+              ]
+            }')"
+
+          curl -fsS \
+            -X PUT \
+            -H "Authorization: Bearer ${access_token}" \
+            -H "Content-Type: application/json" \
+            -d "${track_body}" \
+            "${api_root}/edits/${edit_id}/tracks/${GOOGLE_PLAY_TRACK}" >/dev/null
+
+          curl -fsS \
+            -X POST \
+            -H "Authorization: Bearer ${access_token}" \
+            "${api_root}/edits/${edit_id}:commit" >/dev/null
+
+          trap - ERR
+          echo "Published ${ANDROID_PACKAGE_NAME} ${version_name} (${version_code}) to Google Play track ${GOOGLE_PLAY_TRACK}."
+
+      - name: Remove restored secret files
+        if: always()
+        run: |
+          rm -f mobile/androidApp/google-services.json
+          rm -f mobile/keystore.properties
+          rm -f mobile/keystore/convy-release.keystore
+          rm -f "${RUNNER_TEMP}/google-play-service-account.json"
