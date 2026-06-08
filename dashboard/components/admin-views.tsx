@@ -148,9 +148,9 @@ function formatDuration(value: number | null) {
   return days > 0 ? `${days}d ${hours}h` : `${hours}h`;
 }
 
-function formatPercent(value: number, total: number) {
+function formatPercent(value: number, total: number, emptyLabel = "N/A") {
   if (total === 0) {
-    return "0%";
+    return emptyLabel;
   }
 
   return `${Math.round((value / total) * 100)}%`;
@@ -158,6 +158,18 @@ function formatPercent(value: number, total: number) {
 
 function formatRatio(value: number) {
   return `${Math.round(value * 100)}%`;
+}
+
+function formatRatioWithDenominator(value: number, denominator: number, emptyLabel: string) {
+  return denominator === 0 ? emptyLabel : formatRatio(value);
+}
+
+function successRateTone(denominator: number, failures: number): "default" | "good" | "warn" {
+  if (denominator === 0) {
+    return "default";
+  }
+
+  return failures === 0 ? "good" : "warn";
 }
 
 function formatSignedRatio(value: number) {
@@ -170,6 +182,38 @@ function formatLatency(value: number | null) {
 
 function formatNullableDateTime(value: string | null) {
   return value ? new Date(value).toLocaleString() : "None";
+}
+
+function formatBackupDate(value: string | null) {
+  return value ? new Date(value).toLocaleString() : "None";
+}
+
+function isVerifiedBackup(backup: BackupRun) {
+  return backup.status === "Success" && (backup.verificationStatus === "PgRestoreListOk" || backup.verificationStatus === "RestoreOk");
+}
+
+function compareBackupsNewestFirst(left: BackupRun, right: BackupRun) {
+  return new Date(right.startedAt).getTime() - new Date(left.startedAt).getTime();
+}
+
+function getBackupPosture(backups: BackupRun[]) {
+  const orderedBackups = [...backups].sort(compareBackupsNewestFirst);
+  const latestBackup = orderedBackups[0] ?? null;
+  const latestVerified = orderedBackups.find(isVerifiedBackup) ?? null;
+  const lastFailure = orderedBackups.find((backup) => backup.status === "Failed") ?? null;
+  const successfulRuns = backups.filter((backup) => backup.status === "Success").length;
+  const failedRuns = backups.filter((backup) => backup.status === "Failed").length;
+  const current = latestBackup !== null && isVerifiedBackup(latestBackup);
+
+  return {
+    current,
+    failedRuns,
+    latestBackup,
+    latestVerified,
+    lastFailure,
+    postureLabel: current ? "Current" : "Attention needed",
+    successfulRuns,
+  };
 }
 
 function PageState({ loading, error }: { loading: boolean; error: string }) {
@@ -477,7 +521,11 @@ export function OverviewView() {
         <MetricCard label="Active rate 7d" value={formatSignedRatio(data.growth.activeHouseholdRate7d)} />
         <MetricCard label="Items completed 7d" value={numberFormatter.format(data.engagement.itemsCompleted7d)} />
         <MetricCard label="AI failure rate 7d" value={formatRatio(data.aiReliability.failureRate7d)} tone={data.aiReliability.failures7d > 0 ? "warn" : "default"} />
-        <MetricCard label="Voice success rate 7d" value={formatRatio(data.voiceReliability.successRate7d)} tone={data.voiceReliability.failures7d === 0 ? "good" : "warn"} />
+        <MetricCard
+          label="Voice success rate 7d"
+          value={formatRatioWithDenominator(data.voiceReliability.successRate7d, data.voiceReliability.requests7d, "No voice requests")}
+          tone={successRateTone(data.voiceReliability.requests7d, data.voiceReliability.failures7d)}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-4">
@@ -502,7 +550,7 @@ export function OverviewView() {
             <Stat label="Success" value={data.mcp.toolSuccesses24h} />
             <Stat label="Failed" value={data.mcp.toolFailures24h} />
           </dl>
-          <p className="mt-4 text-sm text-muted">Success rate: {formatRatio(data.mcp.successRate24h)}</p>
+          <p className="mt-4 text-sm text-muted">Success rate: {formatRatioWithDenominator(data.mcp.successRate24h, data.mcp.toolCalls24h, "No MCP calls")}</p>
           <DeepLink href="/mcp" label="Open MCP view" />
         </section>
         <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
@@ -690,7 +738,7 @@ export function OpenAiView() {
           <MetricCard label="Voice requests" value={voiceData.requests} />
           <MetricCard
             label="Success rate"
-            value={formatPercent(voiceData.successes, voiceData.requests)}
+            value={formatPercent(voiceData.successes, voiceData.requests, "No voice requests")}
             tone={voiceData.requests > 0 && voiceData.failures === 0 ? "good" : voiceData.failures > 0 ? "warn" : "default"}
           />
           <MetricCard label="Voice failures" value={voiceData.failures} tone={voiceData.failures > 0 ? "warn" : "default"} />
@@ -771,7 +819,11 @@ export function McpView() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <MetricCard label="Tool calls" value={numberFormatter.format(overview.usage.invocations)} />
-        <MetricCard label="Success rate" value={formatRatio(overview.usage.successRate)} tone={overview.usage.failures === 0 ? "good" : "warn"} />
+        <MetricCard
+          label="Success rate"
+          value={formatRatioWithDenominator(overview.usage.successRate, overview.usage.invocations, "No MCP calls")}
+          tone={successRateTone(overview.usage.invocations, overview.usage.failures)}
+        />
         <MetricCard label="Failures" value={numberFormatter.format(overview.usage.failures)} tone={overview.usage.failures > 0 ? "warn" : "default"} />
         <MetricCard label="Avg latency" value={formatLatency(overview.usage.averageLatencyMs)} />
         <MetricCard label="P95 latency" value={overview.usage.p95LatencyMs === null ? "Unknown" : `${overview.usage.p95LatencyMs} ms`} />
@@ -979,49 +1031,52 @@ export function BackupsView() {
           description="The backup table will populate after the first scheduled or manual backup. Until then there is nothing to download or verify."
         />
       ) : (
-        <ResponsiveDataTable
-          columns={[
-            { header: "Started", render: (backup) => new Date(backup.startedAt).toLocaleString() },
-            { header: "Type", render: (backup) => backup.backupType },
-            { header: "Status", render: (backup) => <StatusPill ok={backup.status === "Success"} label={backup.status} /> },
-            { header: "Verification", render: (backup) => backup.verificationStatus },
-            { header: "Size", render: (backup) => formatBytes(backup.sizeBytes) },
-            {
-              header: "File",
-              className: "max-w-sm truncate",
-              render: (backup) => (
-                <span title={backup.fileName ?? "None"}>
-                  {backup.fileName ?? "None"}
-                </span>
-              ),
-            },
-            {
-              header: "SHA256",
-              className: "max-w-[14rem] truncate font-mono text-xs",
-              render: (backup) => (
-                <span title={backup.sha256 ?? "None"}>
-                  {backup.sha256 ?? "None"}
-                </span>
-              ),
-            },
-            {
-              header: "Download",
-              render: (backup) => (
-                <button
-                  className="rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={backup.status !== "Success" || !backup.fileName}
-                  onClick={() => void downloadBackup(backup)}
-                  type="button"
-                >
-                  Download
-                </button>
-              ),
-            },
-          ]}
-          items={data}
-          keyForItem={(backup) => backup.id}
-          minWidth="980px"
-        />
+        <>
+          <BackupPostureSummary backups={data} />
+          <ResponsiveDataTable
+            columns={[
+              { header: "Started", render: (backup) => new Date(backup.startedAt).toLocaleString() },
+              { header: "Type", render: (backup) => backup.backupType },
+              { header: "Status", render: (backup) => <StatusPill ok={backup.status === "Success"} label={backup.status} /> },
+              { header: "Verification", render: (backup) => backup.verificationStatus },
+              { header: "Size", render: (backup) => formatBytes(backup.sizeBytes) },
+              {
+                header: "File",
+                className: "max-w-sm truncate",
+                render: (backup) => (
+                  <span title={backup.fileName ?? "None"}>
+                    {backup.fileName ?? "None"}
+                  </span>
+                ),
+              },
+              {
+                header: "SHA256",
+                className: "max-w-[14rem] truncate font-mono text-xs",
+                render: (backup) => (
+                  <span title={backup.sha256 ?? "None"}>
+                    {backup.sha256 ?? "None"}
+                  </span>
+                ),
+              },
+              {
+                header: "Download",
+                render: (backup) => (
+                  <button
+                    className="rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={backup.status !== "Success" || !backup.fileName}
+                    onClick={() => void downloadBackup(backup)}
+                    type="button"
+                  >
+                    Download
+                  </button>
+                ),
+              },
+            ]}
+            items={data}
+            keyForItem={(backup) => backup.id}
+            minWidth="980px"
+          />
+        </>
       )}
     </section>
   );
@@ -1136,6 +1191,48 @@ function BackupSummary({ backup }: { backup: BackupRun | null }) {
       <StatusPill ok={backup.status === "Success"} label={backup.status} />
       <p className="text-muted">{new Date(backup.startedAt).toLocaleString()}</p>
       <p className="text-muted">{formatBytes(backup.sizeBytes)}</p>
+    </div>
+  );
+}
+
+function BackupPostureSummary({ backups }: { backups: BackupRun[] }) {
+  const posture = getBackupPosture(backups);
+
+  return (
+    <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-ink">Backup Posture</h2>
+          <p className="mt-1 text-sm text-muted">Latest run status, restore verification, and recent backup outcomes.</p>
+        </div>
+        <StatusPill ok={posture.current} label={posture.postureLabel} />
+      </div>
+      <dl className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+        <PostureMetric label="Posture" value={posture.postureLabel} tone={posture.current ? "good" : "warn"} />
+        <PostureMetric label="Latest backup" value={formatBackupDate(posture.latestBackup?.startedAt ?? null)} />
+        <PostureMetric
+          label="Latest verified"
+          value={formatBackupDate(posture.latestVerified?.finishedAt ?? posture.latestVerified?.startedAt ?? null)}
+          tone={posture.latestVerified ? "good" : "warn"}
+        />
+        <PostureMetric label="Last failure" value={formatBackupDate(posture.lastFailure?.startedAt ?? null)} tone={posture.lastFailure ? "warn" : "good"} />
+        <PostureMetric label="Successful runs" value={posture.successfulRuns} tone={posture.successfulRuns > 0 ? "good" : "default"} />
+        <PostureMetric label="Failed runs" value={posture.failedRuns} tone={posture.failedRuns > 0 ? "warn" : "default"} />
+      </dl>
+    </section>
+  );
+}
+
+function PostureMetric({ label, value, tone = "default" }: { label: string; value: string | number; tone?: "default" | "good" | "warn" }) {
+  const formatted = typeof value === "number" ? numberFormatter.format(value) : value;
+  const toneClass = tone === "good" ? "border-emerald-200 bg-emerald-50" : tone === "warn" ? "border-amber-200 bg-amber-50" : "border-line bg-surface";
+
+  return (
+    <div className={`min-w-0 rounded-md border p-4 ${toneClass}`}>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</dt>
+      <dd className="mt-2 min-w-0 break-words text-base font-semibold text-ink" title={String(formatted)}>
+        {formatted}
+      </dd>
     </div>
   );
 }
