@@ -121,6 +121,28 @@ describe("admin view UX contract", () => {
     assert.match(source, /md:hidden/);
     assert.match(source, /hidden md:block/);
   });
+
+  it("distinguishes no-data rate states from zero-percent outcomes", async () => {
+    const source = await readDashboardFile("components", "admin-views.tsx");
+
+    assert.match(source, /function formatRatioWithDenominator/);
+    assert.match(source, /formatRatioWithDenominator\(data\.voiceReliability\.successRate7d,\s*data\.voiceReliability\.requests7d,\s*"No voice requests"\)/);
+    assert.match(source, /formatRatioWithDenominator\(data\.mcp\.successRate24h,\s*data\.mcp\.toolCalls24h,\s*"No MCP calls"\)/);
+    assert.match(source, /formatRatioWithDenominator\(overview\.usage\.successRate,\s*overview\.usage\.invocations,\s*"No MCP calls"\)/);
+    assert.doesNotMatch(source, /Voice success rate 7d" value=\{formatRatio\(data\.voiceReliability\.successRate7d\)\}/);
+  });
+
+  it("puts backup posture before backup run audit rows", async () => {
+    const source = await readDashboardFile("components", "admin-views.tsx");
+
+    assert.match(source, /function getBackupPosture/);
+    assert.match(source, /function BackupPostureSummary/);
+    assert.match(source, /<BackupPostureSummary backups=\{data\} \/>/);
+    assert.match(source, /Latest verified/);
+    assert.match(source, /Last failure/);
+    assert.match(source, /Posture/);
+    assert.match(source, /Attention needed/);
+  });
 });
 
 describe("MCP admin dashboard contract", () => {
