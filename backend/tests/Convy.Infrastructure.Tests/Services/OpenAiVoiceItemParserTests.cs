@@ -24,13 +24,13 @@ public class OpenAiVoiceItemParserTests
             """);
         var parser = new OpenAiVoiceItemParser(
             responses,
-            new OpenAiVoiceParsingOptions("gpt-4o-mini-transcribe", "gpt-5.4-nano"));
+            new OpenAiVoiceParsingOptions("gpt-4o-mini-transcribe", "gpt-6-luna"));
 
         var result = await parser.ParseAsync("dos litros de leche", ["Leche"], CancellationToken.None);
 
         result.Items.Should().Equal([new ParsedItemDto("Leche", 2, "litros", "Leche")]);
         responses.CapturedOptions.Should().NotBeNull();
-        responses.CapturedOptions!.Model.Should().Be("gpt-5.4-nano");
+        responses.CapturedOptions!.Model.Should().Be("gpt-6-luna");
         responses.CapturedOptions.StoredOutputEnabled.Should().BeFalse();
         responses.CapturedOptions.TextOptions!.TextFormat.Kind.Should().Be(ResponseTextFormatKind.JsonSchema);
     }
@@ -51,7 +51,7 @@ public class OpenAiVoiceItemParserTests
         };
         var parser = new OpenAiVoiceItemParser(
             responses,
-            new OpenAiVoiceParsingOptions("gpt-4o-mini-transcribe", "gpt-5.4-nano"));
+            new OpenAiVoiceParsingOptions("gpt-4o-mini-transcribe", "gpt-6-luna"));
 
         var result = await parser.ParseAsync("nada", [], CancellationToken.None);
 
@@ -75,7 +75,7 @@ public class OpenAiVoiceItemParserTests
             CancellationToken cancellationToken)
         {
             CapturedOptions = options;
-            return Task.FromResult(new OpenAiResponsesResult(_outputText, Usage, "gpt-5.4-nano", "completed"));
+            return Task.FromResult(new OpenAiResponsesResult(_outputText, Usage, "gpt-6-luna", "completed"));
         }
     }
 }

@@ -73,7 +73,7 @@ try {
         "OPENAI_API_KEY=$openAiApiKey"
         "DATABASE_MIGRATE_ON_STARTUP=true"
         "OpenAI__TranscriptionModel=gpt-4o-mini-transcribe"
-        "OpenAI__ParsingModel=gpt-5.4-nano"
+        "OpenAI__ParsingModel=gpt-6-luna"
         "PushNotifications__BatchWindowSeconds=60"
     ) | Set-Content -Path $apiEnv -Encoding ascii
 

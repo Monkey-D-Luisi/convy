@@ -7,4 +7,5 @@ internal sealed record OpenAiVoiceTokenUsage(
     int? CachedTokenCount,
     int? ReasoningTokenCount,
     int? AudioTokenCount,
-    int? TextTokenCount);
+    int? TextTokenCount,
+    int? CacheWriteTokenCount = null);

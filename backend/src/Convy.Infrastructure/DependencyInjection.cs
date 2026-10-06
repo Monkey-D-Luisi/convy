@@ -110,7 +110,7 @@ public static class DependencyInjection
         }
 
         var transcriptionModel = configuration["OpenAI:TranscriptionModel"] ?? "gpt-4o-mini-transcribe";
-        var parsingModel = configuration["OpenAI:ParsingModel"] ?? "gpt-5.4-nano";
+        var parsingModel = configuration["OpenAI:ParsingModel"] ?? "gpt-6-luna";
         var openAiOptions = new OpenAiVoiceParsingOptions(transcriptionModel, parsingModel);
 
         var openAiClient = new OpenAIClient(apiKey);

@@ -190,7 +190,8 @@ internal sealed class OpenAiVoiceParsingService : IAiVoiceParsingService
             usage?.AudioTokenCount,
             usage?.TextTokenCount,
             audioDurationSeconds,
-            errorType);
+            errorType,
+            usage?.CacheWriteTokenCount);
 
         await _usageRecorder.RecordAsync(request, cancellationToken);
     }
@@ -210,7 +211,8 @@ internal sealed class OpenAiVoiceParsingService : IAiVoiceParsingService
             parsingUsage?.OutputTokenCount,
             parsingUsage?.CachedTokenCount,
             parsingUsage?.ReasoningTokenCount,
-            (long)totalElapsed.TotalMilliseconds);
+            (long)totalElapsed.TotalMilliseconds,
+            parsingUsage?.CacheWriteTokenCount);
     }
 
     private void LogTranscriptionCompleted(

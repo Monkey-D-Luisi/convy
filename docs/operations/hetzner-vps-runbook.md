@@ -88,7 +88,7 @@ $env:FIREBASE_WEB_APP_ID = "<firebase-web-app-id>"
   -ConvyLegalHostname "legal.convyapp.com"
 ```
 
-Optional OpenAI cost settings are supported through `OPENAI_COST_*` environment variables. If omitted, cost estimates can be `null` while counts and latency still appear.
+Parsing defaults now use [GPT-6 Luna Standard short-context prices and usage accounting](gpt-6-luna-voice-parsing.md). `OPENAI_COST_*` overrides remain available. Transcription estimates are `null` unless their duration price is configured. Reasoning tokens are included in output pricing; there is no independent reasoning charge.
 
 ## Deploy
 
