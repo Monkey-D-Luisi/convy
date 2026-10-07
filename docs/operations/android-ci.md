@@ -4,6 +4,6 @@ The mobile CI continues to use setup-android v3, Java 17 and the checked-in Grad
 
 The applications retain compileSdk/targetSdk 35, their existing flavors, signing and Play/internal release configuration. The runner's existing SDK is usable, but the explicit setup also installs these components if they are absent. No obsolete `tools` package is requested.
 
-CI still executes both unit-test tasks and assembles `androidApp:assembleLocalDebug`. This change does not remove mobile validation or modify production release behavior.
+CI still executes both unit-test tasks and assembles `androidApp:assembleLocalDebug`. The Play/internal publishing workflow uses the same supported SDK package list; its signing, track and release behavior remain unchanged.
 
 Sources: [setup-android action inputs](https://github.com/android-actions/setup-android/blob/v3/action.yml), [Android Gradle Plugin 8.7 compatibility](https://developer.android.com/build/releases/past-releases/agp-8-7-0-release-notes).
