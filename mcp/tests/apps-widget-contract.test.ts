@@ -94,7 +94,7 @@ test("MCP package builds a React single-file Apps SDK widget", () => {
   assert.equal(packageJson.dependencies["@modelcontextprotocol/ext-apps"], "1.7.2");
   assert.equal(packageJson.dependencies.react, "19.2.6");
   assert.equal(packageJson.dependencies["react-dom"], "19.2.6");
-  assert.equal(packageJson.devDependencies.vite, "8.0.14");
+  assert.equal(packageJson.devDependencies.vite, "8.0.16");
   assert.equal(packageJson.devDependencies["@vitejs/plugin-react"], "6.0.2");
   assert.equal(packageJson.devDependencies["vite-plugin-singlefile"], "2.3.3");
   assert.equal(packageJson.scripts["build:widget"], "vite build --config widget/vite.config.ts");
