@@ -61,12 +61,12 @@ public class OpsContractTests
         source.Should().Contain("CONVY_MCP_HOSTNAME");
         source.Should().Contain("/health/ready");
         source.Should().Contain("/health");
-        backendRelease.Should().Contain("API_HOSTNAME");
-        backendRelease.Should().Contain("/health/ready");
-        backendRelease.Should().NotContain("PUBLIC_HOSTNAME}/health");
-        backendRelease.Should().Contain("Ensure non-root deploy user");
-        backendRelease.Should().Contain("BOOTSTRAP_DEPLOY_USER");
-        backendRelease.Should().Contain("vars.STAGING_DEPLOY_USER || 'convy-deploy'");
+        backendRelease.Should().Contain("workflow_dispatch:");
+        backendRelease.Should().NotContain("workflow_run:");
+        backendRelease.Should().NotContain("secrets.");
+        backendRelease.Should().NotContain("environment:");
+        backendRelease.Should().NotContain("ssh ");
+        backendRelease.Should().NotContain("scp ");
     }
 
     [Fact]

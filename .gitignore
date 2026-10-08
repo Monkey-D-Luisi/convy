@@ -137,3 +137,8 @@ dist/
 *.tsbuildinfo
 ui_dump.*
 uidump.*
+
+# Local review evidence and Python caches
+artifacts/
+**/__pycache__/
+*.pyc
