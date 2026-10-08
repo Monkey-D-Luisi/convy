@@ -170,7 +170,6 @@ jobs:
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     permissions:
       contents: read
       pull-requests: read
@@ -189,18 +188,29 @@ jobs:
           node-version: '22'
 
       - name: Review dependency changes
+        if: github.event_name == 'pull_request'
         id: dependency-review
         uses: actions/dependency-review-action@v4
         continue-on-error: true
 
       - name: Fallback dependency audit
-        if: steps.dependency-review.outcome == 'failure'
+        if: github.event_name == 'push' || steps.dependency-review.outcome == 'failure'
         run: |
           echo "::warning::GitHub Dependency Review is unavailable for this repository. Running package-manager vulnerability checks instead."
+          dotnet restore backend/Convy.slnx
           dotnet list backend/Convy.slnx package --vulnerable --include-transitive
-          cd dashboard && npm audit --audit-level=high
-          cd ../auth && npm audit --audit-level=high
-          cd ../mcp && npm audit --audit-level=high
+      - name: Package-manager security policy
+        run: |
+          node --test .github/scripts/npm-security.test.mjs
+          npm --prefix dashboard run security:audit
+          npm --prefix auth run security:audit
+          npm --prefix mcp run security:audit
+      - name: Preserve dependency findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit
+          path: artifacts/dependency-audit/
 
   secret-scan:
     name: Secret Scan
@@ -279,6 +289,7 @@ jobs:
         run: |
           docker build -f docker/backend/Dockerfile backend
           docker build -f docker/worker/Dockerfile backend
-          docker build -f dashboard/Dockerfile dashboard
-          docker build -f auth/Dockerfile auth
-          docker build -f mcp/Dockerfile mcp
+          docker build -t convy-dashboard:ci -f dashboard/Dockerfile dashboard
+          docker build -t convy-auth:ci -f auth/Dockerfile auth
+          docker build -t convy-mcp:ci -f mcp/Dockerfile mcp
+          node .github/scripts/verify-images.mjs convy-dashboard:ci convy-auth:ci convy-mcp:ci
