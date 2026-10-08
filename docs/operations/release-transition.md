@@ -1,6 +1,6 @@
 # Release automation transition
 
-This change removes automatic deployment from `Backend Staging Release`. A manual invocation only prints the release boundary. It cannot connect to a server. This branch does not control the workflow still installed on master.
+This change removes automatic deployment from `Backend Staging Release`. A manual invocation only prints the release boundary. It cannot connect to a server. This branch does not control the workflow still installed on master. It also carries the previously reviewed OpenAPI/Testcontainers dependency and Android SDK installation corrections needed to validate the master-based control PR. It contains no Luna parsing or release-controller changes.
 
 Before **any merge**, obtain explicit owner approval to disable the installed workflow through the Actions API/UI, cancel queued/in-progress runs of that workflow, and verify it remains disabled with no deployment runs. Disabling a workflow is a GitHub control-plane change requiring separate approval. It must happen before merging this PR, the Luna PR, or the release implementation PR.
 
