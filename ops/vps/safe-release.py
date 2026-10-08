@@ -393,14 +393,17 @@ def apply(profile_path, bundle, manifest_digest, approval):
             state['status'] = 'ACCEPTED'
             save_state(path, state)
             return {'status': 'ACCEPTED', 'sourceSha': manifest['sourceSha'], 'services': services, 'statePath': str(path)}
-        except Exception:
+        except Exception as failure:
+            reason = str(failure) if isinstance(failure, ReleaseError) else 'unexpected_error_output_withheld'
+            state['failureReason'] = reason
+            save_state(path, state)
             try:
                 restore(path, profile)
             except Exception:
                 state['status'] = 'RECOVERY_REQUIRED'
                 save_state(path, state)
                 raise ReleaseError('automatic_rollback_failed_manual_recovery_required') from None
-            raise ReleaseError('release_failed_previous_version_restored') from None
+            raise ReleaseError('release_failed_previous_version_restored:' + reason) from None
 
 def rollback_plan(profile_path, state_path):
     profile = read_profile(profile_path)

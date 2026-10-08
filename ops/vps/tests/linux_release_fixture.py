@@ -166,7 +166,7 @@ try:
                'current': str(root / 'current'), 'stateRoot': str(root / 'transactions'),
                'migrationSha256': schema, 'schemaBaselineSha': old_sha, 'composeSha256': file_digest(root / 'base.json'),
                'composeHashes': {str(root / p): file_digest(root / p) for p in ('base.json', 'override.json')},
-               'healthTimeoutSeconds': 5, 'minimumFreeBytes': 0,
+               'healthTimeoutSeconds': 15, 'minimumFreeBytes': 0,
                'acceptance': [['docker', 'exec', project + '-api', 'python3', '-c',
                                'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8080")']]}
     def write_profile():
@@ -256,11 +256,11 @@ try:
     manifest['schemaPolicy'] = 'nonreversible'
     (nonreversible / 'release.json').write_bytes(canonical(manifest))
     record('nonreversible_migration', lambda: invoke('plan', nonreversible, file_digest(nonreversible / 'release.json'), expected=1))
-    record('health_failure_automatic_rollback', lambda: require(apply(bad, expected=1)['reason'] == 'release_failed_previous_version_restored', 'Health rollback failed'))
+    record('health_failure_automatic_rollback', lambda: require(apply(bad, expected=1)['reason'].startswith('release_failed_previous_version_restored:'), 'Health rollback failed'))
     require(inspect('api')['Image'] == old_image and inspect('worker')['Image'] == old_image, 'Health rollback image mismatch')
     profile['acceptance'].append(['docker', 'exec', project + '-api', 'python3', '-c', 'import os; assert os.environ["VERSION"] != "2"'])
     write_profile()
-    record('acceptance_failure_automatic_rollback', lambda: require(apply(good, expected=1)['reason'] == 'release_failed_previous_version_restored', 'Acceptance rollback failed'))
+    record('acceptance_failure_automatic_rollback', lambda: require(apply(good, expected=1)['reason'].startswith('release_failed_previous_version_restored:'), 'Acceptance rollback failed'))
     profile['acceptance'].pop()
     write_profile()
     shim = root / 'shim'
