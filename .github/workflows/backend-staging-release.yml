@@ -1,144 +1,17 @@
 name: Backend Staging Release
 
+# There is no CI-completion trigger and no deployment job.
 on:
-  workflow_run:
-    workflows: ["Continuous Integration"]
-    branches: [master]
-    types: [completed]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: backend-staging-release
-  cancel-in-progress: false
-
-env:
-  DEPLOY_USER: ${{ vars.STAGING_DEPLOY_USER || 'convy-deploy' }}
-  BOOTSTRAP_DEPLOY_USER: ${{ vars.STAGING_BOOTSTRAP_DEPLOY_USER || 'root' }}
-  DEPLOY_SCRIPT: ${{ vars.STAGING_DEPLOY_SCRIPT || 'ops/vps/deploy-release.sh' }}
-
 jobs:
-  deploy-staging:
-    name: Deploy staging
+  release-disabled:
     runs-on: ubuntu-latest
-    if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_branch == 'master'
-    environment: staging
-
     steps:
-      - name: Checkout CI commit
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-
-      - name: Configure SSH
-        env:
-          DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
-          SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
-          STAGING_SSH_KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+      - name: Explain the release boundary
         run: |
-          if [ -z "${STAGING_SSH_KNOWN_HOSTS}" ]; then
-            echo "Set STAGING_SSH_KNOWN_HOSTS to the pinned staging host key entry." >&2
-            exit 1
-          fi
-          mkdir -p ~/.ssh
-          printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/convy_deploy
-          chmod 600 ~/.ssh/convy_deploy
-          ssh-keygen -y -f ~/.ssh/convy_deploy > ~/.ssh/convy_deploy.pub
-          printf '%s\n' "${STAGING_SSH_KNOWN_HOSTS}" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
-          ssh-keygen -F "${DEPLOY_HOST}" -f ~/.ssh/known_hosts >/dev/null
-
-      - name: Ensure non-root deploy user
-        if: ${{ vars.STAGING_DEPLOY_USER == '' }}
-        env:
-          DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
-        run: |
-          deploy_public_key_b64="$(base64 -w0 ~/.ssh/convy_deploy.pub)"
-          ssh -i ~/.ssh/convy_deploy "${BOOTSTRAP_DEPLOY_USER}@${DEPLOY_HOST}" \
-            "DEPLOY_USER='${DEPLOY_USER}' DEPLOY_PUBLIC_KEY_B64='${deploy_public_key_b64}' bash -s" <<'EOF'
-          set -euo pipefail
-          if [ "$(id -u)" -ne 0 ]; then
-            echo "Bootstrap deploy user must have root privileges." >&2
-            exit 1
-          fi
-          if ! id -u "${DEPLOY_USER}" >/dev/null 2>&1; then
-            useradd --create-home --shell /bin/bash "${DEPLOY_USER}"
-          fi
-          install -d -m 700 -o "${DEPLOY_USER}" -g "${DEPLOY_USER}" "/home/${DEPLOY_USER}/.ssh"
-          printf '%s' "${DEPLOY_PUBLIC_KEY_B64}" | base64 -d > "/home/${DEPLOY_USER}/.ssh/authorized_keys.tmp"
-          touch "/home/${DEPLOY_USER}/.ssh/authorized_keys"
-          if ! grep -qxF "$(cat "/home/${DEPLOY_USER}/.ssh/authorized_keys.tmp")" "/home/${DEPLOY_USER}/.ssh/authorized_keys"; then
-            cat "/home/${DEPLOY_USER}/.ssh/authorized_keys.tmp" >> "/home/${DEPLOY_USER}/.ssh/authorized_keys"
-          fi
-          rm -f "/home/${DEPLOY_USER}/.ssh/authorized_keys.tmp"
-          chown "${DEPLOY_USER}:${DEPLOY_USER}" "/home/${DEPLOY_USER}/.ssh/authorized_keys"
-          chmod 600 "/home/${DEPLOY_USER}/.ssh/authorized_keys"
-          printf '%s\n' "${DEPLOY_USER} ALL=(root) NOPASSWD: /usr/bin/mkdir, /usr/bin/tar, /usr/bin/find, /usr/bin/bash" > "/etc/sudoers.d/${DEPLOY_USER}"
-          chmod 440 "/etc/sudoers.d/${DEPLOY_USER}"
-          EOF
-
-      - name: Package release
-        run: |
-          tar \
-            --exclude='.git' \
-            --exclude='backend/**/bin' \
-            --exclude='backend/**/obj' \
-            --exclude='mobile/**/build' \
-            --exclude='mobile/.gradle' \
-            --exclude='infra/**/.terraform' \
-            --exclude='infra/**/terraform.tfstate*' \
-            --exclude='infra/**/terraform.tfvars' \
-            --exclude='infra/**/tfplan-*' \
-            -czf /tmp/convy-release.tar.gz .
-
-      - name: Upload release
-        env:
-          DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
-          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: |
-          ssh -i ~/.ssh/convy_deploy "${DEPLOY_USER}@${DEPLOY_HOST}" "bash -s" <<EOF
-          set -euo pipefail
-          release_dir="/opt/convy/releases/${RELEASE_SHA}"
-          if [ "\$(id -u)" -eq 0 ]; then
-            mkdir -p "\$release_dir"
-          else
-            sudo mkdir -p "\$release_dir"
-          fi
-          EOF
-          scp -i ~/.ssh/convy_deploy /tmp/convy-release.tar.gz \
-            "${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/convy-release.tar.gz"
-
-      - name: Activate release
-        env:
-          DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
-          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: |
-          ssh -i ~/.ssh/convy_deploy "${DEPLOY_USER}@${DEPLOY_HOST}" "bash -s" <<EOF
-          set -euo pipefail
-          release_dir="/opt/convy/releases/${RELEASE_SHA}"
-          deploy_script="${DEPLOY_SCRIPT}"
-          run_as_root() {
-            if [ "\$(id -u)" -eq 0 ]; then
-              "\$@"
-            else
-              sudo "\$@"
-            fi
-          }
-          run_as_root tar -xzf /tmp/convy-release.tar.gz -C "\$release_dir"
-          run_as_root find "\$release_dir" -name '*.sh' -exec sed -i 's/\r$//' {} +
-          run_as_root bash "\$release_dir/\$deploy_script" "${RELEASE_SHA}"
-          EOF
-
-      - name: External health check
-        env:
-          API_HOSTNAME: ${{ secrets.STAGING_API_HOSTNAME || secrets.STAGING_PUBLIC_HOSTNAME }}
-        run: |
-          if [ -z "${API_HOSTNAME}" ]; then
-            echo "Set STAGING_PUBLIC_HOSTNAME or STAGING_API_HOSTNAME for staging health checks." >&2
-            exit 1
-          fi
-          curl -fsS --retry 10 --retry-delay 5 "https://${API_HOSTNAME}/health/ready"
+          echo 'Automatic deployment is disabled. A reviewed immutable artifact and explicit operator approval are required.'
+          echo 'This workflow has no SSH credentials, environment, or production access.'

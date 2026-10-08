@@ -1,0 +1,52 @@
+name: Build Reviewed Release Artifact
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact reviewed source commit with successful CI
+        required: true
+        type: string
+      baseline_sha:
+        description: Exact deployed schema baseline commit
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate exact source and CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          BASELINE_SHA: ${{ inputs.baseline_sha }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, subprocess
+          for key in ('SOURCE_SHA', 'BASELINE_SHA'):
+              if not re.fullmatch('[a-f0-9]{40}', os.environ[key]):
+                  raise SystemExit('Exact commit required')
+          command = ['gh', 'api', 'repos/' + os.environ['GITHUB_REPOSITORY'] + '/actions/workflows/ci.yml/runs?head_sha=' + os.environ['SOURCE_SHA']]
+          runs = json.loads(subprocess.check_output(command))['workflow_runs']
+          if not runs or runs[0]['conclusion'] != 'success':
+              raise SystemExit('Successful latest exact-head CI required')
+          PY
+      - name: Build immutable Linux artifact without production access
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          BASELINE_SHA: ${{ inputs.baseline_sha }}
+        run: python3 ops/vps/build-release.py --source "$SOURCE_SHA" --baseline "$BASELINE_SHA" --output artifacts/release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: convy-release-${{ inputs.source_sha }}
+          path: artifacts/release/
+          retention-days: 7
+          compression-level: 0
