@@ -9,6 +9,8 @@ if [ "$(id -u)" -ne 0 ]; then
   exec sudo --preserve-env=APP_ROOT,DATA_DEVICE,ALLOW_FORMAT_DATA_DEVICE "$0" "$@"
 fi
 
+source /usr/local/libexec/shared-staging-lock.sh
+
 if ! command -v docker >/dev/null 2>&1; then
   install -m 0755 -d /etc/apt/keyrings
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc

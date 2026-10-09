@@ -1,6 +1,5 @@
 """Installed Linux broker policy; never imported from an uploaded release."""
 from contextlib import contextmanager
-import fcntl
 import importlib.util
 import json
 import os
@@ -13,6 +12,7 @@ from datetime import datetime, timezone
 
 from release_common import ReleaseError, canonical, file_digest, json_read, private_write, require, run, verify_bundle
 from release_content import STATIC_RECOVERY_BYTES
+from shared_staging_lock import LockError, lease_fds, shared_lock, writer
 from staging_common import REPOSITORY, SIGNER, verify_ci
 
 spec = importlib.util.spec_from_file_location('release', Path(__file__).with_name('safe-release.py'))
@@ -22,19 +22,11 @@ spec.loader.exec_module(release)
 
 @contextmanager
 def host_lock(path):
-    path = Path(path)
-    require(path.is_absolute() and path.parent.is_dir() and not path.is_symlink(), 'invalid_shared_lock')
-    parent = path.parent.stat()
-    require(not path.parent.is_symlink() and parent.st_uid == os.geteuid() and
-            (parent.st_mode & 0o022 == 0 or parent.st_mode & 0o1000 != 0), 'shared_lock_parent_allows_replacement')
-    fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
-    with os.fdopen(fd, 'a') as lock:
-        require(os.fstat(lock.fileno()).st_uid == os.geteuid() and os.fstat(lock.fileno()).st_mode & 0o077 == 0, 'unprotected_shared_lock')
-        try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            raise ReleaseError('shared_host_busy_retry_later') from None
-        yield
+    try:
+        with shared_lock(path):
+            yield
+    except LockError as error:
+        raise ReleaseError(str(error)) from None
 
 
 def tree_bytes(path):
@@ -109,6 +101,7 @@ def protected_states(profile):
     return states, keep
 
 
+@writer
 def maintenance(profile, live_bundle=None, pressure=False):
     """Called only under the shared lock. Never prune a daemon, volume or backup."""
     states, keep = protected_states(profile)
@@ -152,9 +145,9 @@ def maintenance(profile, live_bundle=None, pressure=False):
         require(image.startswith('sha256:') and len(image) == 71, 'invalid_cleanup_image')
         if image in {c['Image'] for c in release.containers().values()}:
             continue
-        result = subprocess.run(['docker', 'image', 'rm', image], capture_output=True, timeout=60)
+        result = subprocess.run(pass_fds=lease_fds(), args=['docker', 'image', 'rm', image], capture_output=True, timeout=60)
         image_results.append({'image': image, 'removed': result.returncode == 0})
-        if result.returncode == 0 or subprocess.run(['docker', 'image', 'inspect', image], capture_output=True).returncode != 0:
+        if result.returncode == 0 or subprocess.run(pass_fds=lease_fds(), args=['docker', 'image', 'inspect', image], capture_output=True).returncode != 0:
             remaining.discard(image)
     private_write(ledger, canonical(sorted(remaining)))
     incoming = Path(profile['incomingRoot'])
@@ -170,6 +163,7 @@ def maintenance(profile, live_bundle=None, pressure=False):
     return {'removedArchives': removed, 'images': image_results, 'protectedStates': len(keep)}
 
 
+@writer
 def recover_interrupted(profile):
     root = Path(profile['stateRoot'])
     for path in sorted(root.glob('*/state.json')):
@@ -208,7 +202,7 @@ def provenance(bundle, request, profile):
             '--signer-digest', request['sourceSha'], '--source-digest', request['sourceSha'],
             '--source-ref', 'refs/heads/master', '--deny-self-hosted-runners', '--format', 'json']
     try:
-        result = subprocess.run(argv, capture_output=True, timeout=60, env=environment)
+        result = subprocess.run(pass_fds=lease_fds(), args=argv, capture_output=True, timeout=60, env=environment)
         require(result.returncode == 0, 'artifact_provenance_failed')
         verified = json.loads(result.stdout)
         require(bool(verified), 'artifact_attestation_missing')
@@ -220,6 +214,7 @@ def provenance(bundle, request, profile):
     return manifest
 
 
+@writer
 def refresh_recovery(profile):
     """Fresh pg_dump plus a real restore in a separate bounded, networkless container."""
     config = release.effective(profile)
@@ -238,7 +233,7 @@ def refresh_recovery(profile):
     target = prefix / ('pending-' + str(time.time_ns()) + '.dump')
     fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(fd, 'wb') as output:
-        result = subprocess.run(['docker', 'exec', name, 'sh', '-c', 'exec pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc --no-owner --no-acl'], stdout=output, stderr=subprocess.PIPE, timeout=120)
+        result = subprocess.run(pass_fds=lease_fds(), args=['docker', 'exec', name, 'sh', '-c', 'exec pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc --no-owner --no-acl'], stdout=output, stderr=subprocess.PIPE, timeout=120)
     require(result.returncode == 0, 'fresh_backup_failed')
     checksum = file_digest(target)
     restore_name = 'convy-cd-restore-' + uuid.uuid4().hex[:12]
@@ -276,6 +271,7 @@ def refresh_recovery(profile):
         old.unlink()
 
 
+@writer
 def automatic(profile_path, bundle, request, verify=verify_ci, attest=provenance, backup=refresh_recovery):
     """Caller holds shared lock, including transfer. Injectable boundaries are fixture-only."""
     profile = release.read_profile(profile_path)

@@ -11,6 +11,11 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+& ssh -i $SshKeyPath "${SshUser}@${HostName}" 'test ! -e /run/lock/shared-staging-deployment.lock && test ! -e /etc/convy-staging/profile.json'
+if ($LASTEXITCODE -ne 0) {
+    throw "OCI fallback secret push is unavailable on shared staging or the host could not be inspected."
+}
+
 
 if (-not (Test-Path $SshKeyPath)) {
     throw "SSH key not found: $SshKeyPath"

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+source /usr/local/libexec/shared-staging-lock.sh
 
 BACKUP_PATH="${1:?Usage: restore-postgres.sh <backup-file> [target-db]}"
 APP_ROOT="${APP_ROOT:-/opt/convy}"

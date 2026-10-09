@@ -2,7 +2,7 @@
 
 Hetzner is **shared staging**. There is no production environment. Local development uses local Docker and developer credentials; a future production environment will require its own topology, recovery objectives and credentials.
 
-The normal target flow is `PR -> review/CI -> merge master -> automatic staging release -> acceptance -> automatic cleanup`. This source is prepared for review and remains inactive: the repository activation variable is absent/false, the broker has not been installed, and no timers or environment protections have been changed. First activation requires a separate operator decision. Ordinary compatible releases after activation do not ask for individual approval.
+The normal target flow is `PR -> review/CI -> merge master -> automatic staging release -> acceptance -> automatic cleanup`. The disabled bootstrap was completed on 2026-10-09: frozen broker/recovery tools are installed, the root profile has `automaticEnabled: false`, and the repository activation variable is absent/false. Preserve those installed bytes and gates. The cross-product source changes in [shared-staging-lock.md](shared-staging-lock.md) require separately authorized installation into a new frozen tool directory, writer reconciliation and live coordination verification before activation. First activation requires a separate operator decision. Ordinary compatible releases after activation do not ask for individual approval.
 
 ## Historical decisions and retained purposes
 
@@ -59,7 +59,7 @@ One-time administrator setup must create the root-owned non-writable `shared/rel
 Static source is limited to 64 MiB/4096 entries; each prior host tree has the same limit. Capacity reserves an additional 336 MiB for both prior trees, bounded archive overhead, temporary rollback extraction and the largest atomic file replacement, plus source extraction. Journals follow the existing current/previous/failure retention policy. Symlinks, special files, archive traversal, duplicate entries and unexpected bind roots fail closed. Host writers must respect the common lock. Managed release env files must have a final newline, UTF-8 without BOM and no duplicate metadata keys; planning rejects unsupported input before activation.
 10. Bounded health and root-reviewed regression commands run before the current pointer/accepted ledger changes. Failures restore affected application images/configuration. Cleanup and a result record follow acceptance. A watchdog can recover an interrupted journal without starting a new release.
 
-Converso's future CD, backup and maintenance writers must use **the same lock inode/path**, root ownership and nonblocking `flock` contract for their entire resource-consuming transaction. Separate per-product state directories remain independent. Existing writers that bypass this contract must be reconciled during first activation; this source does not change Converso.
+Convy and Converso deployment, backup and maintenance writers must use **the same lock inode/path**, root ownership and nonblocking `flock` contract for their entire resource-consuming transaction. Separate per-product state directories remain independent. The companion private infrastructure source adopts the contract for Converso and shared-host writers; installed writers and retained legacy paths still require reconciliation before first activation. Source fixtures do not prove live VPS coordination.
 
 ## Disk, memory and retention policy
 

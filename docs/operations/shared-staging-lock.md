@@ -1,0 +1,17 @@
+# Shared staging writer adoption
+
+This source change preserves the completed disabled Convy bootstrap. Hetzner is shared staging, not production. Source tests do not install writers, enable timers or activate CD.
+
+The common lease is `/run/lock/shared-staging-deployment.lock`, root:root 0600, existing regular inode only. The guard never creates, truncates, replaces or unlinks it. It fails closed on contention or unsafe/missing state. Common lock comes before product and edge locks and covers the complete receive/backup/apply/accept/rollback/retention/cleanup transaction. Existing resource, schema, provenance, model/credential preservation and image-ownership safeguards remain.
+
+The byte-identical guard is owned by the private infrastructure repository and included here for Convy's immutable controller export. Shell writers require the separately installed root-protected `/usr/local/libexec/shared-staging-lock.sh` and `shared_staging_lock.py`. Freeze those files outside `current`; add `shared_staging_lock.py` to the exact-SHA Convy administration package when a separate owner-approved tool upgrade occurs. Do not edit or replace the existing disabled bootstrap tools as part of a product release.
+
+FD 8 carries the lease; FD 9 remains available for existing backup/product locks. An environment marker cannot bypass locking: nested calls validate the kernel's exclusive FLOCK, root ownership and matching device/inode. They borrow the descriptor without unlocking. Resource subprocesses inherit it explicitly. A surviving child retains the lease after parent termination. Detached work and daemon operations need explicit quiescence checks before recovery; the tested local process chain is not a live VPS guarantee.
+
+`safe-release.py` apply/restore, automatic release/recovery/ledger cleanup, offsite export, PostgreSQL backup/catalog validation/restore/restore verification/pruning and installers all enter under the common lease. Backup buckets, retention, registration, checksums, restic failure reporting and product isolation stay intact. Metrics and HTTP health collectors remain independent.
+
+The old multi-session `transfer-release.py` and broad `push-secrets.ps1` are retired before any transfer or secret modification. Use the constrained staging broker for eventual automatic delivery; a separately reviewed manual exception must receive, verify, load, apply, accept/rollback and clean up in one pinned remote invocation under the frozen administrator runner. Do not split the lease across SSH/SCP sessions. OCI fallback writers refuse a host with the shared lock or staging profile, preserving their separate fallback purpose.
+
+The installed old current/retained Convy source still includes unsafe direct deployment paths. They are unchanged by this PR. Before activation, an authorized installation must redirect/quarantine those callers, freeze updated helpers and reconcile Converso/commercial/edge/OS maintenance writers too. Root's unrestricted Docker/shell access cannot be enforced by repository-only advisory locking; raw commands are not approved operational entry points.
+
+The complete shared contract and installation decisions are documented in the companion private infrastructure PR's `docs/shared-staging-lock.md`. Both flags remain off. Keep nano, transcription/pricing/credential bytes, databases, Caddy, networks and volumes unchanged during this source task. Live recovery and first activation still require their separately approved evidence.

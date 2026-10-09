@@ -5,4 +5,4 @@ After=docker.service
 
 [Service]
 Type=oneshot
-ExecStart=/opt/convy/current/ops/vps/backups/restore-verify-postgres.sh
+ExecStart=/usr/bin/python3 -I -B /usr/local/libexec/shared_staging_lock.py -- /bin/bash /opt/convy/current/ops/vps/backups/restore-verify-postgres.sh

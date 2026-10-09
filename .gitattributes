@@ -1,1 +1,4 @@
 *.sh text eol=lf
+
+# Keep the cross-repository lease module byte-identical.
+ops/vps/shared_staging_lock.py text eol=lf

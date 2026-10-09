@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+source /usr/local/libexec/shared-staging-lock.sh
 
 APP_ROOT="${APP_ROOT:-/opt/convy}"
 ENV_FILE="${ENV_FILE:-$APP_ROOT/shared/api.env}"

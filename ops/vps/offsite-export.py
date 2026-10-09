@@ -5,11 +5,13 @@ import json
 import os
 from pathlib import Path
 import subprocess
+from shared_staging_lock import LockError, lease_fds, writer
 from datetime import datetime, timezone
 
 from release_common import ReleaseError, file_digest, json_read, require
 
 
+@writer
 def export(config_path, backup):
     config_path = Path(config_path)
     require(not config_path.is_symlink() and config_path.stat().st_uid == os.geteuid() and config_path.stat().st_mode & 0o077 == 0, 'offsite_config_not_private')
@@ -22,7 +24,7 @@ def export(config_path, backup):
     password = Path(environment['RESTIC_PASSWORD_FILE'])
     require(not password.is_symlink() and password.stat().st_uid == os.geteuid() and password.stat().st_mode & 0o077 == 0, 'restic_password_not_private')
     try:
-        result = subprocess.run(['restic', 'backup', '--json', '--tag', 'convy-cd', str(backup)], capture_output=True, env=environment, timeout=90)
+        result = subprocess.run(pass_fds=lease_fds(), args=['restic', 'backup', '--json', '--tag', 'convy-cd', str(backup)], capture_output=True, env=environment, timeout=90)
         require(result.returncode == 0, 'offsite_upload_failed')
         summaries = [json.loads(line) for line in result.stdout.splitlines() if json.loads(line).get('message_type') == 'summary']
         snapshot = summaries[-1]['snapshot_id']
@@ -30,12 +32,12 @@ def export(config_path, backup):
         try:
             fd = os.open(output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
             with os.fdopen(fd, 'wb') as stream:
-                restored = subprocess.run(['restic', 'dump', snapshot, str(backup)], stdout=stream, stderr=subprocess.PIPE, env=environment, timeout=60)
+                restored = subprocess.run(pass_fds=lease_fds(), args=['restic', 'dump', snapshot, str(backup)], stdout=stream, stderr=subprocess.PIPE, env=environment, timeout=60)
             require(restored.returncode == 0 and file_digest(output) == file_digest(backup), 'offsite_retrieval_checksum_mismatch')
         finally:
             output.unlink(missing_ok=True)
         # This tag/path family only. The existing daily/weekly/monthly policy remains separate.
-        retention = subprocess.run(['restic', 'forget', '--tag', 'convy-cd', '--group-by', 'host,tags', '--keep-last', '2', '--keep-daily', '7',
+        retention = subprocess.run(pass_fds=lease_fds(), args=['restic', 'forget', '--tag', 'convy-cd', '--group-by', 'host,tags', '--keep-last', '2', '--keep-daily', '7',
                                     '--keep-weekly', '5', '--keep-monthly', '4', '--prune'], capture_output=True, env=environment, timeout=90)
         require(retention.returncode == 0, 'offsite_retention_failed')
         return {'backupSha256': file_digest(backup), 'verifiedEncryptedRestore': True,
@@ -52,5 +54,5 @@ if __name__ == '__main__':
     try:
         print(json.dumps(export(args.config, args.backup)))
     except Exception as error:
-        print(json.dumps({'status': 'FAILED', 'reason': str(error) if isinstance(error, ReleaseError) else 'offsite_export_failed_output_withheld'}))
+        print(json.dumps({'status': 'FAILED', 'reason': str(error) if isinstance(error, (ReleaseError, LockError)) else 'offsite_export_failed_output_withheld'}))
         raise SystemExit(1)

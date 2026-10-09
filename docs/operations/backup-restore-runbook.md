@@ -1,5 +1,7 @@
 # Backup And Restore Runbook
 
+On the shared staging host, every backup, restore, verification and retention worker requires the [common lease](shared-staging-lock.md). The source units/writers adopt it; installed legacy copies do not yet. Timer installation/enabling and actual backup/restore work require separate owner authorization after frozen writer installation and real off-host recovery/alert tests. The commands below describe future authorized operations, not completion of those gates.
+
 Backups run on the Hetzner VPS and store PostgreSQL custom-format dumps locally under `/opt/convy/backups/postgres`. When restic is configured, the same backup run uploads the dump and metadata to encrypted offsite storage.
 
 ## Files

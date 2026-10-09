@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+from shared_staging_lock import lease_fds
 import tarfile
 
 SERVICES = ('api', 'worker', 'dashboard', 'auth', 'mcp')
@@ -32,9 +33,9 @@ def run(args, data=None, timeout=600):
     try:
         if isinstance(data, Path):
             with data.open('rb') as stream:
-                result = subprocess.run([str(a) for a in args], stdin=stream, capture_output=True, timeout=timeout)
+                result = subprocess.run(pass_fds=lease_fds(), args=[str(a) for a in args], stdin=stream, capture_output=True, timeout=timeout)
         else:
-            result = subprocess.run([str(a) for a in args], input=data, capture_output=True, timeout=timeout)
+            result = subprocess.run(pass_fds=lease_fds(), args=[str(a) for a in args], input=data, capture_output=True, timeout=timeout)
     except (OSError, subprocess.TimeoutExpired):
         raise ReleaseError('command_unavailable_or_timed_out') from None
     require(result.returncode == 0, 'command_failed_output_withheld')

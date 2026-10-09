@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ -e /run/lock/shared-staging-deployment.lock || -e /etc/convy-staging/profile.json ]]; then
+  echo 'OCI fallback writers are disabled on shared staging. Use the coordinated VPS tooling.' >&2
+  exit 75
+fi
 
 APP_ROOT="${APP_ROOT:-/opt/convy}"
 ENV_FILE="$APP_ROOT/shared/api.env"
