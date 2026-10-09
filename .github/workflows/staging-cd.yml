@@ -96,7 +96,7 @@ jobs:
           SOURCE: ${{ needs.build.outputs.source }}
         run: |
           set -euo pipefail
-          gh attestation verify release/release.json --repo Monkey-D-Luisi/convy --bundle release/attestation.json --signer-workflow Monkey-D-Luisi/convy/.github/workflows/staging-cd.yml --cert-identity https://github.com/Monkey-D-Luisi/convy/.github/workflows/staging-cd.yml@refs/heads/master --source-ref refs/heads/master --source-digest "$SOURCE" --signer-digest "$SOURCE" --deny-self-hosted-runners
+          gh attestation verify release/release.json --repo Monkey-D-Luisi/convy --bundle release/attestation.json --cert-identity https://github.com/Monkey-D-Luisi/convy/.github/workflows/staging-cd.yml@refs/heads/master --source-ref refs/heads/master --source-digest "$SOURCE" --signer-digest "$SOURCE" --deny-self-hosted-runners
       - name: Constrained transfer and automatic acceptance
         env:
           GH_TOKEN: ${{ github.token }}

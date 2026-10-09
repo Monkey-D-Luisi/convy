@@ -129,7 +129,7 @@ def adopt(config, live, profile):
         if profile.get('applicationCaps') and service in SERVICES:
             host = container['HostConfig']
             if host.get('Memory'):
-                value['mem_limit'] = host['Memory']
+                value['mem_limit'] = str(host['Memory'])
             if host.get('NanoCpus'):
                 value['cpus'] = host['NanoCpus'] / 1_000_000_000
             logging = host.get('LogConfig', {})
@@ -200,7 +200,7 @@ def plan(profile_path, bundle, manifest_digest):
         name = value['container_name']
         if service in profile.get('applicationCaps', {}):
             limits = profile['applicationCaps'][service]
-            value['mem_limit'] = limits['memoryBytes']
+            value['mem_limit'] = str(limits['memoryBytes'])
             value['cpus'] = limits['cpus']
             value['logging'] = {'driver': 'json-file', 'options': profile['applicationLogOptions']}
         if (profile.get('modelPolicy') == 'preserve' and name in live and

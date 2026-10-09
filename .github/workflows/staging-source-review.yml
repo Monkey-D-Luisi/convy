@@ -31,7 +31,7 @@ jobs:
           set -euo pipefail
           signer="${GITHUB_REPOSITORY}/.github/workflows/staging-source-review.yml"
           identity="https://github.com/${signer}@${GITHUB_REF}"
-          gh attestation verify review-subject.txt --repo "$GITHUB_REPOSITORY" --bundle "$BUNDLE" --signer-workflow "$signer" --cert-identity "$identity" --source-ref "$GITHUB_REF" --source-digest "$GITHUB_SHA" --signer-digest "$GITHUB_SHA" --deny-self-hosted-runners
+          gh attestation verify review-subject.txt --repo "$GITHUB_REPOSITORY" --bundle "$BUNDLE" --cert-identity "$identity" --source-ref "$GITHUB_REF" --source-digest "$GITHUB_SHA" --signer-digest "$GITHUB_SHA" --deny-self-hosted-runners
           if gh attestation verify review-subject.txt --repo "$GITHUB_REPOSITORY" --bundle "$BUNDLE" --cert-identity "https://github.com/${signer}@refs/heads/master" >/dev/null 2>&1; then exit 1; fi
           if gh attestation verify review-subject.txt --repo "$GITHUB_REPOSITORY" --bundle "$BUNDLE" --source-digest 0000000000000000000000000000000000000000 >/dev/null 2>&1; then exit 1; fi
           printf 'corrupt\n' >> review-subject.txt

@@ -199,7 +199,7 @@ def provenance(bundle, request, profile):
     token = Path(profile['githubTokenFile']).read_text().strip()
     environment = {**os.environ, 'GH_TOKEN': token}
     argv = ['gh', 'attestation', 'verify', str(Path(bundle) / 'release.json'), '--repo', REPOSITORY,
-            '--bundle', str(Path(bundle) / 'attestation.json'), '--signer-workflow', SIGNER,
+            '--bundle', str(Path(bundle) / 'attestation.json'),
             '--cert-identity', 'https://github.com/' + SIGNER + '@refs/heads/master',
             '--signer-digest', request['sourceSha'], '--source-digest', request['sourceSha'],
             '--source-ref', 'refs/heads/master', '--deny-self-hosted-runners', '--format', 'json']
