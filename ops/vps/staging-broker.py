@@ -17,16 +17,13 @@ PROFILE = '/etc/convy-staging/profile.json'
 FILES = {'release.json', 'release.sha256', 'images.tar', 'source.tar', 'attestation.json'}
 
 
-class BoundedStream:
-    def __init__(self, stream, maximum):
-        self.stream = stream
-        self.remaining = maximum
-
-    def read(self, size):
-        require(self.remaining > 0 and size >= 0, 'upload_stream_limit_exceeded')
-        value = self.stream.read(min(size, self.remaining))
-        self.remaining -= len(value)
-        return value
+def read_exact(stream, size):
+    value = bytearray()
+    while len(value) < size:
+        chunk = stream.read(size - len(value))
+        require(bool(chunk), 'partial_upload')
+        value.extend(chunk)
+    return bytes(value)
 
 
 def receive(stream, profile, header):
@@ -50,24 +47,32 @@ def receive(stream, profile, header):
     bundle = incoming / ('incoming-' + uuid.uuid4().hex)
     bundle.mkdir(mode=0o700)
     received = set()
-    with tarfile.open(fileobj=BoundedStream(stream, total + 65536), mode='r|') as archive:
-        for entry in archive:
-            require(entry.name in FILES and entry.name not in received and entry.isfile() and entry.size == files[entry.name]['size'], 'unsafe_upload_archive')
-            source = archive.extractfile(entry)
-            checksum = hashlib.sha256()
-            remaining = entry.size
-            fd = os.open(bundle / entry.name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
-            with os.fdopen(fd, 'wb') as output:
-                while remaining:
-                    data = source.read(min(1024 * 1024, remaining))
-                    require(bool(data), 'partial_upload')
-                    output.write(data)
-                    checksum.update(data)
-                    remaining -= len(data)
-                output.flush()
-                os.fsync(output.fileno())
-            require(checksum.hexdigest() == files[entry.name]['sha256'], 'upload_checksum_mismatch')
-            received.add(entry.name)
+    archive_bytes = 0
+    for _ in FILES:
+        # Parse only one 512-byte USTAR header. Generic tar readers consume PAX/
+        # sparse metadata before yielding an entry, which can allocate host RAM.
+        entry = tarfile.TarInfo.frombuf(read_exact(stream, 512), 'utf-8', 'strict')
+        require(entry.name in FILES and entry.name not in received and entry.type in (tarfile.REGTYPE, tarfile.AREGTYPE) and
+                not entry.linkname and entry.size == files[entry.name]['size'], 'unsafe_upload_archive')
+        checksum = hashlib.sha256()
+        remaining = entry.size
+        fd = os.open(bundle / entry.name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, 'wb') as output:
+            while remaining:
+                data = read_exact(stream, min(1024 * 1024, remaining))
+                output.write(data)
+                checksum.update(data)
+                remaining -= len(data)
+            output.flush()
+            os.fsync(output.fileno())
+        padding = (-entry.size) % 512
+        require(read_exact(stream, padding) == b'\0' * padding, 'invalid_upload_padding')
+        archive_bytes += 512 + entry.size + padding
+        require(checksum.hexdigest() == files[entry.name]['sha256'], 'upload_checksum_mismatch')
+        received.add(entry.name)
+    # Two end blocks followed by bounded record padding; no hidden extra entries.
+    footer = ((archive_bytes + 1024 + 10239) // 10240) * 10240 - archive_bytes
+    require(read_exact(stream, footer) == b'\0' * footer and stream.read(1) == b'', 'trailing_upload_data')
     require(received == FILES, 'upload_files_missing')
     return bundle
 

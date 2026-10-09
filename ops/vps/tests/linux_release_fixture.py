@@ -369,8 +369,21 @@ try:
         with host_lock(root / 'shared.lock'):
             maintenance(profile)
     record('broker_archive_link_denied_without_image_load', invalid_stream)
+    def oversized_pax():
+        header = tarfile.TarInfo('images.tar')
+        header.type = tarfile.XHDTYPE
+        header.size = 2 * 1024**3
+        stream = io.BytesIO(header.tobuf(format=tarfile.USTAR_FORMAT))
+        try:
+            broker.receive(stream, profile, {'files': transfer_files})
+            raise AssertionError('Broker consumed an extended header')
+        except auto_release.ReleaseError as error:
+            require(str(error) == 'unsafe_upload_archive', 'Extended header was read before rejection')
+        with host_lock(root / 'shared.lock'):
+            maintenance(profile)
+    record('broker_oversized_pax_header_rejected_before_allocation', oversized_pax)
     with tempfile.TemporaryFile() as transfer:
-        with tarfile.open(fileobj=transfer, mode='w') as tar:
+        with tarfile.open(fileobj=transfer, mode='w', format=tarfile.USTAR_FORMAT) as tar:
             for name in broker.FILES:
                 tar.add(good[0] / name, arcname=name, recursive=False)
         transfer.seek(0)

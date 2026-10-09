@@ -23,6 +23,9 @@ spec.loader.exec_module(release)
 def host_lock(path):
     path = Path(path)
     require(path.is_absolute() and path.parent.is_dir() and not path.is_symlink(), 'invalid_shared_lock')
+    parent = path.parent.stat()
+    require(not path.parent.is_symlink() and parent.st_uid == os.geteuid() and
+            (parent.st_mode & 0o022 == 0 or parent.st_mode & 0o1000 != 0), 'shared_lock_parent_allows_replacement')
     fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     with os.fdopen(fd, 'a') as lock:
         require(os.fstat(lock.fileno()).st_uid == os.geteuid() and os.fstat(lock.fileno()).st_mode & 0o077 == 0, 'unprotected_shared_lock')

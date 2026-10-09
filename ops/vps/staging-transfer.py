@@ -29,7 +29,7 @@ def transfer(bundle, host, user, key, known, known_digest):
     # Disk-backed stream keeps runner memory bounded; it is removed even on failure.
     with tempfile.TemporaryFile() as data:
         data.write(canonical(header) + b'\n')
-        with tarfile.open(fileobj=data, mode='w|') as archive:
+        with tarfile.open(fileobj=data, mode='w|', format=tarfile.USTAR_FORMAT) as archive:
             for name in FILES:
                 archive.add(Path(bundle) / name, arcname=name, recursive=False)
         data.seek(0)
