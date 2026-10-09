@@ -109,7 +109,8 @@ internal sealed class OpenAiTaskVoiceParsingService : ITaskVoiceParsingService
                 usage?.AudioTokenCount,
                 usage?.TextTokenCount,
                 audioDurationSeconds,
-                errorType),
+                errorType,
+                usage?.CacheWriteTokenCount),
             cancellationToken);
     }
 }

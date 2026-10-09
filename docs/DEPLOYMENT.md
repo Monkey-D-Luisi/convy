@@ -6,7 +6,8 @@ Convy deploys the active controlled-release/staging environment to a Hetzner VPS
 
 - Pull requests target `master`.
 - GitHub Actions `Continuous Integration` runs on `master`.
-- `Backend Staging Release` deploys the exact `master` push commit that passed CI through `workflow_run`.
+- The old `Backend Staging Release` workflow remains disabled. New automatic staging CD source is inactive pending separately approved first activation.
+- After activation, exact successful master CI triggers isolated automatic application deployment; see [the staging CD runbook](operations/staging-cd.md).
 - Staging deployment uses the `staging` GitHub environment, restricted to the `master` deployment branch.
 
 ## Active Staging Stack
@@ -43,38 +44,9 @@ Canonical runbooks:
 
 Legacy `178.105.70.69.nip.io` hosts remain configured for previously installed staging Android builds and cutover safety.
 
-## Backend Staging Release Inputs
+## Automatic shared staging CD
 
-Workflow file:
-
-```text
-.github/workflows/backend-staging-release.yml
-```
-
-Repository secrets:
-
-- `STAGING_DEPLOY_HOST`
-- `STAGING_SSH_PRIVATE_KEY`
-- `STAGING_SSH_KNOWN_HOSTS`
-- `STAGING_API_HOSTNAME` or `STAGING_PUBLIC_HOSTNAME`
-
-Repository variables:
-
-- `STAGING_DEPLOY_USER`, default `convy-deploy`
-- `STAGING_BOOTSTRAP_DEPLOY_USER`, default `root`
-- `STAGING_DEPLOY_SCRIPT`, default `ops/vps/deploy-release.sh`
-
-The workflow can bootstrap the non-root deploy user when `STAGING_DEPLOY_USER` is not set.
-
-## Manual Deploy Outline
-
-```bash
-git archive --format=tar.gz -o /tmp/convy-release.tar.gz HEAD
-scp /tmp/convy-release.tar.gz <deploy-user>@<server>:/tmp/convy-release.tar.gz
-ssh <deploy-user>@<server> "sudo mkdir -p /opt/convy/releases/<sha> && sudo tar -xzf /tmp/convy-release.tar.gz -C /opt/convy/releases/<sha> && sudo bash /opt/convy/releases/<sha>/ops/vps/deploy-release.sh <sha>"
-```
-
-Use the detailed [deployment runbook](operations/deployment-runbook.md) for exact commands and smoke checks.
+Use [the staging CD runbook](operations/staging-cd.md) for constrained credentials, pinned artifacts, first activation, shared locking, resource/backup policy and independent rollback. Ordinary compatible master releases after activation need no individual approval. Production does not exist yet.
 
 ## Health Checks
 
@@ -93,12 +65,7 @@ curl -I https://admin.convyapp.com
 
 ## Rollback
 
-Rollback is release-directory based:
-
-1. Identify the previous healthy release under `/opt/convy/releases`.
-2. Run the previous release's `ops/vps/deploy-release.sh <previous-sha>`.
-3. Confirm API, auth, MCP, dashboard, legal, public, and legacy health checks, then confirm the `worker` service is running.
-4. If database migrations have already changed schema, treat rollback as an incident and validate compatibility before downgrading application code.
+Rollback uses the fixed installed controller and checksummed application journal. It restores exact previous image/configuration bytes and preserves shared services; see [isolated release and rollback](operations/safe-release.md). Do not rebuild an old source release on the host.
 
 ## Android Versioning
 

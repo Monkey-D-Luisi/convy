@@ -45,13 +45,14 @@ public class AiUsageRecorder : IAiUsageRecorder
     }
 
     private long? EstimateMicros(AiUsageRecordRequest request) =>
-        request.Operation.Equals("transcription", StringComparison.OrdinalIgnoreCase)
+        (request.Operation.Equals("transcription", StringComparison.OrdinalIgnoreCase) ||
+         request.Operation.Equals("task_transcription", StringComparison.OrdinalIgnoreCase))
             ? EstimateTranscriptionMicros(request)
             : EstimateParsingMicros(request);
 
     private long? EstimateTranscriptionMicros(AiUsageRecordRequest request)
     {
-        if (request.AudioDurationSeconds is null)
+        if (request.AudioDurationSeconds is null or < 0)
             return null;
 
         var price = GetPrice("TranscriptionAudioInputMicrosPerSecond");
@@ -60,62 +61,15 @@ public class AiUsageRecorder : IAiUsageRecorder
             : (long)Math.Round((decimal)request.AudioDurationSeconds.Value * price.Value, MidpointRounding.AwayFromZero);
     }
 
-    private long? EstimateParsingMicros(AiUsageRecordRequest request)
-    {
-        decimal total = 0;
-        var hasCostableUsage = false;
-        var cachedTokens = request.CachedTokens ?? 0;
-        var inputTokens = request.InputTokens ?? 0;
-        var nonCachedInputTokens = Math.Max(0, inputTokens - cachedTokens);
-
-        if (nonCachedInputTokens > 0)
-        {
-            var price = GetPrice("ParsingInputMicrosPer1KTokens");
-            if (price is null)
-                return null;
-
-            total += nonCachedInputTokens / 1000m * price.Value;
-            hasCostableUsage = true;
-        }
-
-        if (cachedTokens > 0)
-        {
-            var price = GetPrice("ParsingCachedInputMicrosPer1KTokens");
-            if (price is null)
-                return null;
-
-            total += cachedTokens / 1000m * price.Value;
-            hasCostableUsage = true;
-        }
-
-        if (request.OutputTokens is > 0)
-        {
-            var price = GetPrice("ParsingOutputMicrosPer1KTokens");
-            if (price is null)
-                return null;
-
-            total += request.OutputTokens.Value / 1000m * price.Value;
-            hasCostableUsage = true;
-        }
-
-        if (request.ReasoningTokens is > 0)
-        {
-            var price = GetPrice("ParsingReasoningMicrosPer1KTokens");
-            if (price is null)
-                return null;
-
-            total += request.ReasoningTokens.Value / 1000m * price.Value;
-            hasCostableUsage = true;
-        }
-
-        return hasCostableUsage ? (long)Math.Round(total, MidpointRounding.AwayFromZero) : null;
-    }
+    private long? EstimateParsingMicros(AiUsageRecordRequest request) =>
+        OpenAiParsingCost.Estimate(_configuration, request.InputTokens, request.OutputTokens,
+            request.CachedTokens, request.CacheWriteTokens);
 
     private decimal? GetPrice(string key)
     {
         var value = _configuration[$"OpenAI:Costs:{key}"];
         return decimal.TryParse(value, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var parsed)
-            ? parsed
+            && parsed >= 0 ? parsed
             : null;
     }
 }

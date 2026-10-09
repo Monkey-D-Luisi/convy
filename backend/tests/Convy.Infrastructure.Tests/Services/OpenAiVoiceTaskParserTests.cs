@@ -13,7 +13,7 @@ public class OpenAiVoiceTaskParserTests
         var responses = new CapturingResponsesClient("""{"tasks":[""");
         var parser = new OpenAiVoiceTaskParser(
             responses,
-            new OpenAiVoiceParsingOptions("gpt-4o-mini-transcribe", "gpt-5.4-nano"));
+            new OpenAiVoiceParsingOptions("gpt-4o-mini-transcribe", "gpt-6-luna"));
 
         var result = await parser.ParseAsync(
             "limpia la cocina",
@@ -46,6 +46,6 @@ public class OpenAiVoiceTaskParserTests
         public Task<OpenAiResponsesResult> CreateResponseAsync(
             CreateResponseOptions options,
             CancellationToken cancellationToken) =>
-            Task.FromResult(new OpenAiResponsesResult(_outputText, null, "gpt-5.4-nano", "completed"));
+            Task.FromResult(new OpenAiResponsesResult(_outputText, null, "gpt-6-luna", "completed"));
     }
 }

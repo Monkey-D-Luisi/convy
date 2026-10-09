@@ -14,6 +14,38 @@ namespace Convy.Infrastructure.Tests.Services;
 public class AdminMetricsReaderTests
 {
     [Fact]
+    public async Task SystemHealthShowsAcceptedStaticReleaseAndActualBackendVersion()
+    {
+        var path = Path.GetTempFileName();
+        var backend = new string('b', 40);
+        try
+        {
+            await using var context = CreateContext();
+            var reader = CreateReader(context,
+                new StaticHttpClientFactory(new HttpClient(new StaticResponseHandler(HttpStatusCode.OK, "{}"))),
+                new Dictionary<string, string?> { ["Deploy:MetadataPath"] = path, ["Deploy:ReleaseSha"] = backend,
+                    ["Backend:Version"] = backend[..12], ["Mobile:AndroidVersion"] = "old+1",
+                    ["Deploy:LastDeployAt"] = "2026-10-08T12:00:00Z" });
+            foreach (var source in new[] { new string('a', 40), new string('c', 40), new string('a', 40) })
+            {
+                await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(new { format = 1,
+                    sourceSha = source, backendSourceSha = source, androidVersion = "1.2.3+42", acceptedAtUtc = "2026-10-09T12:00:00Z" }));
+                var health = await reader.GetSystemHealthAsync();
+                health.ReleaseSha.Should().Be(source);
+                health.BackendVersion.Should().Be(backend[..12]);
+                health.AndroidVersion.Should().Be("1.2.3+42");
+                health.LastDeployAt.Should().Be(new DateTime(2026, 10, 9, 12, 0, 0, DateTimeKind.Utc));
+            }
+            await File.WriteAllTextAsync(path, "corrupt");
+            var fallback = await reader.GetSystemHealthAsync();
+            fallback.ReleaseSha.Should().Be(backend);
+            fallback.BackendVersion.Should().Be(backend[..12]);
+            fallback.AndroidVersion.Should().Be("old+1");
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public async Task GetUsageAsync_CountsHistoricalItemEventsFromActivityLogs()
     {
         await using var context = CreateContext();
@@ -289,7 +321,8 @@ public class AdminMetricsReaderTests
         return new ConvyDbContext(options);
     }
 
-    private static AdminMetricsReader CreateReader(ConvyDbContext context, IHttpClientFactory? httpClientFactory = null)
+    private static AdminMetricsReader CreateReader(ConvyDbContext context, IHttpClientFactory? httpClientFactory = null,
+        IEnumerable<KeyValuePair<string, string?>>? settings = null)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -301,6 +334,7 @@ public class AdminMetricsReaderTests
                 ["Convy:PublicHostname"] = "convyapp.com",
                 ["Convy:LegalHostname"] = "legal.convyapp.com",
             })
+            .AddInMemoryCollection(settings ?? [])
             .Build();
 
         return httpClientFactory is null

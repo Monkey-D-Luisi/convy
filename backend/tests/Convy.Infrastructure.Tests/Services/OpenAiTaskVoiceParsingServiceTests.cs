@@ -23,8 +23,8 @@ public class OpenAiTaskVoiceParsingServiceTests
         {
             Result = new VoiceTaskParsingResult(
                 [],
-                new OpenAiVoiceTokenUsage(20, 5, 25, null, null, null, null),
-                "gpt-5.4-nano",
+                new OpenAiVoiceTokenUsage(20, 5, 25, 5, 1, null, null, 10),
+                "gpt-6-luna",
                 "parse_error"),
         };
         var usageRecorder = new FakeAiUsageRecorder();
@@ -32,7 +32,7 @@ public class OpenAiTaskVoiceParsingServiceTests
             transcription,
             parser,
             usageRecorder,
-            new OpenAiVoiceParsingOptions("gpt-4o-mini-transcribe", "gpt-5.4-nano"),
+            new OpenAiVoiceParsingOptions("gpt-4o-mini-transcribe", "gpt-6-luna"),
             NullLogger<OpenAiTaskVoiceParsingService>.Instance);
 
         await service.ParseAudioAsync(
@@ -46,7 +46,21 @@ public class OpenAiTaskVoiceParsingServiceTests
         usageRecorder.Events.Should().Contain(e =>
             e.Operation == "task_parsing" &&
             e.Status == "failure" &&
-            e.ErrorType == "invalid_json");
+            e.ErrorType == "invalid_json" && e.OutputTokens == 5 && e.ReasoningTokens == 1 && e.CacheWriteTokens == 10);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task ParseAudioAsync_WithEmptyTaskTranscription_SkipsParser(string text)
+    {
+        var parser = new FakeTaskParser();
+        var usage = new FakeAiUsageRecorder();
+        var service = new OpenAiTaskVoiceParsingService(new FakeTranscriptionClient { Result = new(text, null, null, "gpt-4o-mini-transcribe", null) },
+            parser, usage, new("gpt-4o-mini-transcribe", "gpt-6-luna"), NullLogger<OpenAiTaskVoiceParsingService>.Instance);
+        var result = await service.ParseAudioAsync(new MemoryStream([1]), "recording.m4a", Guid.NewGuid(), [], "Europe/Madrid", DateTimeOffset.UtcNow);
+        result.Transcription.Should().BeEmpty(); result.Tasks.Should().BeEmpty();
+        parser.Calls.Should().Be(0); usage.Events.Should().ContainSingle(e => e.Operation == "task_transcription");
     }
 
     private sealed class FakeTranscriptionClient : IOpenAiVoiceTranscriptionClient
@@ -62,6 +76,7 @@ public class OpenAiTaskVoiceParsingServiceTests
 
     private sealed class FakeTaskParser : IOpenAiVoiceTaskParser
     {
+        public int Calls { get; private set; }
         public VoiceTaskParsingResult Result { get; init; } = new([], null, null, null);
 
         public Task<VoiceTaskParsingResult> ParseAsync(
@@ -69,8 +84,11 @@ public class OpenAiTaskVoiceParsingServiceTests
             IReadOnlyList<TaskVoiceHouseholdMember> householdMembers,
             string timeZoneId,
             DateTimeOffset now,
-            CancellationToken cancellationToken) =>
-            Task.FromResult(Result);
+            CancellationToken cancellationToken)
+        {
+            Calls++;
+            return Task.FromResult(Result);
+        }
     }
 
     private sealed class FakeAiUsageRecorder : IAiUsageRecorder

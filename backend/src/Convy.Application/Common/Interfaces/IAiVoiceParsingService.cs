@@ -35,7 +35,8 @@ public record VoiceParsingTelemetry(
     int? OutputTokens,
     int? CachedTokens,
     int? ReasoningTokens,
-    long LatencyMs);
+    long LatencyMs,
+    int? CacheWriteTokens = null);
 
 public record AiUsageRecordRequest(
     Guid? HouseholdId,
@@ -51,4 +52,5 @@ public record AiUsageRecordRequest(
     int? AudioTokens = null,
     int? TextTokens = null,
     double? AudioDurationSeconds = null,
-    string? ErrorType = null);
+    string? ErrorType = null,
+    int? CacheWriteTokens = null);

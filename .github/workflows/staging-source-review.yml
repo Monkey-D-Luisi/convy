@@ -1,0 +1,39 @@
+name: Staging CD Source Provenance Review
+
+on:
+  push:
+    branches: [codex/safe-staging-cd]
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Create a non-deployable review subject
+        run: printf '%s\n' "$GITHUB_SHA" > review-subject.txt
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        id: proof
+        with:
+          subject-path: review-subject.txt
+      - name: Verify signature identity and reject master identity, wrong SHA and corrupt bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUNDLE: ${{ steps.proof.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          signer="${GITHUB_REPOSITORY}/.github/workflows/staging-source-review.yml"
+          identity="https://github.com/${signer}@${GITHUB_REF}"
+          gh attestation verify review-subject.txt --repo "$GITHUB_REPOSITORY" --bundle "$BUNDLE" --cert-identity "$identity" --source-ref "$GITHUB_REF" --source-digest "$GITHUB_SHA" --signer-digest "$GITHUB_SHA" --deny-self-hosted-runners
+          if gh attestation verify review-subject.txt --repo "$GITHUB_REPOSITORY" --bundle "$BUNDLE" --cert-identity "https://github.com/${signer}@refs/heads/master" >/dev/null 2>&1; then exit 1; fi
+          if gh attestation verify review-subject.txt --repo "$GITHUB_REPOSITORY" --bundle "$BUNDLE" --source-digest 0000000000000000000000000000000000000000 >/dev/null 2>&1; then exit 1; fi
+          printf 'corrupt\n' >> review-subject.txt
+          if gh attestation verify review-subject.txt --repo "$GITHUB_REPOSITORY" --bundle "$BUNDLE" >/dev/null 2>&1; then exit 1; fi
+          echo 'Real signature verification and all three rejection cases passed.'

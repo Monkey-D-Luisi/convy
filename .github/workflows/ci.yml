@@ -293,3 +293,16 @@ jobs:
           docker build -t convy-auth:ci -f auth/Dockerfile auth
           docker build -t convy-mcp:ci -f mcp/Dockerfile mcp
           node .github/scripts/verify-images.mjs convy-dashboard:ci convy-auth:ci convy-mcp:ci
+
+  safe-release:
+    name: Isolated Release & Rollback
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Configuration and pinned transfer regressions
+        run: python -m unittest discover -s ops/vps/tests -p 'test_*.py' -v
+      - name: Linux Docker release and recovery fixtures
+        run: python ops/vps/tests/validate_release_docker.py

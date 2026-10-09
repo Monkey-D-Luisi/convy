@@ -54,8 +54,8 @@ public class OpenAiVoiceParsingServiceTests
             new OpenAiVoiceTokenUsage(40, 0, 40, null, null, 35, 5));
         _parser.Result = new VoiceItemParsingResult(
             [new ParsedItemDto("Leche", null, null, "Leche")],
-            new OpenAiVoiceTokenUsage(100, 25, 125, 80, 3, null, null),
-            "gpt-5.4-nano",
+            new OpenAiVoiceTokenUsage(100, 25, 125, 80, 3, null, null, 10),
+            "gpt-6-luna",
             "completed");
         var service = CreateService();
 
@@ -69,10 +69,11 @@ public class OpenAiVoiceParsingServiceTests
         result.Telemetry.OutputTokens.Should().Be(25);
         result.Telemetry.CachedTokens.Should().Be(80);
         result.Telemetry.ReasoningTokens.Should().Be(3);
+        result.Telemetry.CacheWriteTokens.Should().Be(10);
         result.Telemetry.AudioDurationSeconds.Should().Be(2);
         _parser.CallCount.Should().Be(1);
         _usageRecorder.Events.Should().Contain(e => e.Operation == "transcription" && e.Model == "gpt-4o-mini-transcribe" && e.Status == "success");
-        _usageRecorder.Events.Should().Contain(e => e.Operation == "parsing" && e.Model == "gpt-5.4-nano" && e.Status == "success" && e.InputTokens == 100);
+        _usageRecorder.Events.Should().Contain(e => e.Operation == "parsing" && e.Model == "gpt-6-luna" && e.Status == "success" && e.InputTokens == 100 && e.CacheWriteTokens == 10 && e.ReasoningTokens == 3);
         _logger.ContainsValue(transcript).Should().BeFalse();
         _logger.Messages.Should().Contain(message => message.Contains("success"));
         _logger.StructuredValues.Should().Contain(pair => pair.Key == "Model" && Equals(pair.Value, "gpt-4o-mini-transcribe"));
@@ -97,7 +98,7 @@ public class OpenAiVoiceParsingServiceTests
     }
 
     private OpenAiVoiceParsingService CreateService() =>
-        new(_transcription, _parser, _itemRepository, _usageRecorder, new OpenAiVoiceParsingOptions("gpt-4o-mini-transcribe", "gpt-5.4-nano"), _logger);
+        new(_transcription, _parser, _itemRepository, _usageRecorder, new OpenAiVoiceParsingOptions("gpt-4o-mini-transcribe", "gpt-6-luna"), _logger);
 
     private sealed class FakeTranscriptionClient : IOpenAiVoiceTranscriptionClient
     {

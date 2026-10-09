@@ -1,9 +1,9 @@
 # Release automation transition
 
-This change removes automatic deployment from `Backend Staging Release`. A manual invocation only prints the release boundary. It cannot connect to a server. This branch does not control the workflow still installed on master. It also carries the previously reviewed backend/frontend dependency fixes, fail-closed dependency/image checks, Android SDK installation correction and updated workflow contract needed to validate the master-based control PR. It contains no Luna parsing, pricing or release-controller changes.
+Hetzner is shared staging; production does not exist. PR #33 completed the control transition. `Backend Staging Release` is disabled and its source only prints the boundary. Keep workflow ID `290743932` disabled.
 
-Before **any merge**, obtain explicit owner approval to disable the installed workflow through the Actions API/UI, cancel queued/in-progress runs of that workflow, and verify it remains disabled with no deployment runs. Disabling a workflow is a GitHub control-plane change requiring separate approval. It must happen before merging this PR, the Luna PR, or the release implementation PR.
+Manual release approval was transitional. [Automatic shared staging CD](staging-cd.md) describes the replacement and its separately approved first activation. Ordinary compatible master releases after activation require no individual approval.
 
-Merge this control/prerequisite PR first after approval and green CI. Read the installed master workflow and confirm the `workflow_run` trigger, SSH, staging environment, and deployment steps are absent. Leave the old workflow disabled. Only then review/approve subsequent source merges. A green CI run is never authorization to release.
+This integration preserves reviewed Luna source and isolated rollback, reconciled with the merged control master. Source review does not merge PR #32/#34, install tools, enable timers or change secrets/protections. The new workflow remains inactive.
 
-Build immutable images in trusted CI or a workstation from the exact reviewed commit. A future production release additionally requires review of its manifest digest, successful exact-head CI, current protected host profile and dry-run digest, backup/recovery proof, capacity, isolated rollback tests, and explicit owner approval. Do not enable another production workflow or alter environment protections as part of this control PR.
+First activation and unsafe migration/shared topology/credential changes require operator review. GitHub Pages publication remains expected and independent; Android publishing safeguards remain intact.

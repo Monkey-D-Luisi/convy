@@ -1,0 +1,10 @@
+[Unit]
+Description=Recover an interrupted Convy staging application transaction
+# Connect OnFailure to the existing operator alert transport during activation.
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/local/libexec/convy-staging-recover
+TimeoutStartSec=900

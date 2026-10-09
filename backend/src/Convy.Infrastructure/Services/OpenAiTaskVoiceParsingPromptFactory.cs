@@ -77,6 +77,7 @@ internal static class OpenAiTaskVoiceParsingPromptFactory
             Model = model,
             Instructions = SystemPrompt,
             StoredOutputEnabled = false,
+            ReasoningOptions = new ResponseReasoningOptions { ReasoningEffortLevel = ResponseReasoningEffortLevel.None },
             MaxOutputTokenCount = maxOutputTokenCount,
             TextOptions = new ResponseTextOptions
             {

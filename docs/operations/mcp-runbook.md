@@ -53,16 +53,17 @@ Response should be `401` with `WWW-Authenticate` pointing to protected resource 
 - `CONVY_MCP_AUDIT_API_KEY`
 - `OPENAI_APPS_CHALLENGE_TOKEN` when OpenAI Apps domain verification is pending or being rechecked
 
-`ops/vps/push-secrets.ps1` preserves existing MCP keys, audit key, and OpenAI Apps challenge token from `/opt/convy/shared/api.env` when present. If both MCP keys are missing, it generates a new RSA key pair.
+Existing MCP keys, audit key and OpenAI Apps challenge token are protected staging configuration. Ordinary releases preserve them. Credential provisioning or rotation requires a separate administrator operation; it is not part of CD.
 
 ## Deploy
 
-```bash
-ops/vps/push-secrets.ps1 -HostName <server>
-ops/vps/deploy-release.sh <release-sha>
-```
+Hetzner is shared **staging**; production does not exist. Follow [automatic staging CD](staging-cd.md) for the activation boundary and [isolated release and rollback](safe-release.md) for the trusted artifact, protected host profile, dry run and journal recovery commands.
 
-The deploy script builds `api`, `worker`, `dashboard`, `auth`, and `mcp`, recreates services, and checks API, auth, and MCP health endpoints.
+CD is inactive until its separately approved first activation. After activation, a reviewed compatible merge to `master` with successful exact master CI automatically builds an immutable artifact, verifies provenance, acquires the common host lock, verifies backup/restore/retrieval, and applies only changed Convy applications and public content. Ordinary compatible releases need no additional human approval. The fixed installed broker never executes uploaded source or builds on Hetzner.
+
+Acceptance checks cover API readiness, auth/MCP health and OAuth metadata, protected-resource discovery and challenge behavior. A failure restores the prior affected applications, `legal/` and `public-site/`, public release metadata, source pointer and CI ledger from the checksummed journal. Use the fixed installed controller's `rollback-plan` and approved exceptional `rollback` procedure from the recovery runbook; do not rebuild an old release or recreate the shared stack.
+
+Caddy, PostgreSQL, credentials and Converso remain outside the application update. Automatic releases preserve the current parsing model even when Luna code is included; a model transition is a separate explicit configuration rollout. Android publication retains its own version-change, successful master-CI and protected-environment safeguards; the staging Android metadata is the source-declared version, not proof of Play publication.
 
 ## Validate Scopes
 
@@ -119,11 +120,13 @@ Incident path: identify affected active refresh token records by user/client/res
 
 ## Rotate MCP Keys
 
-1. Generate a new RSA key pair.
-2. Set `MCP_AUTH_PRIVATE_KEY_PEM_BASE64` and `MCP_AUTH_PUBLIC_KEY_PEM_BASE64`.
-3. Run `ops/vps/push-secrets.ps1`.
-4. Redeploy API and MCP together.
-5. Re-run OAuth metadata, MCP health, and ChatGPT Developer Mode tests.
+Key rotation requires a separate approved administrator procedure. Ordinary CD preserves credentials and rejects unreviewed protected configuration drift; its application rollback is not a key-rotation transaction.
+
+1. Prepare the private key-generation, revocation and recovery plan; prevent recovery from reintroducing a compromised key.
+2. Coordinate all deployment writers under the common host lock from the staging runbook.
+3. Update only the approved API/MCP credential configuration and reconcile the protected host profile through the reviewed rotation procedure. Do not invoke legacy secret-upload or deployment helpers as part of a normal release.
+4. Apply and verify the coordinated API/MCP credential transition using that administrator procedure, preserving Caddy, PostgreSQL and Converso.
+5. Re-run OAuth metadata, MCP health and ChatGPT Developer Mode tests, then resume ordinary CD only after the new protected baseline is verified.
 
 ## Disable MCP
 

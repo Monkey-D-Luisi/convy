@@ -119,7 +119,7 @@ resource "google_cloud_run_v2_service" "api" {
 
       env {
         name  = "OpenAI__ParsingModel"
-        value = "gpt-5.4-nano"
+        value = "gpt-6-luna"
       }
 
       env {
