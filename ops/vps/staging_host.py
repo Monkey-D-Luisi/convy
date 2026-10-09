@@ -12,6 +12,7 @@ import uuid
 from datetime import datetime, timezone
 
 from release_common import ReleaseError, canonical, file_digest, json_read, private_write, require, run, verify_bundle
+from release_content import STATIC_RECOVERY_BYTES
 from staging_common import REPOSITORY, SIGNER, verify_ci
 
 spec = importlib.util.spec_from_file_location('release', Path(__file__).with_name('safe-release.py'))
@@ -290,7 +291,8 @@ def automatic(profile_path, bundle, request, verify=verify_ci, attest=provenance
     require(set(manifest.get('imageSizes', {})) == set(manifest['images']) and all(isinstance(s, int) and s > 0 for s in manifest['imageSizes'].values()), 'image_expansion_sizes_missing')
     def check_capacity():
         return capacity(profile, 0, manifest['imageStorageBytes'], profile['maximumRollbackArchiveBytes'],
-                        Path(bundle, 'source.tar').stat().st_size * 2, retained_candidate_bytes=Path(bundle, 'images.tar').stat().st_size)
+                        Path(bundle, 'source.tar').stat().st_size * 2 + STATIC_RECOVERY_BYTES,
+                        retained_candidate_bytes=Path(bundle, 'images.tar').stat().st_size)
     try:
         measurements = check_capacity()
     except ReleaseError as failure:

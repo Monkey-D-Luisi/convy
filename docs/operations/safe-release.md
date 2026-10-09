@@ -82,13 +82,13 @@ Required JSON fields:
 | --- | --- |
 | `format`, `project` | `1`, existing `convy` Compose project |
 | `composeFiles`, `composeHashes` | Exact ordered absolute base/override paths and every reviewed SHA256 |
-| `envFiles` | Exact ordered root-owned 0600 interpolation files, including other private override inputs |
+| `envFiles` | Exact ordered root-owned 0600 interpolation files, including managed `/opt/convy/shared/release.env` and other private override inputs |
 | `modelEnv` | Existing Convy `api.env`, within the application's current parent |
 | `preserveFiles` | Existing shared Caddy configuration/fragments and protected Firebase/certificate files to hash, without reading values into logs |
 | `current`, `stateRoot` | `/opt/convy/current`, private sibling such as `/opt/convy/release-state` |
 | `schemaBaselineSha`, `migrationSha256`, `composeSha256` | Reviewed deployed source/catalog/base Compose identities |
 | `backupFile`, `backupSha256`, `restoreProofFile` | Fresh custom PostgreSQL dump and protected independent restore proof |
-| `healthTimeoutSeconds`, `minimumFreeBytes` | 1–600 seconds; default 120; free disk floor default 8 GiB plus twice incoming image size |
+| `healthTimeoutSeconds`, `minimumFreeBytes` | 1–600 seconds; default 120; free disk floor default 8 GiB plus twice incoming image size and 336 MiB for static recovery |
 | `acceptance` | Bounded command arrays for actual API/auth/MCP/dashboard/shared routes and authorization behavior; zero paid-provider calls by default |
 
 The restore proof is root-owned 0600 JSON containing `backupSha256`, `isolatedRestoreSucceeded: true`, and UTC `verifiedAtUtc`. Both backup mtime and restore verification must be less than one hour old. A proof is an operator-reviewed record of an actual isolated restoration, not a substitute for executing restoration. The controller independently verifies the dump SHA and `pg_restore --list`, streaming the dump without loading it into host memory. It never restores a staging database.

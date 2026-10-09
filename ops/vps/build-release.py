@@ -65,6 +65,8 @@ def build(repo, source, baseline, output, services, builder=None, receipt=None):
                     'schemaPolicy': 'unchanged', 'migrationSha256': migration, 'migrationIds': migration_ids(tree), 'composeSha256': file_digest(tree / compose_path),
                     'images': images, 'imageSizes': image_sizes, 'contextHashes': context_hashes,
                     'files': {p: file_digest(output / p) for p in ('source.tar', 'images.tar')}}
+        from release_content import archive_content
+        manifest['staticFiles'], manifest['mobileAndroidVersion'] = archive_content(output / 'source.tar')
         if receipt:
             manifest['ciReceipt'] = receipt
         (output / 'release.json').write_bytes(canonical(manifest))

@@ -347,6 +347,7 @@ public class AdminMetricsReader : IAdminMetricsReader
             .Where(invocation => invocation.CreatedAt >= start && invocation.CreatedAt < end)
             .ToListAsync(cancellationToken);
         var runtime = await GetMcpRuntimeAsync(cancellationToken);
+
         var usage = CreateMcpUsage(invocations);
         var consentMetrics = await _context.McpOAuthConsents
             .AsNoTracking()
@@ -461,6 +462,9 @@ public class AdminMetricsReader : IAdminMetricsReader
     {
         var databaseHealthy = await _context.Database.CanConnectAsync(cancellationToken);
         var runtime = await GetMcpRuntimeAsync(cancellationToken);
+        var accepted = await AcceptedReleaseMetadata.ReadAsync(
+            _configuration["Deploy:MetadataPath"] ?? "/run/convy-release/accepted.json",
+            cancellationToken);
 
         return new AdminSystemHealthDto(
             ApiHealthy: true,
@@ -472,9 +476,9 @@ public class AdminMetricsReader : IAdminMetricsReader
             DiskFreeBytes: GetDiskFreeBytes(),
             PostgresDataSizeBytes: databaseHealthy ? await GetPostgresDataSizeAsync(cancellationToken) : null,
             BackendVersion: _configuration["Backend:Version"] ?? Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
-            AndroidVersion: _configuration["Mobile:AndroidVersion"],
-            LastDeployAt: TryParseDateTime(_configuration["Deploy:LastDeployAt"]),
-            ReleaseSha: _configuration["Deploy:ReleaseSha"],
+            AndroidVersion: accepted?.AndroidVersion ?? _configuration["Mobile:AndroidVersion"],
+            LastDeployAt: accepted?.AcceptedAtUtc ?? TryParseDateTime(_configuration["Deploy:LastDeployAt"]),
+            ReleaseSha: accepted?.SourceSha ?? _configuration["Deploy:ReleaseSha"],
             OperatingSystem: RuntimeInformation.OSDescription,
             Architecture: RuntimeInformation.OSArchitecture.ToString(),
             ProcessorCount: Environment.ProcessorCount,

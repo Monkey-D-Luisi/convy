@@ -114,12 +114,19 @@ def bundle(name, sha, image):
     path.mkdir(mode=0o700)
     with tarfile.open(path / 'source.tar', 'w') as archive:
         archive.add('/source/ops/vps/tests/application.py', arcname='application.py')
+        for item, content in {'legal/index.html': b'reviewed legal', 'public-site/index.html': b'reviewed public',
+                              'mobile/androidApp/build.gradle.kts': b'versionName = "1.2.3"\nversionCode = 42\n'}.items():
+            entry = tarfile.TarInfo(item)
+            entry.size = len(content)
+            archive.addfile(entry, io.BytesIO(content))
     command(['docker', 'image', 'save', '-o', str(path / 'images.tar'), image])
     manifest = {'format': 1, 'sourceSha': sha, 'baselineSha': old_sha, 'platform': 'linux/amd64',
                 'schemaPolicy': 'unchanged', 'migrationSha256': schema,
                 'migrationIds': ['20261008000000_Fixture'],
                 'composeSha256': file_digest(root / 'base.json'), 'images': {'api': image, 'worker': image},
                 'files': {n: file_digest(path / n) for n in ('source.tar', 'images.tar')}}
+    from release_content import archive_content
+    manifest['staticFiles'], manifest['mobileAndroidVersion'] = archive_content(path / 'source.tar')
     size = json.loads(command(['docker', 'image', 'inspect', image]))[0]['Size']
     manifest['imageSizes'] = {'api': size, 'worker': size}
     (path / 'release.json').write_bytes(canonical(manifest))
@@ -151,11 +158,17 @@ try:
                                'OpenAI__Costs__ParsingReasoningMicrosPer1KTokens=\n')
     os.chmod(root / 'api.env', 0o600)
     original_env = (root / 'api.env').read_bytes()
-    (root / 'Caddyfile').write_text(':8080 {\n respond "shared edge"\n}\n')
+    (root / 'shared/release-metadata').mkdir(parents=True, mode=0o755)
+    (root / 'shared/release.env').write_text('Backend__Version=' + old_sha[:12] + '\nMobile__AndroidVersion=old+1\nRETAINED=fixture-dollar$literal\n')
+    os.chmod(root / 'shared/release.env', 0o600)
+    for directory in ('legal', 'public'):
+        (root / directory).mkdir(mode=0o755)
+        (root / directory / 'index.html').write_text('old ' + directory)
+    (root / 'Caddyfile').write_text(':8080 {\n handle_path /legal/* {\n root * /srv/legal\n file_server\n }\n handle {\n root * /srv/public\n file_server\n }\n}\n')
     (root / 'certificate.fixture').write_bytes(b'preserved-certificate-bytes')
     healthcheck = {'test': ['CMD', 'python3', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8080")'],
                    'interval': '1s', 'timeout': '1s', 'retries': 2, 'start_period': '1s'}
-    app = {'image': old_image, 'env_file': [str(root / 'api.env')],
+    app = {'image': old_image, 'env_file': [str(root / 'api.env'), str(root / 'shared/release.env')],
            'environment': {'Database__MigrateOnStartup': 'true', 'Deploy__ReleaseSha': old_sha},
            'networks': ['private'], 'healthcheck': healthcheck}
     base = {'name': project, 'services': {
@@ -165,6 +178,7 @@ try:
                'environment': {'POSTGRES_PASSWORD': 'fixture-only', 'POSTGRES_USER': 'fixture', 'POSTGRES_DB': 'fixture'}, 'networks': ['private']},
         'caddy': {'image': 'caddy:2.10.0-alpine', 'container_name': project + '-caddy',
                   'volumes': [str(root / 'Caddyfile') + ':/etc/caddy/Caddyfile:ro',
+                              str(root / 'legal') + ':/srv/legal:ro', str(root / 'public') + ':/srv/public:ro',
                               str(root / 'certificate.fixture') + ':/fixture/certificate:ro'], 'networks': ['private']},
         'converso': {'image': old_image, 'container_name': project + '-converso', 'networks': ['edge']}},
         'networks': {'private': {'name': project + '-private'}, 'edge': {'name': project + '-edge'}}}
@@ -172,7 +186,7 @@ try:
     override = {'services': {'caddy': {'environment': {'OPS_HASH': 'literal$$retained'}, 'networks': ['edge']}}}
     (root / 'override.json').write_bytes(canonical(override))
     profile = {'format': 1, 'project': project, 'composeFiles': [str(root / 'base.json'), str(root / 'override.json')],
-               'envFiles': [str(root / 'api.env')], 'modelEnv': str(root / 'api.env'),
+               'envFiles': [str(root / 'api.env'), str(root / 'shared/release.env')], 'modelEnv': str(root / 'api.env'),
                'preserveFiles': [str(root / 'Caddyfile'), str(root / 'certificate.fixture')],
                'current': str(root / 'current'), 'stateRoot': str(root / 'transactions'),
                'migrationSha256': schema, 'schemaBaselineSha': old_sha, 'composeSha256': file_digest(root / 'base.json'),
@@ -463,7 +477,7 @@ try:
         manifest['contextHashes'] = {'api': digest(b'9'), 'worker': digest(b'9')}
         (info[0] / 'release.json').write_bytes(canonical(manifest))
         result = auto(info, request_for(sha, 150))
-        require(result['status'] == 'ALREADY_APPLIED' and [inspect(s)['Id'] for s in ('api', 'worker')] == before_ids, 'Unchanged contexts recreated apps')
+        require(result['status'] == 'ACCEPTED' and [inspect(s)['Id'] for s in ('api', 'worker')] == before_ids, 'Unchanged contexts recreated apps')
     record('documentation_commit_contexts_preserve_application_ids', unchanged_context)
     def automatic_health_failure():
         before_images = [inspect(s)['Image'] for s in ('api', 'worker')]
@@ -491,6 +505,136 @@ try:
             maintenance(profile)
         require((root / 'current').is_dir(), 'Rollback source pointer is missing')
     record('protected_previous_image_restore_after_housekeeping', restore_after_cleanup)
+    # Static-only acceptance shares the application journal but never recreates
+    # API/worker/Caddy. Exercise actual Caddy bind mounts and recovery bytes.
+    static_sha = 'b' * 40
+    static_info = bundle('static-only', static_sha, build('static', static_sha, True))
+    entries = {}
+    with tarfile.open(static_info[0] / 'source.tar') as archive:
+        for member in archive:
+            if member.isfile(): entries[member.name] = archive.extractfile(member).read()
+    entries.update({'legal/index.html': b'new legal', 'legal/added.html': b'new legal page',
+                    'public-site/index.html': b'new public', 'public-site/added.html': b'new public page'})
+    with tarfile.open(static_info[0] / 'source.tar', 'w') as archive:
+        for name, data in entries.items():
+            item = tarfile.TarInfo(name); item.size = len(data)
+            archive.addfile(item, io.BytesIO(data))
+    from release_content import archive_content, catalog
+    manifest = json.loads((static_info[0] / 'release.json').read_bytes())
+    manifest['files']['source.tar'] = file_digest(static_info[0] / 'source.tar')
+    manifest['staticFiles'], manifest['mobileAndroidVersion'] = archive_content(static_info[0] / 'source.tar')
+    manifest['contextHashes'] = json.loads((root / 'transactions/active.json').read_bytes())['contextHashes']
+    (static_info[0] / 'release.json').write_bytes(canonical(manifest))
+    static_info = static_info[0], file_digest(static_info[0] / 'release.json')
+    (root / 'public/obsolete.html').write_bytes(b'host-only obsolete content')
+    original_static = {name: catalog(root / name) for name in ('legal', 'public')}
+    original_release_env = (root / 'shared/release.env').read_bytes()
+    original_public_metadata = (root / 'shared/release-metadata/accepted.json').read_bytes()
+    original_app_ids = [inspect(s)['Id'] for s in ('api', 'worker')]
+    original_inodes = [(root / name).stat().st_ino for name in ('legal', 'public')]
+    def preserved_static():
+        require({name: catalog(root / name) for name in ('legal', 'public')} == original_static, 'Static rollback differs')
+        require((root / 'shared/release.env').read_bytes() == original_release_env, 'Release environment rollback differs')
+        require((root / 'shared/release-metadata/accepted.json').read_bytes() == original_public_metadata, 'Public metadata rollback differs')
+        require([inspect(s)['Id'] for s in ('api', 'worker')] == original_app_ids, 'Static release recreated applications')
+    def partial_static_failure():
+        original_publish = auto_release.publish_tree
+        calls = 0
+        def fail_after_first(source, destination):
+            nonlocal calls
+            original_publish(source, destination)
+            calls += 1
+            if calls == 1: raise auto_release.ReleaseError('fixture_partial_static_failure')
+        auto_release.publish_tree = fail_after_first
+        try:
+            try:
+                auto(static_info, request_for(static_sha, 170))
+                raise AssertionError('Partial publication accepted')
+            except auto_release.ReleaseError as error:
+                require(str(error).startswith('release_failed_previous_version_restored:'), 'Partial static rollback failed')
+        finally: auto_release.publish_tree = original_publish
+        preserved_static()
+    record('partial_static_publication_restores_both_roots_and_metadata', partial_static_failure)
+    def static_health_failure():
+        previous_commands, previous_timeout = profile['acceptance'], profile['healthTimeoutSeconds']
+        profile['acceptance'] = [['python3', '-c', 'raise SystemExit(1)']]
+        profile['healthTimeoutSeconds'] = 1
+        write_profile()
+        try:
+            try:
+                auto(static_info, request_for(static_sha, 171))
+                raise AssertionError('Unhealthy static release accepted')
+            except auto_release.ReleaseError as error:
+                require(str(error).startswith('release_failed_previous_version_restored:'), 'Static health rollback failed')
+        finally:
+            profile['acceptance'], profile['healthTimeoutSeconds'] = previous_commands, previous_timeout
+            write_profile()
+        preserved_static()
+    record('static_health_failure_restores_content_metadata_and_ci_ledger', static_health_failure)
+    static_result = {}
+    def accept_static():
+        static_result.update(auto(static_info, request_for(static_sha, 172)))
+        require(static_result['services'] == [] and static_result['staticTrees'] == ['legal', 'public-site'], 'Static changes not detected independently')
+        require([inspect(s)['Id'] for s in ('api', 'worker')] == original_app_ids, 'Static-only recreated apps')
+        require([(root / name).stat().st_ino for name in ('legal', 'public')] == original_inodes, 'Caddy bind roots replaced')
+        require(not (root / 'public/obsolete.html').exists(), 'Obsolete public file not removed')
+        for endpoint, expected in (('/legal/index.html', b'new legal'), ('/index.html', b'new public')):
+            require(command(['docker', 'exec', project + '-caddy', 'wget', '-qO-', 'http://127.0.0.1:8080' + endpoint]) == expected, 'Caddy sees stale content')
+        metadata = json.loads((root / 'shared/release-metadata/accepted.json').read_bytes())
+        prior = json.loads(original_public_metadata)
+        require(metadata['sourceSha'] == static_sha and metadata['backendSourceSha'] == prior['backendSourceSha'] and
+                metadata['backendVersion'] == prior['backendVersion'] and metadata['backendDeployedAtUtc'] == prior['backendDeployedAtUtc'], 'Accepted release confused with backend identity')
+        require(metadata['androidVersion'] == '1.2.3+42' and metadata['acceptedAtUtc'] != prior['acceptedAtUtc'], 'Version or acceptance time stale')
+        visible = json.loads(command(['docker', 'exec', project + '-api', 'python3', '-c',
+                                      'from pathlib import Path; print(Path("/run/convy-release/accepted.json").read_text())']))
+        require(visible == metadata, 'Running API directory bind sees stale accepted metadata')
+        runtime = dict(value.split('=', 1) for value in inspect('api')['Config']['Env'])
+        require(metadata['backendSourceSha'] == runtime['Deploy__ReleaseSha'] and
+                metadata['backendVersion'] == runtime['Backend__Version'] and
+                metadata['backendDeployedAtUtc'] == runtime['Deploy__LastDeployAt'], 'Metadata does not describe actual backend')
+        environment = dict(line.split('=', 1) for line in (root / 'shared/release.env').read_text().splitlines())
+        require(environment['Deploy__ReleaseSha'] == metadata['sourceSha'] and
+                environment['Deploy__LastDeployAt'] == metadata['acceptedAtUtc'] and
+                environment['Backend__Version'] == metadata['backendVersion'] and
+                environment['Mobile__AndroidVersion'] == metadata['androidVersion'], 'Four release metadata keys stale')
+        require(b'RETAINED=fixture-dollar$literal\n' in (root / 'shared/release.env').read_bytes(), 'Unmanaged release environment bytes changed')
+    record('static_only_publishes_through_live_caddy_without_restart', accept_static)
+    def static_noop():
+        before = (root / 'shared/release-metadata/accepted.json').read_bytes()
+        result = auto(static_info, request_for(static_sha, 172))
+        require(result['status'] == 'ALREADY_ACCEPTED' and (root / 'shared/release-metadata/accepted.json').read_bytes() == before, 'Static repeat changed acceptance')
+    record('static_repeat_preserves_metadata_and_application_ids', static_noop)
+    def credential_drift_denies_recovery():
+        for target, reason in ((root / 'shared/release.env', 'protected_release_configuration_changed'),
+                               (root / 'api.env', 'protected_model_configuration_changed')):
+            accepted_bytes = target.read_bytes()
+            metadata_bytes = (root / 'shared/release-metadata/accepted.json').read_bytes()
+            pointer = os.readlink(root / 'current')
+            changed_bytes = accepted_bytes + b'PROTECTED_CREDENTIAL_DRIFT=fixture-only\n'
+            target.write_bytes(changed_bytes)
+            try:
+                try:
+                    with host_lock(root / 'shared.lock'): auto_release.restore(static_result['statePath'], profile)
+                    raise AssertionError('Rollback overwrote changed protected configuration')
+                except auto_release.ReleaseError as error:
+                    require(str(error) == reason, 'Wrong credential drift rejection')
+                require(target.read_bytes() == changed_bytes and os.readlink(root / 'current') == pointer and
+                        (root / 'shared/release-metadata/accepted.json').read_bytes() == metadata_bytes,
+                        'Rejected recovery mutated protected state')
+                require([inspect(s)['Id'] for s in ('api', 'worker')] == original_app_ids, 'Rejected recovery recreated apps')
+            finally: target.write_bytes(accepted_bytes)
+    record('recovery_rejects_protected_credential_drift_before_mutation', credential_drift_denies_recovery)
+    def static_rollback():
+        with host_lock(root / 'shared.lock'): auto_release.restore(static_result['statePath'], profile)
+        preserved_static()
+    record('static_only_manual_rollback_restores_publication_and_metadata', static_rollback)
+    def static_interruption():
+        result = auto(static_info, request_for(static_sha, 173))
+        state = auto_release.recovery(result['statePath']); state['status'] = 'ACTIVATING'
+        auto_release.save_state(result['statePath'], state)
+        with host_lock(root / 'shared.lock'): recover_interrupted(profile)
+        preserved_static()
+    record('interrupted_static_activation_restores_full_journal', static_interruption)
     record('unrelated_running_image_preserved', lambda: require(inspect('converso')['Image'] == old_image, 'Converso image changed'))
     require((root / 'api.env').read_bytes() == original_env, 'Protected bytes changed')
     print(json.dumps({'status': 'PASS', 'scenarios': results, 'sharedContainersPreserved': True, 'secretLogsAbsent': True,

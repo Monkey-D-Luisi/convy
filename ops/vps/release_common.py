@@ -114,6 +114,10 @@ def verify_bundle(bundle, expected):
     require(bool(manifest.get('images')) and set(manifest['images']) <= set(SERVICES), 'invalid_service_selection')
     for name in ('source.tar', 'images.tar'):
         require(file_digest(bundle / name) == manifest['files'].get(name), 'artifact_digest_mismatch')
+    from release_content import archive_content
+    static_files, android = archive_content(bundle / 'source.tar')
+    require(manifest.get('staticFiles') == static_files and manifest.get('mobileAndroidVersion') == android,
+            'static_or_android_manifest_mismatch')
     expected_ids = set()
     for service, image in manifest['images'].items():
         require(IMAGE.fullmatch(image) is not None, 'invalid_image_id')

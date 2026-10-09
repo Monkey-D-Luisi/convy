@@ -66,13 +66,25 @@ class AutomaticIdentityTests(unittest.TestCase):
                     item = tarfile.TarInfo(name)
                     item.size = len(data)
                     archive.addfile(item, io.BytesIO(data))
-            (root / 'source.tar').write_bytes(b'fixture source')
+            with tarfile.open(root / 'source.tar', 'w') as archive:
+                for name, data in (('legal/index.html', b'legal'), ('public-site/index.html', b'public'),
+                                   ('mobile/androidApp/build.gradle.kts', b'versionName = "1.0"\nversionCode = 1\n')):
+                    item = tarfile.TarInfo(name)
+                    item.size = len(data)
+                    archive.addfile(item, io.BytesIO(data))
             manifest = {'format': 1, 'platform': 'linux/amd64', 'sourceSha': self.sha, 'baselineSha': 'b' * 40,
                         'schemaPolicy': 'unchanged', 'migrationSha256': '0' * 64, 'migrationIds': ['20261008000000_Fixture'],
                         'images': {'api': image, 'worker': image}, 'files': {name: file_digest(root / name) for name in ('source.tar', 'images.tar')}}
+            from release_content import archive_content
+            manifest['staticFiles'], manifest['mobileAndroidVersion'] = archive_content(root / 'source.tar')
             (root / 'release.json').write_bytes(canonical(manifest))
             checked = verify_bundle(root, file_digest(root / 'release.json'))
             self.assertEqual(checked['imageStorageBytes'], len(compressed) + 2 * len(layer_bytes))
+            manifest['staticFiles']['legal']['index.html'] = '0' * 64
+            (root / 'release.json').write_bytes(canonical(manifest))
+            with self.assertRaisesRegex(ReleaseError, 'static_or_android_manifest_mismatch'):
+                verify_bundle(root, file_digest(root / 'release.json'))
+            manifest['staticFiles']['legal']['index.html'] = digest(b'legal')
             manifest['imageStorageBytes'] = 1
             (root / 'release.json').write_bytes(canonical(manifest))
             with self.assertRaisesRegex(ReleaseError, 'image_storage_estimate_mismatch'):

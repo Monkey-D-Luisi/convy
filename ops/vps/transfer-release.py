@@ -23,7 +23,7 @@ def transfer(bundle, checksum, host, key, known_hosts, pin, remote_root):
     run(['ssh', *options, host, command])
     scripts = Path(__file__).parent
     run(['scp', *options, *[str(Path(bundle) / name) for name in ('release.json', 'images.tar', 'source.tar')],
-         str(scripts / 'release_common.py'), str(scripts / 'verify-release.py'), host + ':' + incoming + '/'], timeout=1200)
+         str(scripts / 'release_common.py'), str(scripts / 'release_content.py'), str(scripts / 'verify-release.py'), host + ':' + incoming + '/'], timeout=1200)
     verified = json.loads(run(['ssh', *options, host, 'python3 ' + incoming + '/verify-release.py --bundle ' + incoming + ' --manifest ' + checksum], timeout=900))
     require(verified.get('status') == 'VERIFIED' and verified.get('manifestSha256') == checksum, 'remote_verification_failed')
     run(['ssh', *options, host, 'test ! -e ' + destination + ' && mv -T ' + incoming + ' ' + destination])

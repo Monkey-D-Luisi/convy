@@ -14,6 +14,14 @@ from datetime import datetime, timezone
 from release_common import (LEGACY_PRICE, MODEL_PATCH, SERVICES, ReleaseError, canonical,
                             digest, extract_source, file_digest, json_read, patch_model,
                             private_write, require, run, verify_bundle)
+from release_content import (METADATA_KEYS, STATIC_RECOVERY_BYTES, candidate_metadata, catalog, metadata_paths,
+                             patch_metadata, protected_lines, public_write, publish_tree, restore_static,
+                             roots, save_static, static_inputs)
+
+def metadata_mount(profile):
+    return {'type': 'bind', 'source': str(metadata_paths(profile)[1].parent),
+            'target': '/run/convy-release', 'read_only': True,
+            'bind': {}}
 
 def dollars(value, encode):
     if isinstance(value, str):
@@ -64,6 +72,16 @@ def read_profile(path):
     require(profile['modelEnv'] in profile['envFiles'], 'model_env_not_in_profile')
     for source in profile['envFiles']:
         protected(source)
+    release_env, public = metadata_paths(profile)
+    shared = release_env.parent
+    require(shared.is_dir() and not shared.is_symlink() and shared.stat().st_uid == os.geteuid() and
+            shared.stat().st_mode & 0o022 == 0, 'shared_directory_not_owned')
+    protected(release_env)
+    require(str(release_env) in profile['envFiles'] and str(release_env) not in profile['preserveFiles'], 'release_env_not_managed')
+    directory = public.parent
+    require(directory.is_dir() and not directory.is_symlink() and directory.stat().st_uid == os.geteuid() and
+            directory.stat().st_mode & 0o022 == 0, 'metadata_directory_requires_operator_setup')
+    require(not public.is_symlink(), 'public_metadata_symlink')
     for source in profile['composeFiles'] + profile['preserveFiles']:
         require(Path(source).is_absolute() and Path(source).is_file(), 'profile_source_missing')
     require(profile.get('composeHashes') == {p: file_digest(p) for p in profile['composeFiles']}, 'compose_sources_not_reviewed')
@@ -115,7 +133,7 @@ def adopt(config, live, profile):
         for key, expected in environment.items():
             allowed = key in MODEL_PATCH or key == LEGACY_PRICE
             allowed |= service == 'api' and key == 'Database__MigrateOnStartup' and actual.get(key) == 'false'
-            allowed |= service == 'api' and known is not None and key == 'Deploy__ReleaseSha'
+            allowed |= known is not None and key in METADATA_KEYS
             require(allowed or actual.get(key) == str(expected), 'effective_environment_differs_from_runtime')
             require(allowed or key in actual, 'runtime_environment_key_missing')
         if environment:
@@ -123,6 +141,12 @@ def adopt(config, live, profile):
         for mount in value.get('volumes', []):
             require(any(m['Source'] == mount.get('source') and m['Destination'] == mount['target'] and
                         m['RW'] == (not mount.get('read_only', False)) for m in container['Mounts']), 'runtime_mount_mismatch')
+        if service == 'api':
+            managed = [m for m in container['Mounts'] if m['Destination'] == '/run/convy-release']
+            if managed:
+                require(len(managed) == 1 and managed[0]['Source'] == metadata_mount(profile)['source'] and not managed[0]['RW'], 'metadata_mount_not_reviewed')
+                if metadata_mount(profile) not in value.setdefault('volumes', []):
+                    value['volumes'].append(metadata_mount(profile))
         expected_networks = {config['networks'][n]['name'] for n in value.get('networks', {})}
         require(expected_networks == set(container['NetworkSettings']['Networks']), 'runtime_network_mismatch')
         value['image'] = container['Image']
@@ -183,7 +207,8 @@ def plan(profile_path, bundle, manifest_digest):
     manifest = verify_bundle(bundle, manifest_digest)
     require(manifest['migrationSha256'] == profile['migrationSha256'] and manifest['baselineSha'] == profile['schemaBaselineSha'], 'incompatible_schema')
     require(manifest['composeSha256'] == profile['composeSha256'], 'candidate_compose_not_equivalent')
-    require(shutil.disk_usage(Path(profile['current']).parent).free >= profile.get('minimumFreeBytes', 8 * 1024**3) + 2 * Path(bundle, 'images.tar').stat().st_size, 'insufficient_disk_capacity')
+    require(shutil.disk_usage(Path(profile['current']).parent).free >= profile.get('minimumFreeBytes', 8 * 1024**3) +
+            2 * Path(bundle, 'images.tar').stat().st_size + STATIC_RECOVERY_BYTES, 'insufficient_disk_capacity')
     live = containers()
     before = adopt(effective(profile), live, profile)
     history = database_history(before)
@@ -192,6 +217,10 @@ def plan(profile_path, bundle, manifest_digest):
     affected = []
     active_file = Path(profile['stateRoot']) / 'active.json'
     active = json_read(active_file) if active_file.exists() else {}
+    static_before, static_changed = static_inputs(profile, manifest, before)
+    after['services']['api'].setdefault('volumes', [])
+    if metadata_mount(profile) not in after['services']['api']['volumes']:
+        after['services']['api']['volumes'].append(metadata_mount(profile))
     for service in SERVICES:
         if service not in manifest['images']:
             continue
@@ -226,9 +255,16 @@ def plan(profile_path, bundle, manifest_digest):
                 env.pop(LEGACY_PRICE, None)
             env['Database__MigrateOnStartup'] = 'false'
             env['Deploy__ReleaseSha'] = manifest['sourceSha']
+            env['Backend__Version'] = manifest['sourceSha'][:12]
+            env['Mobile__AndroidVersion'] = manifest['mobileAndroidVersion']
+            # Bound in the plan; apply substitutes only the controller's UTC clock.
+            if (before['services'][service].get('environment', {}).get('Deploy__ReleaseSha') != manifest['sourceSha'] or
+                    before['services'][service]['image'] != value['image']):
+                env['Deploy__LastDeployAt'] = 'pending-acceptance'
         model_change = service == 'api' and model_bytes(profile) != Path(profile['modelEnv']).read_bytes()
         if name not in live or value != before['services'][service] or model_change:
             affected.append(service)
+    patch_metadata(metadata_paths(profile)[0].read_bytes(), candidate_metadata(manifest, before, True, 'pending-acceptance'))
     backup = backup_gate(profile, before) if affected else {'required': False}
     require('api' in manifest['images'] or model_bytes(profile) == Path(profile['modelEnv']).read_bytes(), 'model_update_requires_api_image')
     roundtrip = dollars(json.loads(compose(after, 'config', '--format', 'json')), False)
@@ -245,12 +281,19 @@ def plan(profile_path, bundle, manifest_digest):
               'toolSha256': file_digest(__file__), 'commonSha256': file_digest(Path(__file__).with_name('release_common.py'))}
     inputs['databaseHistorySha256'] = digest(canonical(history))
     inputs['backup'] = backup
+    inputs['staticBefore'] = static_before
+    inputs['staticChanged'] = static_changed
+    public = metadata_paths(profile)[1]
+    inputs['publicMetadata'] = file_digest(public) if public.exists() else None
+    inputs['contentToolSha256'] = file_digest(Path(__file__).with_name('release_content.py'))
+    inputs['alreadyAccepted'] = active.get('sourceSha') == manifest['sourceSha'] and not affected and not static_changed
     return profile, manifest, before, after, affected, unaffected, inputs
 
 def summary(planned):
     profile, manifest, before, after, affected, unaffected, inputs = planned
-    return {'status': 'PLAN_READY' if affected else 'ALREADY_APPLIED', 'sourceSha': manifest['sourceSha'],
+    return {'status': 'ALREADY_APPLIED' if inputs['alreadyAccepted'] else 'PLAN_READY', 'sourceSha': manifest['sourceSha'],
             'services': affected, 'approvalDigest': digest(canonical(inputs)),
+            'staticTrees': inputs['staticChanged'],
             'inputDigests': {key: digest(canonical(value)) for key, value in inputs.items()},
             'manifestSha256': inputs['manifestSha256'], 'startupMigrations': False,
             'project': profile['project'], 'composeFiles': profile['composeFiles'],
@@ -310,6 +353,11 @@ def recovery(path):
 def restore(path, profile):
     path = Path(path)
     state = recovery(path)
+    if 'previous-static.tar' in state['recoveryFiles']:
+        require(protected_lines(metadata_paths(profile)[0].read_bytes()) == protected_lines((path / 'previous-release.env').read_bytes()),
+                'protected_release_configuration_changed')
+        require(protected_lines(Path(profile['modelEnv']).read_bytes(), (*MODEL_PATCH, LEGACY_PRICE)) ==
+                protected_lines((path / 'previous-model.env').read_bytes(), (*MODEL_PATCH, LEGACY_PRICE)), 'protected_model_configuration_changed')
     # Only fixed controller-owned atomic-write leftovers, never arbitrary files.
     for temporary in (path / 'state.json.tmp', Path(profile['modelEnv'] + '.tmp'),
                       Path(profile['stateRoot']) / 'active.json.tmp', Path(profile['stateRoot']) / 'cd-active.json.tmp'):
@@ -334,6 +382,18 @@ def restore(path, profile):
             run(['docker', 'image', 'inspect', image])
     if Path(profile['modelEnv']).read_bytes() != (path / 'previous-model.env').read_bytes():
         private_write(profile['modelEnv'], (path / 'previous-model.env').read_bytes())
+    if 'previous-static.tar' in state['recoveryFiles']:
+        restore_static(path, profile, state)
+        release_env, public = metadata_paths(profile)
+        for temporary in (Path(str(release_env) + '.tmp'), Path(str(public) + '.tmp')):
+            if temporary.exists():
+                require(not temporary.is_symlink() and temporary.stat().st_uid == os.geteuid(), 'metadata_temporary_not_owned')
+                temporary.unlink()
+        private_write(release_env, (path / 'previous-release.env').read_bytes())
+        if state['previousPublicMetadata']:
+            public_write(public, (path / 'previous-public.json').read_bytes())
+        else:
+            public.unlink(missing_ok=True)
     if state['status'] in ('ACTIVATING', 'ACCEPTED', 'RECOVERY_REQUIRED'):
         activate(before, [s for s in state['services'] if s in state['previousImages']])
     for service in state['services']:
@@ -403,7 +463,7 @@ def apply(profile_path, bundle, manifest_digest, approval):
         changed_inputs = sorted(k for k in initial_inputs if initial_inputs[k] != planned[-1][k])
         require(summary(planned)['approvalDigest'] == approval, 'host_changed_since_approval:' + ','.join(changed_inputs))
         profile, manifest, before, after, services, unaffected, inputs = planned
-        if not services:
+        if inputs['alreadyAccepted']:
             return summary(planned)
         path = root / (manifest['sourceSha'] + '-' + manifest_digest[:12] + '-' + str(time.time_ns()))
         path.mkdir(mode=0o700)
@@ -417,6 +477,11 @@ def apply(profile_path, bundle, manifest_digest, approval):
         private_write(path / 'candidate-compose.json', canonical(after))
         private_write(path / 'previous-model.env', Path(profile['modelEnv']).read_bytes())
         private_write(path / 'release.json', Path(bundle, 'release.json').read_bytes())
+        release_env, public = metadata_paths(profile)
+        private_write(path / 'previous-release.env', release_env.read_bytes())
+        if public.exists():
+            private_write(path / 'previous-public.json', public.read_bytes())
+        static_digest = save_static(path, profile)
         if inputs['currentTarget'] is not None:
             previous_source = Path(inputs['currentTarget'])
             require(previous_source.is_dir(), 'previous_source_missing')
@@ -433,8 +498,13 @@ def apply(profile_path, bundle, manifest_digest, approval):
                  'previousActive': json_read(root / 'active.json') if (root / 'active.json').exists() else None,
                  'previousCiActive': json_read(root / 'cd-active.json') if (root / 'cd-active.json').exists() else None,
                  'databaseHistorySha256': inputs['databaseHistorySha256'], 'backup': inputs['backup'],
+                 'staticBefore': inputs['staticBefore'], 'staticTrees': inputs['staticChanged'],
+                 'previousPublicMetadata': public.exists(),
                  'preservedFiles': {p: file_digest(p) for p in profile['preserveFiles']},
                  'recoveryFiles': {p: file_digest(path / p) for p in ('previous-compose.json', 'rollback-compose.json', 'candidate-compose.json', 'previous-model.env', 'release.json', 'candidate-images.tar')}}
+        state['recoveryFiles'].update({'previous-static.tar': static_digest, 'previous-release.env': file_digest(path / 'previous-release.env')})
+        if public.exists():
+            state['recoveryFiles']['previous-public.json'] = file_digest(path / 'previous-public.json')
         save_state(path, state)
         if (path / 'previous-source.tar').exists():
             state['recoveryFiles']['previous-source.tar'] = file_digest(path / 'previous-source.tar')
@@ -451,40 +521,58 @@ def apply(profile_path, bundle, manifest_digest, approval):
         save_state(path, state)
         try:
             verify_bundle(bundle, manifest_digest)
-            run(['docker', 'image', 'load', '-i', Path(bundle) / 'images.tar'], timeout=900)
+            if services:
+                run(['docker', 'image', 'load', '-i', Path(bundle) / 'images.tar'], timeout=900)
             for service in manifest['images']:
-                identifier = loaded_image(manifest, service)
                 if service in services:
-                    after['services'][service]['image'] = identifier
+                    after['services'][service]['image'] = loaded_image(manifest, service)
+            if 'api' in services:
+                after['services']['api']['environment']['Deploy__LastDeployAt'] = datetime.now(timezone.utc).isoformat()
             private_write(path / 'candidate-compose.json', canonical(after))
             state['recoveryFiles']['candidate-compose.json'] = file_digest(path / 'candidate-compose.json')
             save_state(path, state)
             unchanged(unaffected, names, profile)
             require(source_hashes(profile) == inputs['sources'], 'source_changed_during_prepare')
             require(digest(canonical(database_history(before))) == inputs['databaseHistorySha256'], 'database_changed_during_prepare')
+            require(static_inputs(profile, manifest, before)[0] == inputs['staticBefore'], 'static_changed_during_prepare')
+            require((file_digest(public) if public.exists() else None) == inputs['publicMetadata'], 'metadata_changed_during_prepare')
             state['status'] = 'ACTIVATING'
             save_state(path, state)
             if Path(profile['modelEnv']).read_bytes() != model_bytes(profile):
                 private_write(profile['modelEnv'], model_bytes(profile))
+            for name in inputs['staticChanged']:
+                publish_tree(source / name, roots(profile)[name])
             activate(after, services)
             health(after, services, profile)
             require(digest(canonical(database_history(after))) == inputs['databaseHistorySha256'], 'database_changed_during_release')
             unchanged(unaffected, names, profile)
             require({p: file_digest(p) for p in profile['preserveFiles']} == state['preservedFiles'], 'preserved_file_changed')
+            require(all(catalog(root) == manifest['staticFiles'][name] for name, root in roots(profile).items()), 'accepted_static_mismatch')
+            metadata = candidate_metadata(manifest, before, 'api' in services, datetime.now(timezone.utc).isoformat())
+            if 'api' not in services and state['previousPublicMetadata']:
+                prior = json_read(path / 'previous-public.json')
+                for key in ('backendSourceSha', 'backendVersion', 'backendDeployedAtUtc'):
+                    metadata[key] = prior[key]
+            if 'api' in services:
+                metadata['backendDeployedAtUtc'] = after['services']['api']['environment']['Deploy__LastDeployAt']
+            private_write(release_env, patch_metadata((path / 'previous-release.env').read_bytes(), metadata))
+            public_write(public, canonical(metadata))
             set_current(Path(profile['current']), str(source))
             private_write(root / 'active.json', canonical({'sourceSha': manifest['sourceSha'], 'statePath': str(path),
                                                          'contextHashes': manifest.get('contextHashes', {})}))
             state['status'] = 'ACCEPTED'
             save_state(path, state)
-            return {'status': 'ACCEPTED', 'sourceSha': manifest['sourceSha'], 'services': services, 'statePath': str(path)}
+            return {'status': 'ACCEPTED', 'sourceSha': manifest['sourceSha'], 'services': services,
+                    'staticTrees': inputs['staticChanged'], 'statePath': str(path)}
         except Exception as failure:
             reason = str(failure) if isinstance(failure, ReleaseError) else 'unexpected_error_output_withheld'
             state['failureReason'] = reason
             save_state(path, state)
             try:
                 restore(path, profile)
-            except Exception:
+            except Exception as rollback_failure:
                 state['status'] = 'RECOVERY_REQUIRED'
+                state['rollbackFailureReason'] = str(rollback_failure) if isinstance(rollback_failure, ReleaseError) else 'unexpected_error_output_withheld'
                 save_state(path, state)
                 raise ReleaseError('automatic_rollback_failed_manual_recovery_required') from None
             raise ReleaseError('release_failed_previous_version_restored:' + reason) from None
