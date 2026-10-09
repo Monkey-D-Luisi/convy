@@ -47,20 +47,10 @@ public class OpsContractTests
     }
 
     [Fact]
-    public void VpsDeployScript_ShouldPublishLegalAndCheckReadyEndpoint()
+    public void VpsReleaseWorkflow_ShouldHaveNoAutomaticHostAccess()
     {
-        var source = ReadRepoFile("ops", "vps", "deploy-release.sh");
         var backendRelease = ReadRepoFile(".github", "workflows", "backend-staging-release.yml");
 
-        source.Should().Contain("/opt/convy/legal");
-        source.Should().Contain("/opt/convy/public");
-        source.Should().Contain("legal");
-        source.Should().Contain("public-site");
-        source.Should().Contain("CONVY_API_HOSTNAME");
-        source.Should().Contain("CONVY_AUTH_HOSTNAME");
-        source.Should().Contain("CONVY_MCP_HOSTNAME");
-        source.Should().Contain("/health/ready");
-        source.Should().Contain("/health");
         backendRelease.Should().Contain("workflow_dispatch:");
         backendRelease.Should().NotContain("workflow_run:");
         backendRelease.Should().NotContain("secrets.");
@@ -98,13 +88,14 @@ public class OpsContractTests
     }
 
     [Fact]
-    public void VpsDeployScript_ShouldPruneDockerBuildCacheAfterHealthyDeploy()
+    public void VpsDeployScript_ShouldDisableLegacyBuildAndPrune()
     {
         var source = ReadRepoFile("ops", "vps", "deploy-release.sh");
 
-        source.Should().Contain("DOCKER_BUILD_CACHE_MAX_USED_SPACE");
-        source.Should().Contain("docker buildx prune");
-        source.Should().Contain("--max-used-space");
+        source.Should().Contain("Legacy deployment is disabled");
+        source.Should().NotContain("docker compose");
+        source.Should().NotContain("docker build");
+        source.Should().NotContain("prune");
     }
 
     [Fact]

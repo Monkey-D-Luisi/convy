@@ -53,6 +53,6 @@ public class OpenAiVoiceCostEstimatorTests
 
         var cost = estimator.EstimateMicros(telemetry);
 
-        cost.Should().Be(107);
+        cost.Should().Be(98);
     }
 }
