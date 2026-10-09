@@ -57,7 +57,7 @@ scp -i "$env:USERPROFILE\.ssh\convy_vps_deploy" ..\..\ops\vps\bootstrap-server.s
 ssh -i "$env:USERPROFILE\.ssh\convy_vps_deploy" "root@${ip}" "bash /tmp/bootstrap-server.sh"
 ```
 
-The CD workflow can create/use the non-root deploy user `convy-deploy`.
+These are historical initial provisioning commands. New CD uses a separately provisioned constrained `convy-cd` principal and never creates users during a release. See [staging CD](staging-cd.md).
 
 ## Secrets
 
@@ -96,7 +96,7 @@ Use [deployment-runbook.md](deployment-runbook.md) for GitHub Actions and manual
 
 ## Backups
 
-Install backup timers after the first healthy deploy:
+Backup timers remain unactivated. Review shared locking, frozen tools, real off-host recovery and alert routing in [staging CD](staging-cd.md) before separately authorizing installation:
 
 ```bash
 sudo /opt/convy/current/ops/vps/backups/install-backup-timers.sh

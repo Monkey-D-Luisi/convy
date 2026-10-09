@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import tempfile
 
-from release_common import (SERVICES, SHA, ReleaseError, canonical, extract_source,
+from release_common import (SERVICES, SHA, ReleaseError, canonical, digest, extract_source,
                             file_digest, migration_digest, migration_ids, require, run, verify_bundle)
 
 BUILDS = {
@@ -16,7 +16,7 @@ BUILDS = {
     'mcp': ('mcp', 'mcp/Dockerfile'),
 }
 
-def build(repo, source, baseline, output, services):
+def build(repo, source, baseline, output, services, builder=None, receipt=None):
     require(SHA.fullmatch(source) is not None and SHA.fullmatch(baseline) is not None, 'exact_commit_required')
     require(bool(services) and len(set(services)) == len(services) and set(services) <= set(SERVICES), 'invalid_services')
     output = Path(output)
@@ -38,25 +38,40 @@ def build(repo, source, baseline, output, services):
         compose_path = 'docker/docker-compose.vps.yml'
         require(file_digest(tree / compose_path) == file_digest(old / compose_path), 'compose_change_requires_separate_review')
         images = {}
+        image_sizes = {}
+        context_hashes = {}
         for service in services:
             context, dockerfile = BUILDS[service]
+            paths = sorted(p for p in (tree / context).rglob('*') if p.is_file())
+            context_hashes[service] = digest(canonical({str(p.relative_to(tree)): [file_digest(p), p.stat().st_mode & 0o777] for p in paths} |
+                                                      {dockerfile: file_digest(tree / dockerfile)}))
             tag = 'convy-reviewed-' + service + ':' + source
-            run(['docker', 'build', '--platform', 'linux/amd64', '--label',
+            command = ['docker', 'buildx', 'build', '--builder', builder, '--load'] if builder else ['docker', 'build']
+            run(command + ['--platform', 'linux/amd64', '--label',
                  'org.opencontainers.image.revision=' + source, '-t', tag,
                  '-f', tree / dockerfile, tree / context], timeout=1800)
             info = json.loads(run(['docker', 'image', 'inspect', tag]))[0]
             require(info['Os'] == 'linux' and info['Architecture'] == 'amd64', 'wrong_build_platform')
             images[service] = info['Id']
+            image_sizes[service] = info['Size']
+            if service in ('dashboard', 'auth', 'mcp'):
+                run(['node', Path(repo) / '.github/scripts/verify-release-image.mjs', info['Id']], timeout=120)
+            if builder:
+                run(['docker', 'buildx', 'prune', '--builder', builder, '-f', '--max-used-space', '4GB'], timeout=120)
         output.mkdir(parents=True)
         (output / 'source.tar').write_bytes((temp / (source + '.tar')).read_bytes())
         run(['docker', 'image', 'save', '-o', output / 'images.tar', *sorted(set(images.values()))], timeout=900)
         manifest = {'format': 1, 'sourceSha': source, 'baselineSha': baseline, 'platform': 'linux/amd64',
                     'schemaPolicy': 'unchanged', 'migrationSha256': migration, 'migrationIds': migration_ids(tree), 'composeSha256': file_digest(tree / compose_path),
-                    'images': images, 'files': {p: file_digest(output / p) for p in ('source.tar', 'images.tar')}}
+                    'images': images, 'imageSizes': image_sizes, 'contextHashes': context_hashes,
+                    'files': {p: file_digest(output / p) for p in ('source.tar', 'images.tar')}}
+        if receipt:
+            manifest['ciReceipt'] = receipt
         (output / 'release.json').write_bytes(canonical(manifest))
         checksum = file_digest(output / 'release.json')
         checked = verify_bundle(output, checksum)
         manifest['configIds'] = checked['configIds']
+        manifest['imageStorageBytes'] = checked['imageStorageBytes']
         (output / 'release.json').write_bytes(canonical(manifest))
         checksum = file_digest(output / 'release.json')
         verify_bundle(output, checksum)

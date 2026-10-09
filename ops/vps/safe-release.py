@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import tarfile
 import time
 from datetime import datetime, timezone
 
@@ -125,6 +126,16 @@ def adopt(config, live, profile):
         expected_networks = {config['networks'][n]['name'] for n in value.get('networks', {})}
         require(expected_networks == set(container['NetworkSettings']['Networks']), 'runtime_network_mismatch')
         value['image'] = container['Image']
+        if profile.get('applicationCaps') and service in SERVICES:
+            host = container['HostConfig']
+            if host.get('Memory'):
+                value['mem_limit'] = host['Memory']
+            if host.get('NanoCpus'):
+                value['cpus'] = host['NanoCpus'] / 1_000_000_000
+            logging = host.get('LogConfig', {})
+            value['logging'] = {'driver': logging.get('Type', 'json-file')}
+            if logging.get('Config'):
+                value['logging']['options'] = logging['Config']
     return config
 
 def database_history(config):
@@ -150,6 +161,12 @@ def backup_gate(profile, config):
 def source_hashes(profile):
     return {p: file_digest(p) for p in profile['composeFiles'] + profile['envFiles'] + profile['preserveFiles']}
 
+
+def model_bytes(profile):
+    original = Path(profile['modelEnv']).read_bytes()
+    require(profile.get('modelPolicy', 'reviewed-luna') in ('preserve', 'reviewed-luna'), 'invalid_model_policy')
+    return original if profile.get('modelPolicy') == 'preserve' else patch_model(original)
+
 def unchanged(snapshot, affected, profile):
     live = containers()
     excluded = set(affected)
@@ -173,12 +190,24 @@ def plan(profile_path, bundle, manifest_digest):
     require(history == manifest['migrationIds'], 'pending_or_unknown_database_migration')
     after = copy.deepcopy(before)
     affected = []
+    active_file = Path(profile['stateRoot']) / 'active.json'
+    active = json_read(active_file) if active_file.exists() else {}
     for service in SERVICES:
         if service not in manifest['images']:
             continue
         require(service in after['services'], 'candidate_service_missing')
         value = after['services'][service]
         name = value['container_name']
+        if service in profile.get('applicationCaps', {}):
+            limits = profile['applicationCaps'][service]
+            value['mem_limit'] = limits['memoryBytes']
+            value['cpus'] = limits['cpus']
+            value['logging'] = {'driver': 'json-file', 'options': profile['applicationLogOptions']}
+        if (profile.get('modelPolicy') == 'preserve' and name in live and
+                manifest.get('contextHashes', {}).get(service) is not None and
+                manifest['contextHashes'][service] == active.get('contextHashes', {}).get(service) and
+                value == before['services'][service]):
+            continue
         image = manifest['images'][service]
         try:
             info = json.loads(run(['docker', 'image', 'inspect', image]))[0]
@@ -192,15 +221,16 @@ def plan(profile_path, bundle, manifest_digest):
         if service == 'api':
             env = value.setdefault('environment', {})
             require(env.get('OpenAI__TranscriptionModel') == 'gpt-4o-mini-transcribe', 'transcription_not_reviewed')
-            env.update(MODEL_PATCH)
-            env.pop(LEGACY_PRICE, None)
+            if profile.get('modelPolicy') != 'preserve':
+                env.update(MODEL_PATCH)
+                env.pop(LEGACY_PRICE, None)
             env['Database__MigrateOnStartup'] = 'false'
             env['Deploy__ReleaseSha'] = manifest['sourceSha']
-        model_change = service == 'api' and patch_model(Path(profile['modelEnv']).read_bytes()) != Path(profile['modelEnv']).read_bytes()
+        model_change = service == 'api' and model_bytes(profile) != Path(profile['modelEnv']).read_bytes()
         if name not in live or value != before['services'][service] or model_change:
             affected.append(service)
     backup = backup_gate(profile, before) if affected else {'required': False}
-    require('api' in manifest['images'] or patch_model(Path(profile['modelEnv']).read_bytes()) == Path(profile['modelEnv']).read_bytes(), 'model_update_requires_api_image')
+    require('api' in manifest['images'] or model_bytes(profile) == Path(profile['modelEnv']).read_bytes(), 'model_update_requires_api_image')
     roundtrip = dollars(json.loads(compose(after, 'config', '--format', 'json')), False)
     differences = [s + '.' + k for s in after['services'] for k in set(after['services'][s]) | set(roundtrip['services'].get(s, {}))
                    if after['services'][s].get(k) != roundtrip['services'].get(s, {}).get(k)]
@@ -225,7 +255,8 @@ def summary(planned):
             'manifestSha256': inputs['manifestSha256'], 'startupMigrations': False,
             'project': profile['project'], 'composeFiles': profile['composeFiles'],
             'environmentFiles': profile['envFiles'], 'modelEnv': profile['modelEnv'], 'current': profile['current'],
-            'modelPatch': MODEL_PATCH, 'removedPriceKey': LEGACY_PRICE,
+            'modelPatch': MODEL_PATCH if profile.get('modelPolicy') != 'preserve' else {},
+            'removedPriceKey': LEGACY_PRICE if profile.get('modelPolicy') != 'preserve' else None,
             'unrelatedContainers': len(unaffected)}
 
 def health(config, services, profile):
@@ -279,6 +310,17 @@ def recovery(path):
 def restore(path, profile):
     path = Path(path)
     state = recovery(path)
+    # Only fixed controller-owned atomic-write leftovers, never arbitrary files.
+    for temporary in (path / 'state.json.tmp', Path(profile['modelEnv'] + '.tmp'),
+                      Path(profile['stateRoot']) / 'active.json.tmp', Path(profile['stateRoot']) / 'cd-active.json.tmp'):
+        if temporary.exists() or temporary.is_symlink():
+            protected(temporary)
+            temporary.unlink()
+    next_pointer = Path(profile['current'] + '.next')
+    if next_pointer.exists() or next_pointer.is_symlink():
+        require(next_pointer.is_symlink() and next_pointer.lstat().st_uid == os.geteuid() and
+                os.readlink(next_pointer) in (str(path / 'source'), state['previousCurrent'], str(path / 'restored-previous-source')), 'unexpected_pending_pointer')
+        next_pointer.unlink()
     before = json_read(path / 'rollback-compose.json')
     require(digest(canonical(database_history(before))) == state['databaseHistorySha256'], 'database_changed_since_release')
     names = [before['services'][s]['container_name'] for s in state['services']]
@@ -308,12 +350,34 @@ def restore(path, profile):
     if state['previousCurrent'] is None:
         current.unlink(missing_ok=True)
     elif not current.is_symlink() or os.readlink(current) != state['previousCurrent']:
-        set_current(current, state['previousCurrent'])
+        target = state['previousCurrent']
+        if not Path(target).is_dir():
+            require('previous-source.tar' in state['recoveryFiles'], 'previous_source_unavailable')
+            restored_source = path / 'restored-previous-source'
+            if not restored_source.exists():
+                restored_source.mkdir(mode=0o700)
+                extract_source(path / 'previous-source.tar', restored_source)
+            target = str(restored_source)
+        set_current(current, target)
     active = Path(profile['stateRoot']) / 'active.json'
     if state['previousActive'] is None:
         active.unlink(missing_ok=True)
     else:
-        private_write(active, canonical(state['previousActive']))
+        previous_active = copy.deepcopy(state['previousActive'])
+        if not Path(previous_active['statePath']).is_dir():
+            # This journal independently holds both image archives and the prior
+            # source. It remains a recovery anchor after older journals expire.
+            previous_active['statePath'] = str(path)
+        private_write(active, canonical(previous_active))
+    ci_active = Path(profile['stateRoot']) / 'cd-active.json'
+    if 'previousCiActive' in state:
+        if state['previousCiActive'] is None:
+            ci_active.unlink(missing_ok=True)
+        else:
+            previous_ci = copy.deepcopy(state['previousCiActive'])
+            if active.exists():
+                previous_ci['statePath'] = json_read(active)['statePath']
+            private_write(ci_active, canonical(previous_ci))
     unchanged(state['unaffected'], names, profile)
     require({p: file_digest(p) for p in profile['preserveFiles']} == state['preservedFiles'], 'preserved_file_changed')
     state['status'] = 'ROLLED_BACK'
@@ -353,15 +417,31 @@ def apply(profile_path, bundle, manifest_digest, approval):
         private_write(path / 'candidate-compose.json', canonical(after))
         private_write(path / 'previous-model.env', Path(profile['modelEnv']).read_bytes())
         private_write(path / 'release.json', Path(bundle, 'release.json').read_bytes())
+        if inputs['currentTarget'] is not None:
+            previous_source = Path(inputs['currentTarget'])
+            require(previous_source.is_dir(), 'previous_source_missing')
+            require(not any(p.is_symlink() for p in previous_source.rglob('*')), 'previous_source_contains_links')
+            with tarfile.open(path / 'previous-source.tar', 'w') as source_archive:
+                for source_file in sorted(previous_source.iterdir()):
+                    source_archive.add(source_file, arcname=source_file.name)
+            os.chmod(path / 'previous-source.tar', 0o600)
+        # Same filesystem hard link: retain the exact candidate without a second copy.
+        os.link(Path(bundle) / 'images.tar', path / 'candidate-images.tar')
+        os.chmod(path / 'candidate-images.tar', 0o600)
         state = {'format': 1, 'sourceSha': manifest['sourceSha'], 'manifestSha256': manifest_digest, 'status': 'PREPARING',
                  'services': services, 'previousImages': previous, 'previousCurrent': inputs['currentTarget'], 'unaffected': unaffected,
                  'previousActive': json_read(root / 'active.json') if (root / 'active.json').exists() else None,
+                 'previousCiActive': json_read(root / 'cd-active.json') if (root / 'cd-active.json').exists() else None,
                  'databaseHistorySha256': inputs['databaseHistorySha256'], 'backup': inputs['backup'],
                  'preservedFiles': {p: file_digest(p) for p in profile['preserveFiles']},
-                 'recoveryFiles': {p: file_digest(path / p) for p in ('previous-compose.json', 'rollback-compose.json', 'candidate-compose.json', 'previous-model.env', 'release.json')}}
+                 'recoveryFiles': {p: file_digest(path / p) for p in ('previous-compose.json', 'rollback-compose.json', 'candidate-compose.json', 'previous-model.env', 'release.json', 'candidate-images.tar')}}
         save_state(path, state)
+        if (path / 'previous-source.tar').exists():
+            state['recoveryFiles']['previous-source.tar'] = file_digest(path / 'previous-source.tar')
+            save_state(path, state)
         if previous:
             run(['docker', 'image', 'save', '-o', path / 'previous-images.tar', *sorted(set(previous.values()))], timeout=900)
+            require((path / 'previous-images.tar').stat().st_size <= profile.get('maximumRollbackArchiveBytes', 2**63), 'rollback_archive_exceeds_reviewed_budget')
             os.chmod(path / 'previous-images.tar', 0o600)
             state['recoveryFiles']['previous-images.tar'] = file_digest(path / 'previous-images.tar')
         source = path / 'source'
@@ -373,7 +453,9 @@ def apply(profile_path, bundle, manifest_digest, approval):
             verify_bundle(bundle, manifest_digest)
             run(['docker', 'image', 'load', '-i', Path(bundle) / 'images.tar'], timeout=900)
             for service in manifest['images']:
-                after['services'][service]['image'] = loaded_image(manifest, service)
+                identifier = loaded_image(manifest, service)
+                if service in services:
+                    after['services'][service]['image'] = identifier
             private_write(path / 'candidate-compose.json', canonical(after))
             state['recoveryFiles']['candidate-compose.json'] = file_digest(path / 'candidate-compose.json')
             save_state(path, state)
@@ -382,14 +464,16 @@ def apply(profile_path, bundle, manifest_digest, approval):
             require(digest(canonical(database_history(before))) == inputs['databaseHistorySha256'], 'database_changed_during_prepare')
             state['status'] = 'ACTIVATING'
             save_state(path, state)
-            private_write(profile['modelEnv'], patch_model(Path(profile['modelEnv']).read_bytes()))
+            if Path(profile['modelEnv']).read_bytes() != model_bytes(profile):
+                private_write(profile['modelEnv'], model_bytes(profile))
             activate(after, services)
             health(after, services, profile)
             require(digest(canonical(database_history(after))) == inputs['databaseHistorySha256'], 'database_changed_during_release')
             unchanged(unaffected, names, profile)
             require({p: file_digest(p) for p in profile['preserveFiles']} == state['preservedFiles'], 'preserved_file_changed')
             set_current(Path(profile['current']), str(source))
-            private_write(root / 'active.json', canonical({'sourceSha': manifest['sourceSha'], 'statePath': str(path)}))
+            private_write(root / 'active.json', canonical({'sourceSha': manifest['sourceSha'], 'statePath': str(path),
+                                                         'contextHashes': manifest.get('contextHashes', {})}))
             state['status'] = 'ACCEPTED'
             save_state(path, state)
             return {'status': 'ACCEPTED', 'sourceSha': manifest['sourceSha'], 'services': services, 'statePath': str(path)}

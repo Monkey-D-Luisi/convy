@@ -1,6 +1,6 @@
 # Isolated Convy release and rollback
 
-This procedure is source prepared for review. Installing tools, transferring artifacts, creating a production backup/profile, merging, changing production configuration, or applying a release requires separate operator approval. The master workflow remains unsafe until the transition below is explicitly performed. Branch changes alone do not disable it.
+This is the historical exceptional plan/apply procedure underlying [automatic staging CD](staging-cd.md). Hetzner is shared staging; production does not exist. Ordinary compatible releases after first activation are automatic; the steps below are exceptional operator tools, not a per-release approval requirement. This procedure is source prepared for review. Installing tools, transferring artifacts, creating a staging backup/profile, merging, changing staging configuration, or applying a release requires separate operator approval. PR #33 completed the control transition. The old workflow is disabled. The transition below records the historical ordering; new CD remains inactive pending first activation.
 
 ## Previous and new flows
 
@@ -37,11 +37,11 @@ The application rollout targets only `api`, `worker`, `dashboard`, `auth`, and `
 1. Obtain explicit approval to disable the installed `Backend Staging Release` workflow and cancel its queued/in-progress runs. This is a GitHub control-plane change. Do not execute it under source-only authorization.
 2. Disable it through Actions API/UI. Inspect all its runs, cancel pending/running deployment runs and confirm none remain. If a run already touched the host, reconcile live state read-only before continuing.
 3. With separate merge approval and green exact-head CI, merge the control/prerequisite PR first. Its only release job prints an explanation, with no CI-completion trigger, SSH, credentials or deployment environment. Previously reviewed dependency/CI prerequisites allow this master-based PR to pass full CI without introducing Luna.
-4. Read the installed master workflow and verify removal of every production step. Leave it disabled. Green master CI cannot authorize deployment.
+4. Read the installed master workflow and verify removal of every staging step. Leave it disabled. This was the transitional control boundary. After approved activation, compatible successful exact master CI authorizes the constrained automatic staging path.
 5. Review/approve the Luna source and this release implementation. If Luna is merged separately first, reconcile this implementation branch against the new master, review the remaining diff and rerun CI on the resulting head before its approved merge.
 6. Build from the exact final reviewed source SHA with successful latest CI. A merge/squash creates a new SHA: rebuild and review its new manifest. A branch artifact is not silently promoted to that new SHA.
 
-`release-artifact.yml` is manual, read-only build/upload automation without production secrets, environment or SSH. It checks latest successful exact-head CI. It never transfers, loads or deploys. No production Actions workflow needs to be enabled. Future automation/protection changes require their own review and approval.
+`release-artifact.yml` is manual, read-only build/upload automation without staging secrets, environment or SSH. It checks latest successful exact-head CI. It never transfers, loads or deploys. No staging Actions workflow needs to be enabled. Future automation/protection changes require their own review and approval.
 
 ## Trusted artifact build
 
@@ -53,7 +53,7 @@ python3 ops/vps/build-release.py --repo /trusted/convy \
   --output /protected/releases/REVIEWED_FULL_SHA
 ```
 
-Use `--services api worker` only when source review establishes that those are the only affected images. Luna's accompanying frontend dependency changes require frontend images as well. The output contains `source.tar`, `images.tar`, `release.json`, and `release.sha256`. The manifest records full source/baseline SHA, platform, migration files digest/IDs, base Compose digest, service image IDs, portable image config IDs, and archive SHA256. Images are saved by ID without mutable repository tags. The output path cannot already exist. Preserve the approved artifact and prior artifacts; release code has no pruning.
+Use `--services api worker` only when source review establishes that those are the only affected images. Luna's accompanying frontend dependency changes require frontend images as well. The output contains `source.tar`, `images.tar`, `release.json`, and `release.sha256`. The manifest records full source/baseline SHA, platform, migration files digest/IDs, base Compose digest, service image IDs, portable image config IDs, and archive SHA256. Images are saved by ID without mutable repository tags. The output path cannot already exist. Preserve the approved artifact and prior artifacts; automatic CD retains current/designated rollback journals and implements targeted maintenance under the shared lease; see the new retention policy.
 
 Docker Desktop's containerd store can identify an image by an OCI manifest/index digest; the classic Docker store identifies its config digest. The verifier checks the archive graph/config bytes and records both identities, validates platform and source labels, and permits resolution to the corresponding host-native ID after load. It never substitutes a mutable tag.
 
@@ -91,7 +91,7 @@ Required JSON fields:
 | `healthTimeoutSeconds`, `minimumFreeBytes` | 1–600 seconds; default 120; free disk floor default 8 GiB plus twice incoming image size |
 | `acceptance` | Bounded command arrays for actual API/auth/MCP/dashboard/shared routes and authorization behavior; zero paid-provider calls by default |
 
-The restore proof is root-owned 0600 JSON containing `backupSha256`, `isolatedRestoreSucceeded: true`, and UTC `verifiedAtUtc`. Both backup mtime and restore verification must be less than one hour old. A proof is an operator-reviewed record of an actual isolated restoration, not a substitute for executing restoration. The controller independently verifies the dump SHA and `pg_restore --list`, streaming the dump without loading it into host memory. It never restores a production database.
+The restore proof is root-owned 0600 JSON containing `backupSha256`, `isolatedRestoreSucceeded: true`, and UTC `verifiedAtUtc`. Both backup mtime and restore verification must be less than one hour old. A proof is an operator-reviewed record of an actual isolated restoration, not a substitute for executing restoration. The controller independently verifies the dump SHA and `pg_restore --list`, streaming the dump without loading it into host memory. It never restores a staging database.
 
 Before constructing the profile, capture current read-only capacity/health/IDs/protected-state evidence and create/verify a fresh supported Convy backup under separate live authorization. Confirm sufficient RAM, disk and inode headroom and preserve/off-host copy recovery material. Preserve the actual Caddy mounts/certificates and existing overrides. Do not restore historical whole-host config archives that predate shared routing.
 
@@ -134,7 +134,7 @@ Recovery verifies snapshot/archive digests and unchanged schema/shared state, re
 
 ## Migration and Luna configuration policy
 
-This controller supports **no schema changes**. The complete migration source catalog (including designer/model snapshot) must match the deployed baseline, and every applied migration ID must exactly match the candidate. New, pending, unknown, incompatible or nonreversible migrations require a separately reviewed deployment/data recovery procedure. No production migration or production database restore is invoked here.
+This controller supports **no schema changes**. The complete migration source catalog (including designer/model snapshot) must match the deployed baseline, and every applied migration ID must exactly match the candidate. New, pending, unknown, incompatible or nonreversible migrations require a separately reviewed deployment/data recovery procedure. No staging migration or staging database restore is invoked here.
 
 The current API can have `Database__MigrateOnStartup=true`. Candidate and rollback API configurations explicitly override it to `false`; the protected original setting is retained in the original snapshot/environment. Worker source has no migration-on-startup path. Database history is rechecked during apply and recovery. Old images can therefore be recovered without performing startup migrations.
 
@@ -144,4 +144,4 @@ Only these protected model/pricing keys change: `OpenAI__ParsingModel=gpt-6-luna
 
 Run `python -m unittest discover -s ops/vps/tests -p test_release.py -v`, `python ops/vps/tests/validate_release_docker.py`, all backend tests and relevant infrastructure checks. GitHub's `Isolated Release & Rollback` job exercises real Linux/Docker state transitions; fault shims fail individual commands while all other Docker operations are real. Shared Caddy/PostgreSQL are real containers; the Convy/Converso HTTP applications are provider-free fixtures. Fixture cleanup is confined to its generated local project and is not release code.
 
-Source readiness requires green final-head CI and recorded preservation. It is not live readiness or permission to merge. Subsequent approval must cover workflow disable/cancellation, ordered reviewed merges, exact merged SHA/artifact/CI, tool installation/transfer, current profile/backup/isolated restoration/capacity, concrete dry-run digest, only reviewed env changes, scoped activation/recovery and post-release acceptance/soak. Real Luna/provider acceptance and any paid requests require the intended explicit authorization. Recurring backups/notifications, whole-host recovery, credential rotation, other products and production automation remain separately scoped.
+Source readiness requires green final-head CI and recorded preservation. It is not live readiness or permission to merge. Subsequent approval must cover workflow disable/cancellation, ordered reviewed merges, exact merged SHA/artifact/CI, tool installation/transfer, current profile/backup/isolated restoration/capacity, concrete dry-run digest, only reviewed env changes, scoped activation/recovery and post-release acceptance/soak. Real Luna/provider acceptance and any paid requests require the intended explicit authorization. Recurring backups/notifications, whole-host recovery, credential rotation, other products and staging automation remain separately scoped.

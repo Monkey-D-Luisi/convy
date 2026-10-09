@@ -303,6 +303,6 @@ jobs:
         with:
           python-version: '3.12'
       - name: Configuration and pinned transfer regressions
-        run: python -m unittest discover -s ops/vps/tests -p test_release.py -v
+        run: python -m unittest discover -s ops/vps/tests -p 'test_*.py' -v
       - name: Linux Docker release and recovery fixtures
         run: python ops/vps/tests/validate_release_docker.py

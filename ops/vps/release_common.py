@@ -1,5 +1,6 @@
 """Shared immutable artifact and secret-safe subprocess boundaries."""
 import hashlib
+import gzip
 import json
 import os
 from pathlib import Path
@@ -69,6 +70,12 @@ def private_write(path, content):
         os.replace(temporary, path)
     finally:
         temporary.unlink(missing_ok=True)
+    if hasattr(os, 'O_DIRECTORY'):
+        fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
 
 def json_read(path):
     try:
@@ -141,6 +148,26 @@ def verify_bundle(bundle, expected):
         if 'configIds' in manifest:
             require(manifest['configIds'] == {s: identities[i] for s, i in manifest['images'].items()}, 'config_identity_mismatch')
         manifest['configIds'] = {s: identities[i] for s, i in manifest['images'].items()}
+        # Containerd may retain compressed content and unpacked snapshots. Inspect
+        # unique layer bytes rather than assuming Engine's Size is expanded usage.
+        expanded = 0
+        stored = 0
+        for name in sorted({layer for item in metadata for layer in item['Layers']}):
+            member = archive.getmember(name)
+            require(member.isfile(), 'image_layer_not_regular_file')
+            stored += member.size
+            stream = archive.extractfile(member)
+            magic = stream.read(2)
+            stream.seek(0)
+            reader = gzip.GzipFile(fileobj=stream) if magic == b'\x1f\x8b' else stream
+            while chunk := reader.read(1024 * 1024):
+                expanded += len(chunk)
+                require(expanded <= 16 * 1024**3, 'image_expansion_exceeds_host_envelope')
+            reader.close()
+        storage = stored + 2 * expanded
+        if 'imageStorageBytes' in manifest:
+            require(manifest['imageStorageBytes'] == storage, 'image_storage_estimate_mismatch')
+        manifest['imageStorageBytes'] = storage
     return manifest
 
 def patch_model(content):
