@@ -109,5 +109,5 @@ jobs:
           umask 077
           trap 'rm -f "$RUNNER_TEMP/cd-key" "$RUNNER_TEMP/cd-known-hosts"' EXIT
           printf '%s\n' "$DEPLOY_KEY" > "$RUNNER_TEMP/cd-key"
-          printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/cd-known-hosts"
+          printf '%s' "$KNOWN_HOSTS" > "$RUNNER_TEMP/cd-known-hosts"
           python ops/vps/staging-transfer.py --bundle release --host "$STAGING_HOST" --key "$RUNNER_TEMP/cd-key" --known-hosts "$RUNNER_TEMP/cd-known-hosts" --known-hosts-sha256 "$KNOWN_HOSTS_SHA256"
