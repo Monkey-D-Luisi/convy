@@ -21,7 +21,7 @@ The owner-reported disk incident is operational evidence. The available Git hist
 
 ## Compose versus Swarm
 
-The observed CX23 has two CPUs, approximately 4 GiB RAM and 40 GB disk; fourteen containers include the two products, edge, PostgreSQL, MariaDB and host operations. The inspection found about 1.8 GiB available memory and 19.3 GiB free disk. Those readings are snapshots, not a promise of spare capacity.
+The shared CX23 has two CPUs, approximately 4 GiB RAM and 40 GB disk. Both products, edge, PostgreSQL, MariaDB and host operations compete for these resources. Actual headroom and service inventory are recorded in the private iteration report; snapshots do not promise spare capacity.
 
 | Dimension | Current Compose | Single-node Swarm |
 | --- | --- | --- |
@@ -51,15 +51,15 @@ Converso's future CD, backup and maintenance writers must use **the same lock in
 
 ## Disk, memory and retention policy
 
-The inspection measured approximately 6.68 GB images (all fourteen active), 4.75 GB builder cache, 0.35 GB container logs, 0.90 GB Convy release material and 0.43 GB legacy recovery archives. These are distinct categories; image layer sizes must not be double-counted as physical daemon usage.
+The private read-only inspection accounts separately for images, builder cache, container logs, Convy releases and legacy recovery archives. The policy below is derived from those measurements and the prior reviewed reserve. Image layer sizes must not be double-counted as physical daemon usage.
 
 | Policy | Initial reviewed envelope and rationale |
 | --- | --- |
-| Minimum free disk | 8 GiB, retaining the prior reviewed controller's reserve: approximately one fifth of the actual filesystem, below the measured 19.3 GiB free |
-| Minimum available memory | 1 GiB: 512 MiB largest application envelope plus 512 MiB shared-host safety headroom; measured available memory was about 1.8 GiB |
+| Minimum free disk | 8 GiB, retaining the prior reviewed controller's reserve: approximately one fifth of the filesystem; actual free space is rechecked on every release |
+| Minimum available memory | 1 GiB: 512 MiB largest application envelope plus 512 MiB shared-host safety headroom; actual available memory is rechecked on every release |
 | Incoming cap | 2 GiB per immutable bundle; bounded upload protocol; actual final artifact must be measured again at first activation |
-| Managed release material | 3 GiB maximum, derived from the measured 0.90 + 0.43 GB existing materials with roughly twofold room; a budget check is mandatory, not an assumption that every future image fits |
-| Prior image archive | 1 GiB maximum, more than twice the measured 0.43 GB historical recovery archive; reserve the full envelope before snapshotting and reject an oversized archive before activation |
+| Managed release material | 3 GiB maximum, derived from private measurements of existing release/recovery materials with roughly twofold room; a budget check is mandatory, not an assumption that every future image fits |
+| Prior image archive | 1 GiB maximum, more than twice the measured historical recovery archive; reserve the full envelope before snapshotting and reject an oversized archive before activation |
 | Success retention | Current and one designated previous accepted journal, including prior source and exact checksummed candidate/rollback archives |
 | Failed retention | At most two rolled-back transactions, for at most 24 hours; optional debug material can be reclaimed earlier under capacity pressure. Current/designated rollback/unresolved recovery are always protected |
 | Aborted transfer | One lease at a time; abandoned CD-owned incoming directories removed under that lease before the next bounded upload |
@@ -71,7 +71,7 @@ Before transfer, loading and application changes, budget reserve + incoming byte
 
 Engine image `Size` is not assumed to equal containerd disk cost. Verification streams unique archive layers, checks compressed versus expanded bytes and budgets stored content plus twice expanded bytes for snapshot/extraction overhead. The signed manifest estimate is recomputed and compared on the host. A 16 GiB expansion ceiling stops an artifact that cannot fit the measured staging envelope; the stricter actual free-space reserve gate still applies.
 
-The proposed application profile caps API at 512 MiB/one CPU and worker/web services at 256 MiB/half a CPU each. Inspection found API about 220 MiB, worker 88 MiB and web services 44–54 MiB, with no existing Convy limits. These envelopes require activation/load-test review; they are not inferred workload peaks. Only selected Convy applications receive `json-file` rotation, 10 MB times three files (about 150 MB across five services). Shared edge/databases/other products remain unchanged. Their existing unbounded logs remain measured capacity risks and need independent review.
+The proposed application profile caps API at 512 MiB/one CPU and worker/web services at 256 MiB/half a CPU each. Private per-service readings informed these envelopes; the existing Convy configuration has no resource limits. These envelopes require activation/load-test review; they are not inferred workload peaks. Only selected Convy applications receive `json-file` rotation, 10 MB times three files (about 150 MB across five services). Shared edge/databases/other products remain unchanged. Their existing unbounded logs remain measured capacity risks and need independent review.
 
 Only image IDs in the CD ownership ledger may be removed. The controller rechecks **all products' containers, including stopped containers**, and both protected journals before each removal. A failed image deletion stays in the ledger for retry. It never runs daemon-wide image/system/volume prune, never deletes a database backup through release cleanup, and never removes unknown legacy build cache. Legacy rollback/backup directories stay outside managed roots. Growing unowned cache, oversized logs or protected materials cause capacity failure and an operator alert, not unsafe deletion. Container log rotation and any legacy cache remediation require their own first-activation review; active logs are never truncated by this controller. See [Docker prune semantics](https://docs.docker.com/engine/manage-resources/pruning/).
 
@@ -87,7 +87,7 @@ This first source implementation intentionally automates the **unchanged-schema*
 
 Existing backup scripts contain daily/weekly/monthly buckets, `pg_restore --list`, optional restic export, backup-run recording and separate restore verification. The live scheduled timers are missing; a manually verified encrypted backup is not scheduled recovery. Keep the existing bucket policy. During activation review, freeze scheduled tools outside `current`, wrap backup/restore/retention with the shared lease, connect timer `OnFailure` and watchdog failures to the existing operator alert transport, verify daily 03:15 and Sunday 04:20 host-time schedules and randomized delays, and test missed/failed runs. **Do not enable timers in this source iteration.**
 
-Each automatic release creates an actual isolated restore and verifies retrieval of that exact encrypted dump before proceeding. The observed database was about 11.3 MB; this first restore envelope caps it at 64 MiB with 256 MiB bounded tmpfs/container memory and budgets four database-size copies before backup work. Growth outside that envelope produces an explicit resource/recovery gate, requiring a reviewed larger restore design. `offsite-export.py` requires a root-private reviewed endpoint/password file; no provider key is present in source or CI artifacts. Tests use an encrypted local restic repository and a separate PostgreSQL container: they prove the source behavior, not that real off-host connectivity/timers/alerts are operational. First activation must test the real endpoint and alert transport.
+Each automatic release creates an actual isolated restore and verifies retrieval of that exact encrypted dump before proceeding. The private database measurement fits this first restore envelope, which caps the database at 64 MiB with 256 MiB bounded tmpfs/container memory and budgets four database-size copies before backup work. Growth outside that envelope produces an explicit resource/recovery gate, requiring a reviewed larger restore design. `offsite-export.py` requires a root-private reviewed endpoint/password file; no provider key is present in source or CI artifacts. Tests use an encrypted local restic repository and a separate PostgreSQL container: they prove the source behavior, not that real off-host connectivity/timers/alerts are operational. First activation must test the real endpoint and alert transport.
 
 ## Failure and recovery matrix
 
