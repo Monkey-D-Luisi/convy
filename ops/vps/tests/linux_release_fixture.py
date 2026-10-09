@@ -225,6 +225,15 @@ try:
     record('idempotent_repeat_requires_no_new_backup', lambda: require(invoke('plan', *good)['status'] == 'ALREADY_APPLIED', 'No-op requires a backup'))
     os.utime(root / 'fresh.dump', None)
     record('normal_rollback', lambda: rollback(first))
+    no_api = root / 'initial-without-api'
+    shutil.copytree(good[0], no_api)
+    no_api_manifest = json.loads((no_api / 'release.json').read_bytes())
+    no_api_manifest['images'].pop('api')
+    no_api_manifest['imageSizes'].pop('api')
+    (no_api / 'release.json').write_bytes(canonical(no_api_manifest))
+    record('initial_metadata_requires_api_artifact_without_mutation', lambda: require(
+        invoke('plan', no_api, file_digest(no_api / 'release.json'), expected=1)['reason'] == 'metadata_initialization_requires_api_image',
+        'Initial metadata setup silently skipped API'))
     # An initial application deployment has no previous app; rollback removes only those new app containers.
     compose('up', '-d', '--no-deps', 'api', 'worker')
     (root / 'old-source').mkdir()

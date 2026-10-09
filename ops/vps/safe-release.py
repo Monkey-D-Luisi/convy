@@ -220,6 +220,7 @@ def plan(profile_path, bundle, manifest_digest):
     static_before, static_changed = static_inputs(profile, manifest, before)
     after['services']['api'].setdefault('volumes', [])
     if metadata_mount(profile) not in after['services']['api']['volumes']:
+        require('api' in manifest['images'], 'metadata_initialization_requires_api_image')
         after['services']['api']['volumes'].append(metadata_mount(profile))
     for service in SERVICES:
         if service not in manifest['images']:
