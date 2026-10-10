@@ -59,18 +59,11 @@ Docker Desktop's containerd store can identify an image by an OCI manifest/index
 
 The current Dockerfiles contain version tags, not immutable base digests. This procedure guarantees delivery/recovery of the reviewed **artifact bytes**, not bit-identical future rebuilds against a changing registry. Rebuilds require fresh manifest/image/dependency review. Before a real release, apply the repository's image vulnerability review policy to those actual images.
 
-## Pinned transfer and tool installation
+## Retired transfer and protected tool installation
 
 Review/install the exact release-tool source from its immutable Git archive in a protected directory outside `current`, for example `/opt/convy/release-tools/TOOL_FULL_SHA`. Preserve LF bytes; never repair a transferred source tree in place. Verify hashes of the tool files and use that fixed path for deployment and recovery, even after `current` points to an older application source.
 
-```bash
-python3 ops/vps/transfer-release.py --bundle /protected/releases/SOURCE_SHA \
-  --manifest MANIFEST_SHA256 --host root@APPROVED_HOST \
-  --key /protected/deploy-key --known-hosts /protected/known_hosts \
-  --pin APPROVED_KNOWN_HOSTS_FILE_SHA256 --remote-root /opt/convy/artifacts
-```
-
-Transfer is separately approved. The helper uses strict existing ed25519 trust, never key scanning/TOFU or pin updates. It verifies locally, creates a private uniquely named incoming directory, transfers only archives/manifest and verification code, verifies remotely, then publishes to a new immutable path. It cannot load images or start services. Failure retains a partial incoming directory for investigation; it does not replace an existing artifact or invoke global cleanup.
+`transfer-release.py` and `push-secrets.ps1` are retired because their unrestricted SSH transactions could allocate staging resources outside the common lease. They fail closed before SSH or artifact processing; the transfer entry point still validates the existing host pin. Use the constrained staging broker's bounded upload after separately approved activation, or a separately reviewed administrator transaction that acquires the common lease before its first remote write. Preserve strict ed25519 trust and the established known-hosts digest; never key scan or update pins as part of a transfer. See [the common lease contract](shared-staging-lock.md). Source review does not authorize transfer or tool installation.
 
 ## Protected host profile and dry run
 

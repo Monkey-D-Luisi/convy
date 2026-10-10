@@ -16,6 +16,7 @@ import time
 from datetime import datetime, timezone
 
 sys.path.insert(0, '/source/ops/vps')
+from shared_staging_lock import LOCK_PATH, MARKER, lease_fds
 from release_common import canonical, file_digest, digest
 from staging_common import CI_WORKFLOW_ID, REPOSITORY, authorize_ci
 from staging_host import automatic, capacity, host_lock, maintenance, recover_interrupted, release as auto_release
@@ -28,6 +29,10 @@ parser.add_argument('--root', required=True)
 parser.add_argument('--project', required=True)
 args = parser.parse_args()
 root = Path(args.root)
+assert Path('/.dockerenv').exists()
+Path(LOCK_PATH).parent.mkdir(parents=True, exist_ok=True)
+lock_fd = os.open(LOCK_PATH, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+os.close(lock_fd)
 project = args.project
 if re.fullmatch(r'convy-release-test-[a-f0-9]{10}', project) is None:
     raise SystemExit('Only a generated local fixture project is allowed')
@@ -39,7 +44,7 @@ results = []
 images = []
 
 def command(args, data=None):
-    r = subprocess.run(args, input=data, capture_output=True)
+    r = subprocess.run(args, input=data, capture_output=True, pass_fds=lease_fds())
     if r.returncode:
         raise RuntimeError('Fixture command failed: ' + args[0] + ' ' + r.stderr.decode()[-1000:])
     return r.stdout
@@ -92,7 +97,14 @@ def require(condition, reason):
 
 def record(name, operation):
     baseline = shared_state()
-    operation()
+    try:
+        operation()
+    except Exception:
+        for journal in (root / 'transactions').glob('*/state.json'):
+            state = json.loads(journal.read_bytes())
+            print(json.dumps({'failedScenario': name, **{k: state.get(k) for k in
+                ('status', 'failureReason', 'rollbackFailureReason')}}), flush=True)
+        raise
     require(shared_state() == baseline, name + ': shared container changed')
     require((root / 'certificate.fixture').read_bytes() == b'preserved-certificate-bytes', 'Certificate changed')
     results.append(name)
@@ -353,7 +365,7 @@ try:
         (path / 'release.json').write_bytes(canonical(manifest))
         return path
     def auto(info, request):
-        with host_lock(root / 'shared.lock'):
+        with host_lock(Path(LOCK_PATH)):
             maintenance(profile, info[0])
             return automatic(root / 'profile.json', signed(info, request), request, verify=fixture_ci, attest=fixture_attestation)
     def denied(change):
@@ -389,7 +401,7 @@ try:
         except auto_release.ReleaseError as error:
             require(str(error) == 'unsafe_upload_archive', 'Wrong broker rejection')
         require(set(command(['docker', 'image', 'ls', '-q', '--no-trunc']).split()) == unchanged_images, 'Receiver loaded a rejected image')
-        with host_lock(root / 'shared.lock'):
+        with host_lock(Path(LOCK_PATH)):
             maintenance(profile)
     record('broker_archive_link_denied_without_image_load', invalid_stream)
     def oversized_pax():
@@ -402,7 +414,7 @@ try:
             raise AssertionError('Broker consumed an extended header')
         except auto_release.ReleaseError as error:
             require(str(error) == 'unsafe_upload_archive', 'Extended header was read before rejection')
-        with host_lock(root / 'shared.lock'):
+        with host_lock(Path(LOCK_PATH)):
             maintenance(profile)
     record('broker_oversized_pax_header_rejected_before_allocation', oversized_pax)
     with tempfile.TemporaryFile() as transfer:
@@ -410,7 +422,7 @@ try:
             for name in broker.FILES:
                 tar.add(good[0] / name, arcname=name, recursive=False)
         transfer.seek(0)
-        with host_lock(root / 'shared.lock'):
+        with host_lock(Path(LOCK_PATH)):
             received = broker.receive(transfer, profile, {'files': transfer_files})
     received_info = (received, file_digest(received / 'release.json'))
     auto_accepted = {}
@@ -423,7 +435,7 @@ try:
     def older():
         baseline_ids = command(['docker', 'ps', '-aq'])
         try:
-            with host_lock(root / 'shared.lock'):
+            with host_lock(Path(LOCK_PATH)):
                 automatic(root / 'profile.json', good[0], request_for(old_sha, 99), verify=fixture_ci, attest=fixture_attestation)
             raise AssertionError('Older accepted source overwrote current')
         except auto_release.ReleaseError as failure:
@@ -431,10 +443,10 @@ try:
         require(command(['docker', 'ps', '-aq']) == baseline_ids, 'Older run changed containers')
     record('automatic_older_run_denied', older)
     def competing():
-        with host_lock(root / 'shared.lock'):
-            result = subprocess.run(['python3', '-c', 'import sys; sys.path.insert(0,"/source/ops/vps"); from staging_host import host_lock;\nwith host_lock(sys.argv[1]): print("converso entered")', str(root / 'shared.lock')], capture_output=True)
+        with host_lock(Path(LOCK_PATH)):
+            result = subprocess.run(['python3', '-c', 'import sys; sys.path.insert(0,"/source/ops/vps"); from staging_host import host_lock;\nwith host_lock(sys.argv[1]): print("converso entered")', str(Path(LOCK_PATH))], capture_output=True, env={k: v for k, v in os.environ.items() if k != MARKER})
             require(result.returncode != 0 and b'shared_host_busy_retry_later' in result.stderr, 'Converso bypassed host lock')
-        with host_lock(root / 'shared.lock'):
+        with host_lock(Path(LOCK_PATH)):
             pass
     record('competing_convy_converso_host_lock', competing)
     def low(key, reason):
@@ -457,7 +469,7 @@ try:
         (root / 'current.next').symlink_to(state_path / 'source')
         (state_path / 'state.json.tmp').write_bytes(b'partial atomic write')
         os.chmod(state_path / 'state.json.tmp', 0o600)
-        with host_lock(root / 'shared.lock'):
+        with host_lock(Path(LOCK_PATH)):
             recover_interrupted(profile)
         require(inspect('api')['Image'] == old_image, 'Interrupted release did not recover prior image')
         (root / 'transactions/cd-active.json').unlink(missing_ok=True)
@@ -471,7 +483,7 @@ try:
         context_manifest['contextHashes'] = {'api': digest(str(number).encode()), 'worker': digest(str(number).encode())}
         (info[0] / 'release.json').write_bytes(canonical(context_manifest))
         last = auto(info, request_for(sha, counter + number))
-        with host_lock(root / 'shared.lock'):
+        with host_lock(Path(LOCK_PATH)):
             cleanup = maintenance(profile)
         state_count = len(list((root / 'transactions').glob('*/state.json')))
         require(state_count <= 4, 'Release archives accumulated without bound')
@@ -507,10 +519,10 @@ try:
             command(['docker', 'image', 'rm', tag])
         if subprocess.run(['docker', 'image', 'inspect', previous], capture_output=True).returncode == 0:
             command(['docker', 'image', 'rm', previous])
-        with host_lock(root / 'shared.lock'):
+        with host_lock(Path(LOCK_PATH)):
             auto_release.restore(path, profile)
         require(inspect('api')['Image'] == previous, 'Previous image could not be restored after cleanup')
-        with host_lock(root / 'shared.lock'):
+        with host_lock(Path(LOCK_PATH)):
             maintenance(profile)
         require((root / 'current').is_dir(), 'Rollback source pointer is missing')
     record('protected_previous_image_restore_after_housekeeping', restore_after_cleanup)
@@ -623,7 +635,7 @@ try:
             target.write_bytes(changed_bytes)
             try:
                 try:
-                    with host_lock(root / 'shared.lock'): auto_release.restore(static_result['statePath'], profile)
+                    with host_lock(Path(LOCK_PATH)): auto_release.restore(static_result['statePath'], profile)
                     raise AssertionError('Rollback overwrote changed protected configuration')
                 except auto_release.ReleaseError as error:
                     require(str(error) == reason, 'Wrong credential drift rejection')
@@ -634,14 +646,14 @@ try:
             finally: target.write_bytes(accepted_bytes)
     record('recovery_rejects_protected_credential_drift_before_mutation', credential_drift_denies_recovery)
     def static_rollback():
-        with host_lock(root / 'shared.lock'): auto_release.restore(static_result['statePath'], profile)
+        with host_lock(Path(LOCK_PATH)): auto_release.restore(static_result['statePath'], profile)
         preserved_static()
     record('static_only_manual_rollback_restores_publication_and_metadata', static_rollback)
     def static_interruption():
         result = auto(static_info, request_for(static_sha, 173))
         state = auto_release.recovery(result['statePath']); state['status'] = 'ACTIVATING'
         auto_release.save_state(result['statePath'], state)
-        with host_lock(root / 'shared.lock'): recover_interrupted(profile)
+        with host_lock(Path(LOCK_PATH)): recover_interrupted(profile)
         preserved_static()
     record('interrupted_static_activation_restores_full_journal', static_interruption)
     record('unrelated_running_image_preserved', lambda: require(inspect('converso')['Image'] == old_image, 'Converso image changed'))

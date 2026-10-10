@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+source /usr/local/libexec/shared-staging-lock.sh
 
 BACKUP_PATH="${1:?Usage: verify-backup.sh <backup-file>}"
 

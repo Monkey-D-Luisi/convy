@@ -51,26 +51,17 @@ class ConfigurationTests(unittest.TestCase):
                     extract_source(archive, Path(temporary) / 'output')
                 self.assertFalse((Path(temporary) / 'output').exists())
 
-    def test_transfer_failure_cannot_load_or_activate_and_ssh_is_pinned(self):
+    def test_legacy_transfer_is_retired_before_ssh_and_still_checks_host_pin(self):
         with tempfile.TemporaryDirectory() as temporary:
             known = Path(temporary) / 'known_hosts'
             known.write_text('fixture ed25519 key')
             from release_common import file_digest
-            calls = []
-            def execute(args, **kwargs):
-                calls.append(args)
-                if args[0] == 'scp':
-                    raise ReleaseError('command_failed_output_withheld')
-                return b''
-            with patch.object(transfer, 'verify_bundle', return_value={'sourceSha': 'a' * 40}), patch.object(transfer, 'run', side_effect=execute):
-                with self.assertRaises(ReleaseError):
+            with patch('subprocess.run') as execute:
+                with self.assertRaisesRegex(ReleaseError, 'legacy_transfer_disabled'):
                     transfer.transfer(temporary, 'b' * 64, 'root@fixture', 'fixture-key', known, file_digest(known), '/fixture/artifacts')
-            self.assertEqual([a[0] for a in calls], ['ssh', 'scp'])
-            for args in calls:
-                self.assertIn('StrictHostKeyChecking=yes', args)
-                self.assertIn('UpdateHostKeys=no', args)
-                self.assertNotIn('load', args)
-                self.assertNotIn('up', args)
+                with self.assertRaisesRegex(ReleaseError, 'known_hosts_pin_changed'):
+                    transfer.transfer(temporary, 'b' * 64, 'root@fixture', 'fixture-key', known, '0' * 64, '/fixture/artifacts')
+                execute.assert_not_called()
 
     def test_workflows_have_no_automatic_production_path(self):
         source = (ROOT.parents[1] / '.github/workflows/backend-staging-release.yml').read_text()

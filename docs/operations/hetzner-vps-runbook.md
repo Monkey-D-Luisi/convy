@@ -61,6 +61,8 @@ These are historical initial provisioning commands. New CD uses a separately pro
 
 ## Secrets
 
+The old `push-secrets.ps1` command below is historical and now rejects shared-staging use. Initial provisioning or credential/model changes need a separately reviewed complete administrator transaction under the [common lease](shared-staging-lock.md). Preserve the installed disabled bootstrap, nano and existing credential bytes; the historical Luna defaults are not approval to apply them.
+
 Generate Caddy Basic Auth hash:
 
 ```powershell

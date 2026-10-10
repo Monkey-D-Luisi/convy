@@ -11,6 +11,7 @@ import tarfile
 import time
 from datetime import datetime, timezone
 
+from shared_staging_lock import LockError, writer
 from release_common import (LEGACY_PRICE, MODEL_PATCH, SERVICES, ReleaseError, canonical,
                             digest, extract_source, file_digest, json_read, patch_model,
                             private_write, require, run, verify_bundle)
@@ -279,7 +280,8 @@ def plan(profile_path, bundle, manifest_digest):
               'sources': source_hashes(profile), 'containers': {n: fingerprint(c) for n, c in live.items()},
               'before': digest(canonical(before)), 'after': digest(canonical(after)),
               'currentTarget': os.readlink(current) if current.is_symlink() else None,
-              'toolSha256': file_digest(__file__), 'commonSha256': file_digest(Path(__file__).with_name('release_common.py'))}
+              'toolSha256': file_digest(__file__), 'commonSha256': file_digest(Path(__file__).with_name('release_common.py')),
+              'sharedLockSha256': file_digest(Path(__file__).with_name('shared_staging_lock.py'))}
     inputs['databaseHistorySha256'] = digest(canonical(history))
     inputs['backup'] = backup
     inputs['staticBefore'] = static_before
@@ -351,6 +353,7 @@ def recovery(path):
         require(file_digest(path / name) == checksum, 'recovery_checksum_mismatch')
     return state
 
+@writer
 def restore(path, profile):
     path = Path(path)
     state = recovery(path)
@@ -450,6 +453,7 @@ def set_current(path, target):
     temporary.symlink_to(target)
     os.replace(temporary, path)
 
+@writer
 def apply(profile_path, bundle, manifest_digest, approval):
     planned = plan(profile_path, bundle, manifest_digest)
     require(summary(planned)['approvalDigest'] == approval, 'approval_digest_mismatch:' + json.dumps(summary(planned)['inputDigests'], sort_keys=True))
@@ -603,15 +607,17 @@ if __name__ == '__main__':
             result = summary(plan(args.profile, args.bundle, args.manifest)) if args.action == 'plan' else apply(args.profile, args.bundle, args.manifest, args.approve)
         else:
             require(args.state is not None, 'state_required')
-            profile, result = rollback_plan(args.profile, args.state)
-            if args.action == 'rollback':
-                require(result['approvalDigest'] == args.approve, 'rollback_approval_mismatch')
-                with (Path(profile['stateRoot']) / 'lock').open('a') as lock:
-                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    require(rollback_plan(args.profile, args.state)[1] == result, 'host_changed_since_rollback_approval')
-                    restore(args.state, profile)
-                    result = {'status': 'ROLLED_BACK', 'services': result['services']}
+            from shared_staging_lock import shared_lock
+            with shared_lock():
+                profile, result = rollback_plan(args.profile, args.state)
+                if args.action == 'rollback':
+                    require(result['approvalDigest'] == args.approve, 'rollback_approval_mismatch')
+                    with (Path(profile['stateRoot']) / 'lock').open('a') as lock:
+                        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        require(rollback_plan(args.profile, args.state)[1] == result, 'host_changed_since_rollback_approval')
+                        restore(args.state, profile)
+                        result = {'status': 'ROLLED_BACK', 'services': result['services']}
         print(json.dumps(result))
     except Exception as error:
-        print(json.dumps({'status': 'FAILED', 'reason': str(error) if isinstance(error, ReleaseError) else 'unexpected_error_output_withheld'}))
+        print(json.dumps({'status': 'FAILED', 'reason': str(error) if isinstance(error, (ReleaseError, LockError)) else 'unexpected_error_output_withheld'}))
         raise SystemExit(1)

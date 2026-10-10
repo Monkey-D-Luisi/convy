@@ -6,4 +6,4 @@ After=docker.service
 [Service]
 Type=oneshot
 Environment=BACKUP_TYPE=Daily
-ExecStart=/opt/convy/current/ops/vps/backups/backup-postgres.sh
+ExecStart=/usr/bin/python3 -I -B /usr/local/libexec/shared_staging_lock.py -- /bin/bash /opt/convy/current/ops/vps/backups/backup-postgres.sh

@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ -e /run/lock/shared-staging-deployment.lock || -e /etc/convy-staging/profile.json ]]; then
+  echo 'OCI fallback writers are disabled on shared staging. Use the coordinated VPS tooling.' >&2
+  exit 75
+fi
 
 if [ "$(id -u)" -ne 0 ]; then
   exec sudo "$0" "$@"
