@@ -2,6 +2,7 @@
 """Common staging lease; installed independently of mutable product releases."""
 from contextlib import contextmanager
 from functools import wraps
+import json
 import os
 from pathlib import Path
 import stat
@@ -10,6 +11,7 @@ import sys
 LOCK_PATH = '/run/lock/shared-staging-deployment.lock'
 LOCK_FD = 8
 MARKER = 'SHARED_STAGING_LOCK_FD'
+EDGE_WRITER_BARRIER = '/opt/shared-edge/traefik-state/writer-barrier.json'
 _active_path = None
 
 
@@ -64,13 +66,31 @@ def lease_fds():
     return (inherited_fd(),) if MARKER in os.environ else ()
 
 
+def edge_writer_gate():
+    """An interrupted edge switch blocks new resource writers until recovery."""
+    path = Path(EDGE_WRITER_BARRIER)
+    if not path.exists() and not path.is_symlink():
+        return
+    _path_info(path)
+    try:
+        data = json.loads(path.read_bytes())
+    except (ValueError, OSError):
+        raise LockError('edge_recovery_barrier_invalid') from None
+    _require(data.get('format') == 1 and data.get('reason') == 'edge_cutover_incomplete' and
+             isinstance(data.get('transactionId'), str) and len(data['transactionId']) == 64,
+             'edge_recovery_barrier_invalid')
+    raise LockError('shared_edge_recovery_required')
+
+
 @contextmanager
-def shared_lock(path=None):
+def shared_lock(path=None, *, allow_edge_recovery=False):
     import fcntl
     global _active_path
     path = str(path or _active_path or LOCK_PATH)
     if MARKER in os.environ:
         inherited_fd(path)
+        if not allow_edge_recovery:
+            edge_writer_gate()
         yield
         return
     info = _path_info(path)
@@ -98,6 +118,8 @@ def shared_lock(path=None):
         owner = LOCK_FD
         _active_path = path
         os.environ[MARKER] = str(LOCK_FD)
+        if not allow_edge_recovery:
+            edge_writer_gate()
         yield
     finally:
         if owner is not None:
@@ -120,6 +142,7 @@ def writer(function):
 def main():
     if sys.argv[1:] == ['--check']:
         inherited_fd()
+        edge_writer_gate()
         return
     _require(len(sys.argv) > 2 and sys.argv[1] == '--', 'shared_lock_command_required')
     with shared_lock():

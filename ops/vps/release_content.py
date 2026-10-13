@@ -78,8 +78,13 @@ def metadata_paths(profile):
     return parent / 'shared/release.env', parent / 'shared/release-metadata/accepted.json'
 
 
-def static_inputs(profile, manifest, config):
-    mounts = config['services']['caddy'].get('volumes', [])
+def static_inputs(profile, manifest, config, live=None):
+    if profile.get('edgeTopology') is not None:
+        from edge_topology import edge_mounts
+        require('caddy' not in config['services'] and live is not None, 'explicit_edge_transition_required')
+        mounts = edge_mounts(profile, live)
+    else:
+        mounts = config['services']['caddy'].get('volumes', [])
     values = {}
     for name, root in roots(profile).items():
         info = root.stat()
