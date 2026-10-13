@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from edge_topology import edge_mounts
-from release_common import ReleaseError, canonical, digest
+from release_common import ReleaseError, canonical, digest, file_digest
 
 
 class EdgeTopologyTests(unittest.TestCase):
@@ -25,6 +25,7 @@ class EdgeTopologyTests(unittest.TestCase):
                           'networksSha256': digest(canonical(container['NetworkSettings']['Networks'])),
                           'mountsSha256': digest(canonical(container['Mounts']))}
         topology = {'kind': 'traefik-file-v1', 'infrastructureSourceSha': 'a' * 40, 'project': 'shared-traefik-edge', 'containers': pins}
+        topology['protectedConfigurationHashes']={str(Path(__file__).resolve()):file_digest(__file__)}
         topology['approvalSha256'] = digest(canonical(topology))
         return {'edgeTopology': topology}, live
 

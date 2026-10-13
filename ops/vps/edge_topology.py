@@ -28,7 +28,9 @@ def edge_mounts(profile, live):
         values[role] = container
     require(values['content']['HostConfig']['NetworkMode'] == 'container:' + values['proxy']['Id'],
             'edge_content_namespace_mismatch')
-    for path, expected in topology.get('protectedConfigurationHashes', {}).items():
+    require(isinstance(topology.get('protectedConfigurationHashes'), dict) and
+            bool(topology['protectedConfigurationHashes']), 'reviewed_edge_configuration_pins_missing')
+    for path, expected in topology['protectedConfigurationHashes'].items():
         require(Path(path).is_absolute() and Path(path).is_file() and not Path(path).is_symlink() and
                 file_digest(path) == expected, 'reviewed_edge_configuration_changed')
     return [{'type': m['Type'], 'source': m['Source'], 'target': m['Destination'], 'read_only': not m['RW']}
