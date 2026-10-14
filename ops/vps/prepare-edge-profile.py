@@ -23,7 +23,7 @@ def topology(live, source_sha, project='shared-traefik-edge', proxy='shared-trae
     directory=Path(config_mounts[0]['Source'])
     require(directory.is_dir() and not directory.is_symlink(), 'protected_traefik_configuration_directory_required')
     # The separately leased certificate worker alone owns this generated TLS state.
-    generated_tls=directory/'dynamic/certificates.json'
+    generated_tls=directory/'dynamic/certificates.yml'
     result['protectedConfigurationHashes']={str(p):file_digest(p) for p in directory.rglob('*') if p.is_file() and p!=generated_tls}
     require(result['protectedConfigurationHashes'], 'reviewed_traefik_configuration_pins_missing')
     result['approvalSha256'] = digest(canonical(result))
