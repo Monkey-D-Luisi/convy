@@ -49,7 +49,7 @@ def main():
     candidate['edgeTopology'] = topology(live, args.infrastructure_source_sha)
     candidate['composeFiles'] = [*original['composeFiles'], str(args.applications_override)]
     candidate['composeHashes'] = {p: file_digest(p) for p in candidate['composeFiles']}
-    candidate['preserveFiles'] = sorted(set(original['preserveFiles']) | {str(args.applications_override)} | set(candidate['edgeTopology']['protectedConfigurationHashes']))
+    candidate['preserveFiles'] = sorted(set(original['preserveFiles']) | {str(args.applications_override),str(Path(__file__).with_name('edge_topology.py'))} | set(candidate['edgeTopology']['protectedConfigurationHashes']))
     candidate['bootstrapStatus'] = 'DISABLED_REVIEWED_TRAEFIK_TRANSITION_INSTALLATION_PENDING'
     # Only validate normalized application topology; do not load images or create services.
     command = ['docker', 'compose', '--project-name', candidate['project']]

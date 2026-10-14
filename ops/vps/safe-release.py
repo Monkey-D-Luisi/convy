@@ -68,6 +68,8 @@ def read_profile(path):
             profile['modelEnv'] not in profile['preserveFiles'], 'write_paths_outside_application')
     for key in ('composeFiles', 'envFiles', 'preserveFiles', 'acceptance'):
         require(bool(profile.get(key)), 'incomplete_profile')
+    if profile.get('edgeTopology') is not None:
+        require(str(Path(__file__).with_name('edge_topology.py')) in profile['preserveFiles'], 'frozen_edge_topology_tool_pin_required')
     for key in ('current', 'stateRoot', 'modelEnv'):
         require(Path(profile[key]).is_absolute(), 'absolute_profile_paths_required')
     require(profile['modelEnv'] in profile['envFiles'], 'model_env_not_in_profile')
@@ -294,6 +296,8 @@ def plan(profile_path, bundle, manifest_digest):
     public = metadata_paths(profile)[1]
     inputs['publicMetadata'] = file_digest(public) if public.exists() else None
     inputs['contentToolSha256'] = file_digest(Path(__file__).with_name('release_content.py'))
+    if profile.get('edgeTopology') is not None:
+        inputs['edgeTopologyToolSha256'] = file_digest(Path(__file__).with_name('edge_topology.py'))
     inputs['alreadyAccepted'] = active.get('sourceSha') == manifest['sourceSha'] and not affected and not static_changed
     return profile, manifest, before, after, affected, unaffected, inputs
 
