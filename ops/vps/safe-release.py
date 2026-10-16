@@ -68,6 +68,8 @@ def read_profile(path):
             profile['modelEnv'] not in profile['preserveFiles'], 'write_paths_outside_application')
     for key in ('composeFiles', 'envFiles', 'preserveFiles', 'acceptance'):
         require(bool(profile.get(key)), 'incomplete_profile')
+    if profile.get('edgeTopology') is not None:
+        require(str(Path(__file__).with_name('edge_topology.py')) in profile['preserveFiles'], 'frozen_edge_topology_tool_pin_required')
     for key in ('current', 'stateRoot', 'modelEnv'):
         require(Path(profile[key]).is_absolute(), 'absolute_profile_paths_required')
     require(profile['modelEnv'] in profile['envFiles'], 'model_env_not_in_profile')
@@ -98,7 +100,12 @@ def effective(profile):
     for path in profile['composeFiles']:
         args += ['-f', path]
     config = dollars(json.loads(run(args + ['config', '--format', 'json'])), False)
-    require(config['name'] == profile['project'] and {'api', 'db', 'caddy'} <= set(config['services']), 'unexpected_compose_project')
+    required = {'api', 'db'} if profile.get('edgeTopology') is not None else {'api', 'db', 'caddy'}
+    require(config['name'] == profile['project'] and required <= set(config['services']), 'unexpected_compose_project')
+    if profile.get('edgeTopology') is not None:
+        from edge_topology import edge_mounts
+        require('caddy' not in config['services'], 'explicit_edge_transition_required')
+        edge_mounts(profile, containers())
     require(file_digest(profile['composeFiles'][0]) == profile['composeSha256'], 'base_compose_not_reviewed')
     for network in config.get('networks', {}).values():
         run(['docker', 'network', 'inspect', network['name']])
@@ -218,7 +225,7 @@ def plan(profile_path, bundle, manifest_digest):
     affected = []
     active_file = Path(profile['stateRoot']) / 'active.json'
     active = json_read(active_file) if active_file.exists() else {}
-    static_before, static_changed = static_inputs(profile, manifest, before)
+    static_before, static_changed = static_inputs(profile, manifest, before, live)
     after['services']['api'].setdefault('volumes', [])
     if metadata_mount(profile) not in after['services']['api']['volumes']:
         require('api' in manifest['images'], 'metadata_initialization_requires_api_image')
@@ -289,6 +296,8 @@ def plan(profile_path, bundle, manifest_digest):
     public = metadata_paths(profile)[1]
     inputs['publicMetadata'] = file_digest(public) if public.exists() else None
     inputs['contentToolSha256'] = file_digest(Path(__file__).with_name('release_content.py'))
+    if profile.get('edgeTopology') is not None:
+        inputs['edgeTopologyToolSha256'] = file_digest(Path(__file__).with_name('edge_topology.py'))
     inputs['alreadyAccepted'] = active.get('sourceSha') == manifest['sourceSha'] and not affected and not static_changed
     return profile, manifest, before, after, affected, unaffected, inputs
 
@@ -539,7 +548,7 @@ def apply(profile_path, bundle, manifest_digest, approval):
             unchanged(unaffected, names, profile)
             require(source_hashes(profile) == inputs['sources'], 'source_changed_during_prepare')
             require(digest(canonical(database_history(before))) == inputs['databaseHistorySha256'], 'database_changed_during_prepare')
-            require(static_inputs(profile, manifest, before)[0] == inputs['staticBefore'], 'static_changed_during_prepare')
+            require(static_inputs(profile, manifest, before, containers())[0] == inputs['staticBefore'], 'static_changed_during_prepare')
             require((file_digest(public) if public.exists() else None) == inputs['publicMetadata'], 'metadata_changed_during_prepare')
             state['status'] = 'ACTIVATING'
             save_state(path, state)
