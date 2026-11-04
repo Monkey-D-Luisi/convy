@@ -32,7 +32,7 @@ internal static class ContainerMetricsFile
             if (count > 16384) return Unknown();
             return Parse(System.Text.Encoding.UTF8.GetString(bytes, 0, count), now);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException or NotSupportedException)
         {
             return Unknown();
         }

@@ -84,6 +84,7 @@ public class ContainerMetricsTests
             }
             File.Delete(path);
             (await ContainerMetricsFile.ReadAsync(path, Now)).Status.Should().Be("unknown");
+            (await ContainerMetricsFile.ReadAsync("", Now)).Status.Should().Be("unknown");
         }
         finally { File.Delete(path); }
     }
