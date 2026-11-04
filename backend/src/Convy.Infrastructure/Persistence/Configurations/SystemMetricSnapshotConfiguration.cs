@@ -20,6 +20,8 @@ public class SystemMetricSnapshotConfiguration : IEntityTypeConfiguration<System
         builder.Property(snapshot => snapshot.LoadAverage1m).HasColumnName("load_average_1m");
         builder.Property(snapshot => snapshot.UptimeSeconds).HasColumnName("uptime_seconds");
         builder.Property(snapshot => snapshot.PostgresDataSizeBytes).HasColumnName("postgres_data_size_bytes");
+        builder.Property(snapshot => snapshot.MetricScope).HasColumnName("metric_scope").HasMaxLength(32).HasDefaultValue("legacy-host").IsRequired();
+        builder.Property(snapshot => snapshot.ContainerMetricsJson).HasColumnName("container_metrics_json").HasMaxLength(16384);
 
         builder.HasIndex(snapshot => snapshot.CapturedAt)
             .HasDatabaseName("ix_system_metric_snapshots_captured_at");

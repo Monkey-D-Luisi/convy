@@ -159,13 +159,15 @@ public record AdminSystemHealthDto(
     string? ReleaseSha,
     string? OperatingSystem,
     string? Architecture,
-    int ProcessorCount,
+    int? ProcessorCount,
     string? CpuModel,
     long? MemoryTotalBytes,
     long? MemoryAvailableBytes,
     long? DiskTotalBytes,
     long? UptimeSeconds,
-    double? LoadAverage1m);
+    double? LoadAverage1m,
+    string MetricScope = "container",
+    ContainerMetricsDto? Containers = null);
 
 public record AdminSystemHistoryDto(
     DateOnly From,
@@ -180,7 +182,9 @@ public record SystemMetricSnapshotDto(
     long? MemoryTotalBytes,
     double? LoadAverage1m,
     long? UptimeSeconds,
-    long? PostgresDataSizeBytes);
+    long? PostgresDataSizeBytes,
+    string MetricScope = "legacy-host",
+    ContainerMetricsDto? Containers = null);
 
 public record AdminMcpOverviewDto(
     DateOnly From,

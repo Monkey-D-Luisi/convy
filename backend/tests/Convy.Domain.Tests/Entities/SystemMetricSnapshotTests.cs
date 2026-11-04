@@ -6,6 +6,13 @@ namespace Convy.Domain.Tests.Entities;
 public class SystemMetricSnapshotTests
 {
     [Fact]
+    public void Constructor_ContainerScopeWithHostValues_RejectsMislabelledHistory()
+    {
+        var create = () => new SystemMetricSnapshot(DateTime.UtcNow, 10, null, null, null, null, null, null, "container");
+        create.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
     public void Constructor_WithValidMetrics_CreatesSnapshot()
     {
         var capturedAt = new DateTime(2026, 5, 29, 12, 0, 0, DateTimeKind.Utc);

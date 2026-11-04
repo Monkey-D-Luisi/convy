@@ -12,6 +12,8 @@ public class SystemMetricSnapshot : Entity
     public double? LoadAverage1m { get; private set; }
     public long? UptimeSeconds { get; private set; }
     public long? PostgresDataSizeBytes { get; private set; }
+    public string MetricScope { get; private set; } = "legacy-host";
+    public string? ContainerMetricsJson { get; private set; }
 
     private SystemMetricSnapshot() { }
 
@@ -23,7 +25,9 @@ public class SystemMetricSnapshot : Entity
         long? memoryTotalBytes,
         double? loadAverage1m,
         long? uptimeSeconds,
-        long? postgresDataSizeBytes)
+        long? postgresDataSizeBytes,
+        string metricScope = "legacy-host",
+        string? containerMetricsJson = null)
     {
         ThrowIfNegative(diskFreeBytes, nameof(diskFreeBytes));
         ThrowIfNegative(diskTotalBytes, nameof(diskTotalBytes));
@@ -32,6 +36,13 @@ public class SystemMetricSnapshot : Entity
         ThrowIfNegative(loadAverage1m, nameof(loadAverage1m));
         ThrowIfNegative(uptimeSeconds, nameof(uptimeSeconds));
         ThrowIfNegative(postgresDataSizeBytes, nameof(postgresDataSizeBytes));
+        if (metricScope is not ("legacy-host" or "container"))
+            throw new ArgumentException("Unknown metric scope.", nameof(metricScope));
+        if (metricScope == "legacy-host" && containerMetricsJson is not null || containerMetricsJson?.Length > 16384)
+            throw new ArgumentException("Invalid container metric payload.", nameof(containerMetricsJson));
+        if (metricScope == "container" && (diskFreeBytes is not null || diskTotalBytes is not null ||
+            memoryAvailableBytes is not null || memoryTotalBytes is not null || loadAverage1m is not null || uptimeSeconds is not null))
+            throw new ArgumentException("Container samples cannot contain host resource values.", nameof(metricScope));
 
         CapturedAt = capturedAt;
         DiskFreeBytes = diskFreeBytes;
@@ -41,6 +52,8 @@ public class SystemMetricSnapshot : Entity
         LoadAverage1m = loadAverage1m;
         UptimeSeconds = uptimeSeconds;
         PostgresDataSizeBytes = postgresDataSizeBytes;
+        MetricScope = metricScope;
+        ContainerMetricsJson = containerMetricsJson;
     }
 
     private static void ThrowIfNegative(long? value, string parameterName)

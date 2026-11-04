@@ -473,7 +473,7 @@ public class AdminMetricsReader : IAdminMetricsReader
             AuthHealthy: runtime.AuthHealthHealthy,
             McpMetadataHealthy: runtime.McpMetadataHealthy,
             AuthMetadataHealthy: runtime.AuthMetadataHealthy,
-            DiskFreeBytes: GetDiskFreeBytes(),
+            DiskFreeBytes: null,
             PostgresDataSizeBytes: databaseHealthy ? await GetPostgresDataSizeAsync(cancellationToken) : null,
             BackendVersion: _configuration["Backend:Version"] ?? Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
             AndroidVersion: accepted?.AndroidVersion ?? _configuration["Mobile:AndroidVersion"],
@@ -481,13 +481,16 @@ public class AdminMetricsReader : IAdminMetricsReader
             ReleaseSha: accepted?.SourceSha ?? _configuration["Deploy:ReleaseSha"],
             OperatingSystem: RuntimeInformation.OSDescription,
             Architecture: RuntimeInformation.OSArchitecture.ToString(),
-            ProcessorCount: Environment.ProcessorCount,
-            CpuModel: GetCpuModel(),
-            MemoryTotalBytes: GetMemoryValueBytes("MemTotal:"),
-            MemoryAvailableBytes: GetMemoryValueBytes("MemAvailable:"),
-            DiskTotalBytes: GetDiskTotalBytes(),
-            UptimeSeconds: GetUptimeSeconds(),
-            LoadAverage1m: GetLoadAverage1m());
+            ProcessorCount: null,
+            CpuModel: null,
+            MemoryTotalBytes: null,
+            MemoryAvailableBytes: null,
+            DiskTotalBytes: null,
+            UptimeSeconds: null,
+            LoadAverage1m: null,
+            Containers: await ContainerMetricsFile.ReadAsync(
+                _configuration["Operations:ContainerMetricsPath"] ?? ContainerMetricsFile.DefaultPath,
+                DateTimeOffset.UtcNow, cancellationToken));
     }
 
     public async Task<AdminSystemHistoryDto> GetSystemHistoryAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
@@ -499,7 +502,9 @@ public class AdminMetricsReader : IAdminMetricsReader
             .AsNoTracking()
             .Where(snapshot => snapshot.CapturedAt >= start && snapshot.CapturedAt < end)
             .OrderBy(snapshot => snapshot.CapturedAt)
-            .Select(snapshot => new SystemMetricSnapshotDto(
+            .ToListAsync(cancellationToken);
+
+        var result = samples.Select(snapshot => new SystemMetricSnapshotDto(
                 snapshot.CapturedAt,
                 snapshot.DiskFreeBytes,
                 snapshot.DiskTotalBytes,
@@ -507,10 +512,12 @@ public class AdminMetricsReader : IAdminMetricsReader
                 snapshot.MemoryTotalBytes,
                 snapshot.LoadAverage1m,
                 snapshot.UptimeSeconds,
-                snapshot.PostgresDataSizeBytes))
-            .ToListAsync(cancellationToken);
+                snapshot.PostgresDataSizeBytes,
+                snapshot.MetricScope,
+                snapshot.MetricScope == "container" ? ContainerMetricsFile.Parse(snapshot.ContainerMetricsJson) : null))
+            .ToList();
 
-        return new AdminSystemHistoryDto(from, to, samples);
+        return new AdminSystemHistoryDto(from, to, result);
     }
 
     private async Task<AdminMcpSummaryDto> GetMcpSummaryAsync(DateTime now, CancellationToken cancellationToken)
@@ -749,119 +756,6 @@ public class AdminMetricsReader : IAdminMetricsReader
     {
         var present = values.Where(value => value is not null).Select(value => value!.Value).ToList();
         return present.Count == 0 ? null : present.Average();
-    }
-
-    private long? GetDiskFreeBytes()
-    {
-        try
-        {
-            var path = _configuration["Operations:DataPath"] ?? "/opt/convy";
-            var root = Path.GetPathRoot(path);
-            if (string.IsNullOrWhiteSpace(root))
-                return null;
-
-            return new DriveInfo(root).AvailableFreeSpace;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private long? GetDiskTotalBytes()
-    {
-        try
-        {
-            var path = _configuration["Operations:DataPath"] ?? "/opt/convy";
-            var root = Path.GetPathRoot(path);
-            if (string.IsNullOrWhiteSpace(root))
-                return null;
-
-            return new DriveInfo(root).TotalSize;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private static string? GetCpuModel()
-    {
-        try
-        {
-            const string cpuInfoPath = "/proc/cpuinfo";
-            if (!File.Exists(cpuInfoPath))
-                return null;
-
-            return File.ReadLines(cpuInfoPath)
-                .Select(line => line.Split(':', 2))
-                .Where(parts => parts.Length == 2 && parts[0].Trim().Equals("model name", StringComparison.OrdinalIgnoreCase))
-                .Select(parts => parts[1].Trim())
-                .FirstOrDefault();
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private static long? GetMemoryValueBytes(string key)
-    {
-        try
-        {
-            const string memInfoPath = "/proc/meminfo";
-            if (!File.Exists(memInfoPath))
-                return null;
-
-            var line = File.ReadLines(memInfoPath).FirstOrDefault(value => value.StartsWith(key, StringComparison.Ordinal));
-            if (line is null)
-                return null;
-
-            var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            return parts.Length >= 2 && long.TryParse(parts[1], out var kib) ? kib * 1024 : null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private static long? GetUptimeSeconds()
-    {
-        try
-        {
-            const string uptimePath = "/proc/uptime";
-            if (!File.Exists(uptimePath))
-                return null;
-
-            var first = File.ReadAllText(uptimePath).Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-            return double.TryParse(first, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var uptime)
-                ? (long)Math.Round(uptime)
-                : null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private static double? GetLoadAverage1m()
-    {
-        try
-        {
-            const string loadAveragePath = "/proc/loadavg";
-            if (!File.Exists(loadAveragePath))
-                return null;
-
-            var first = File.ReadAllText(loadAveragePath).Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-            return double.TryParse(first, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var load)
-                ? load
-                : null;
-        }
-        catch
-        {
-            return null;
-        }
     }
 
     private async Task<long?> GetPostgresDataSizeAsync(CancellationToken cancellationToken)
