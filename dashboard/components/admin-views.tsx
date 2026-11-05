@@ -128,7 +128,7 @@ function formatBytes(value: number | null) {
     return "Unknown";
   }
 
-  const units = ["B", "KB", "MB", "GB", "TB"];
+  const units = ["B", "KiB", "MiB", "GiB", "TiB"];
   let next = value;
   let index = 0;
   while (next >= 1024 && index < units.length - 1) {
