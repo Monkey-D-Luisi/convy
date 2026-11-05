@@ -1,4 +1,5 @@
 using System.Data;
+using Convy.Application.Features.Admin.DTOs;
 using Convy.Domain.Entities;
 using Convy.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,9 @@ internal sealed record SystemMetricSample(
     long? MemoryTotalBytes,
     double? LoadAverage1m,
     long? UptimeSeconds,
-    long? PostgresDataSizeBytes);
+    long? PostgresDataSizeBytes,
+    string MetricScope = "legacy-host",
+    ContainerMetricsDto? Containers = null);
 
 internal interface ISystemMetricSource
 {
@@ -35,105 +38,11 @@ internal sealed class SystemMetricSource : ISystemMetricSource
     }
 
     public async Task<SystemMetricSample> CaptureAsync(CancellationToken cancellationToken = default) =>
-        new(
-            DiskFreeBytes: GetDiskFreeBytes(),
-            DiskTotalBytes: GetDiskTotalBytes(),
-            MemoryAvailableBytes: GetMemoryValueBytes("MemAvailable:"),
-            MemoryTotalBytes: GetMemoryValueBytes("MemTotal:"),
-            LoadAverage1m: GetLoadAverage1m(),
-            UptimeSeconds: GetUptimeSeconds(),
-            PostgresDataSizeBytes: await GetPostgresDataSizeAsync(cancellationToken));
-
-    private long? GetDiskFreeBytes()
-    {
-        try
-        {
-            var root = GetDataRoot();
-            return string.IsNullOrWhiteSpace(root) ? null : new DriveInfo(root).AvailableFreeSpace;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private long? GetDiskTotalBytes()
-    {
-        try
-        {
-            var root = GetDataRoot();
-            return string.IsNullOrWhiteSpace(root) ? null : new DriveInfo(root).TotalSize;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private string? GetDataRoot()
-    {
-        var path = _configuration["Operations:DataPath"] ?? "/opt/convy";
-        return Path.GetPathRoot(path);
-    }
-
-    private static long? GetMemoryValueBytes(string key)
-    {
-        try
-        {
-            const string memInfoPath = "/proc/meminfo";
-            if (!File.Exists(memInfoPath))
-                return null;
-
-            var line = File.ReadLines(memInfoPath).FirstOrDefault(value => value.StartsWith(key, StringComparison.Ordinal));
-            if (line is null)
-                return null;
-
-            var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            return parts.Length >= 2 && long.TryParse(parts[1], out var kib) ? kib * 1024 : null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private static long? GetUptimeSeconds()
-    {
-        try
-        {
-            const string uptimePath = "/proc/uptime";
-            if (!File.Exists(uptimePath))
-                return null;
-
-            var first = File.ReadAllText(uptimePath).Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-            return double.TryParse(first, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var uptime)
-                ? (long)Math.Round(uptime)
-                : null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private static double? GetLoadAverage1m()
-    {
-        try
-        {
-            const string loadAveragePath = "/proc/loadavg";
-            if (!File.Exists(loadAveragePath))
-                return null;
-
-            var first = File.ReadAllText(loadAveragePath).Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-            return double.TryParse(first, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var load)
-                ? load
-                : null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
+        new(null, null, null, null, null, null,
+            await GetPostgresDataSizeAsync(cancellationToken), "container",
+            await ContainerMetricsFile.ReadAsync(
+                _configuration["Operations:ContainerMetricsPath"] ?? ContainerMetricsFile.DefaultPath,
+                DateTimeOffset.UtcNow, cancellationToken));
 
     private async Task<long?> GetPostgresDataSizeAsync(CancellationToken cancellationToken)
     {
@@ -188,7 +97,9 @@ internal sealed class SystemMetricSnapshotRecorder
             sample.MemoryTotalBytes,
             sample.LoadAverage1m,
             sample.UptimeSeconds,
-            sample.PostgresDataSizeBytes));
+            sample.PostgresDataSizeBytes,
+            sample.MetricScope,
+            sample.Containers is null ? null : ContainerMetricsFile.Serialize(sample.Containers)));
 
         await _context.SaveChangesAsync(cancellationToken);
     }

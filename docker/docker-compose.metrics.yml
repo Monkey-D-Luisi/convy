@@ -1,0 +1,7 @@
+services:
+  api:
+    volumes:
+      - /var/lib/shared-host-ops/products/convy:/run/convy-container-metrics:ro
+  worker:
+    volumes:
+      - /var/lib/shared-host-ops/products/convy:/run/convy-container-metrics:ro

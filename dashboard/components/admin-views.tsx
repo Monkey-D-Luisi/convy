@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { useAdminToken } from "@/components/admin-shell";
+import { ContainerServices } from "@/components/container-services";
 import type { BackupRun, McpOverview, OpenAiMetrics, Overview, SystemHealth, SystemHistory, UsageMetrics, VoiceMetrics } from "@/lib/types";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
@@ -127,7 +128,7 @@ function formatBytes(value: number | null) {
     return "Unknown";
   }
 
-  const units = ["B", "KB", "MB", "GB", "TB"];
+  const units = ["B", "KiB", "MiB", "GiB", "TiB"];
   let next = value;
   let index = 0;
   while (next >= 1024 && index < units.length - 1) {
@@ -566,8 +567,8 @@ export function OverviewView() {
           <h2 className="text-lg font-semibold text-ink">System</h2>
           <HealthSummary health={data.health} />
           <dl className="mt-4 grid grid-cols-2 gap-4">
-            <Stat label="Disk free" value={formatBytes(data.health.diskFreeBytes)} />
-            <Stat label="Uptime" value={formatDuration(data.health.uptimeSeconds)} />
+            <Stat label="Container telemetry" value={data.health.containers?.status ?? "unknown"} />
+            <Stat label="PostgreSQL data" value={formatBytes(data.health.postgresDataSizeBytes)} />
           </dl>
           <DeepLink href="/system" label="Open System view" />
         </section>
@@ -604,6 +605,8 @@ export function OverviewView() {
         </section>
       </div>
 
+      <ContainerServices metrics={data.health.containers} />
+      <p className="text-sm text-muted">Historical host samples are preserved as legacy-host. Container samples use Docker telemetry; missing values remain gaps.</p>
       <ChartPanel title="System Trends">
         {systemHistory.data?.samples.length ? (
           <SystemTrendsChart samples={systemHistory.data.samples} />
@@ -1095,7 +1098,7 @@ export function SystemView() {
       <div className="space-y-6">
         <ViewHeader
           title="System"
-          description="Runtime, database, host, deploy, and resource health."
+          description="Convy containers, application health, database and deployment."
           rangeLabel={range.label}
           lastUpdatedAt={combinedLastUpdatedAt}
           loading={combinedLoading}
@@ -1114,7 +1117,7 @@ export function SystemView() {
     <div className="space-y-6">
       <ViewHeader
         title="System"
-        description="Runtime, database, host, deploy, and resource health."
+        description="Convy containers, application health, database and deployment."
         rangeLabel={range.label}
         lastUpdatedAt={combinedLastUpdatedAt}
         loading={combinedLoading}
@@ -1131,13 +1134,6 @@ export function SystemView() {
         <MetricCard label="Auth" value={data.authHealthy ? "Healthy" : "Unhealthy"} tone={data.authHealthy ? "good" : "warn"} />
         <MetricCard label="MCP metadata" value={data.mcpMetadataHealthy ? "Reachable" : "Unreachable"} tone={data.mcpMetadataHealthy ? "good" : "warn"} />
         <MetricCard label="Auth metadata" value={data.authMetadataHealthy ? "Reachable" : "Unreachable"} tone={data.authMetadataHealthy ? "good" : "warn"} />
-        <MetricCard label="Disk free" value={formatBytes(data.diskFreeBytes)} />
-        <MetricCard label="Disk total" value={formatBytes(data.diskTotalBytes)} />
-        <MetricCard label="Memory available" value={formatBytes(data.memoryAvailableBytes)} />
-        <MetricCard label="Memory total" value={formatBytes(data.memoryTotalBytes)} />
-        <MetricCard label="CPU cores" value={data.processorCount} />
-        <MetricCard label="Load 1m" value={data.loadAverage1m === null ? "Unknown" : data.loadAverage1m.toFixed(2)} />
-        <MetricCard label="Uptime" value={formatDuration(data.uptimeSeconds)} />
         <MetricCard label="PostgreSQL data" value={formatBytes(data.postgresDataSizeBytes)} />
         <section className="rounded-lg border border-line bg-white p-5 shadow-sm md:col-span-2 xl:col-span-4">
           <h2 className="text-lg font-semibold text-ink">Versions</h2>
@@ -1149,14 +1145,15 @@ export function SystemView() {
           </dl>
         </section>
         <section className="rounded-lg border border-line bg-white p-5 shadow-sm md:col-span-2 xl:col-span-4">
-          <h2 className="text-lg font-semibold text-ink">Host</h2>
+          <h2 className="text-lg font-semibold text-ink">API runtime</h2>
           <dl className="mt-4 grid gap-4 md:grid-cols-3">
             <Stat label="OS" value={data.operatingSystem ?? "Unknown"} />
             <Stat label="Architecture" value={data.architecture ?? "Unknown"} />
-            <Stat label="CPU" value={data.cpuModel ?? "Unknown"} />
           </dl>
         </section>
       </div>
+      <ContainerServices metrics={data.containers} />
+      <p className="text-sm text-muted">Historical host samples are preserved as legacy-host. Container samples use Docker telemetry; missing values remain gaps.</p>
       <ChartPanel title="System Trends">
         {systemHistory.data?.samples.length ? (
           <SystemTrendsChart samples={systemHistory.data.samples} />

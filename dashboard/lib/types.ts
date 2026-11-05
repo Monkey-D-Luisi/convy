@@ -12,7 +12,19 @@ export type BackupRun = {
   finishedAt: string;
 };
 
+export type ContainerServiceMetric = {
+  containerName: string; containerId: string | null; state: string; health: string;
+  cpuPercent: number | null; memoryBytes: number | null; restartCount: number | null;
+  startedAtUtc: string | null;
+};
+export type ContainerMetrics = {
+  schemaVersion: number; scope: "container"; product: "convy"; capturedAtUtc: string;
+  status: "available" | "unknown" | "stale"; services: ContainerServiceMetric[];
+};
+
 export type SystemHealth = {
+  metricScope: "container";
+  containers: ContainerMetrics | null;
   apiHealthy: boolean;
   databaseHealthy: boolean;
   mcpHealthy: boolean;
@@ -27,7 +39,7 @@ export type SystemHealth = {
   releaseSha: string | null;
   operatingSystem: string | null;
   architecture: string | null;
-  processorCount: number;
+  processorCount: number | null;
   cpuModel: string | null;
   memoryTotalBytes: number | null;
   memoryAvailableBytes: number | null;
@@ -43,6 +55,8 @@ export type SystemHistory = {
 };
 
 export type SystemMetricSnapshot = {
+  metricScope: "legacy-host" | "container";
+  containers: ContainerMetrics | null;
   capturedAt: string;
   diskFreeBytes: number | null;
   diskTotalBytes: number | null;

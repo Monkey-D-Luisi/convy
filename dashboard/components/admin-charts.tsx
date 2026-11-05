@@ -115,8 +115,10 @@ export function SystemTrendsChart({ samples }: { samples: SystemHistory["samples
   const data = samples.map((sample) => ({
     ...sample,
     capturedAtLabel: dateFormatter.format(new Date(sample.capturedAt)),
-    diskFreeGb: toGib(sample.diskFreeBytes),
-    memoryAvailableGb: toGib(sample.memoryAvailableBytes),
+    diskFreeGb: sample.metricScope === "legacy-host" ? toGib(sample.diskFreeBytes) : null,
+    memoryAvailableGb: sample.metricScope === "legacy-host" ? toGib(sample.memoryAvailableBytes) : null,
+    containerMemoryMb: sample.metricScope === "container" && sample.containers?.status === "available" && sample.containers.services.every(service => service.memoryBytes !== null)
+      ? sample.containers.services.reduce((total, service) => total + (service.memoryBytes ?? 0), 0) / 2 ** 20 : null,
     postgresDataMb: toMib(sample.postgresDataSizeBytes),
   }));
 
@@ -125,12 +127,14 @@ export function SystemTrendsChart({ samples }: { samples: SystemHistory["samples
       <LineChart data={data}>
         <CartesianGrid strokeDasharray="3 3" stroke="#dce7e2" />
         <XAxis dataKey="capturedAt" tickFormatter={formatDateTick} />
-        <YAxis tickFormatter={(value) => bytesFormatter.format(Number(value))} />
+        <YAxis tickFormatter={(value) => bytesFormatter.format(Number(value))} label={{ value: "MiB", angle: -90, position: "insideLeft" }} />
+        <YAxis yAxisId="host" orientation="right" label={{ value: "Legacy host GiB", angle: 90, position: "insideRight" }} />
         <Tooltip labelFormatter={(value) => new Date(String(value)).toLocaleString()} />
         <Legend />
-        <Line type="monotone" dataKey="diskFreeGb" dot={false} isAnimationActive={false} stroke={ChartPalette.good} strokeWidth={2} name="Disk free GB" />
-        <Line type="monotone" dataKey="memoryAvailableGb" dot={false} isAnimationActive={false} stroke={ChartPalette.compare} strokeWidth={2} name="Memory available GB" />
-        <Line type="monotone" dataKey="postgresDataMb" dot={false} isAnimationActive={false} stroke={ChartPalette.caution} strokeWidth={2} name="PostgreSQL MB" />
+        <Line type="monotone" dataKey="diskFreeGb" dot={false} isAnimationActive={false} stroke={ChartPalette.good} strokeWidth={2} name="Legacy host disk free GiB" yAxisId="host" connectNulls={false} />
+        <Line type="monotone" dataKey="memoryAvailableGb" dot={false} isAnimationActive={false} stroke={ChartPalette.compare} strokeWidth={2} name="Legacy host memory available GiB" yAxisId="host" connectNulls={false} />
+        <Line type="monotone" dataKey="containerMemoryMb" dot={false} isAnimationActive={false} stroke={ChartPalette.compare} strokeWidth={2} name="Convy container memory MiB" connectNulls={false} />
+        <Line type="monotone" dataKey="postgresDataMb" dot={false} isAnimationActive={false} stroke={ChartPalette.caution} strokeWidth={2} name="PostgreSQL MiB" connectNulls={false} />
       </LineChart>
     </ResponsiveContainer>
   );

@@ -974,6 +974,11 @@ namespace Convy.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("captured_at");
 
+                    b.Property<string>("ContainerMetricsJson")
+                        .HasMaxLength(16384)
+                        .HasColumnType("character varying(16384)")
+                        .HasColumnName("container_metrics_json");
+
                     b.Property<long?>("DiskFreeBytes")
                         .HasColumnType("bigint")
                         .HasColumnName("disk_free_bytes");
@@ -993,6 +998,14 @@ namespace Convy.Infrastructure.Migrations
                     b.Property<long?>("MemoryTotalBytes")
                         .HasColumnType("bigint")
                         .HasColumnName("memory_total_bytes");
+
+                    b.Property<string>("MetricScope")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("legacy-host")
+                        .HasColumnName("metric_scope");
 
                     b.Property<long?>("PostgresDataSizeBytes")
                         .HasColumnType("bigint")
