@@ -7,6 +7,7 @@ const ts = require("typescript");
 const { renderToStaticMarkup } = require("react-dom/server");
 const { createElement } = require("react");
 const Module = require("node:module");
+require.extensions[".ts"] = (module, file) => module._compile(ts.transpileModule(readFileSync(file, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, file);
 const filename = new URL("../components/container-services.tsx", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const component = new Module(filename);
 component.filename = filename;
@@ -17,7 +18,7 @@ component._compile(ts.transpileModule(readFileSync(new URL("../components/contai
 const { ContainerServices } = component.exports;
 
 test("renders all six services, real zero values, unknown health and container identity", () => {
-  const html = renderToStaticMarkup(createElement(ContainerServices, { metrics: { status: "available", capturedAtUtc: "2026-11-04T12:00:00Z", services: [{ containerName: "convy-api", containerId: "a".repeat(64), state: "running", health: "unknown", cpuPercent: 0, memoryBytes: 1048576, restartCount: 0 }] } }));
+  const html = renderToStaticMarkup(createElement(ContainerServices, { metrics: { status: "available", schemaVersion: 1, scope: "container", product: "convy", capturedAtUtc: new Date().toISOString(), services: [{ containerName: "convy-api", containerId: "a".repeat(64), state: "running", health: "unknown", cpuPercent: 0, memoryBytes: 1048576, restartCount: 0 }] } }));
   for (const value of ["API", "Worker", "Authentication", "Admin dashboard", "MCP", "PostgreSQL", "0.00%", "1.0 MiB", "aaaaaaaaaaaa", "Infrastructure Ops"]) assert.ok(html.includes(value), value);
   assert.ok(!html.includes("chatbot-api"));
 });
