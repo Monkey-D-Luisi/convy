@@ -13,13 +13,17 @@ public class McpTokenService
         _configuration = configuration;
     }
 
-    public string CreateAccessToken(Guid userId, string clientId, string scopes)
+    public string CreateAccessToken(Guid userId, string clientId, string scopes, string? resource = null)
     {
+        var audiences = McpResources.GetAudiences(_configuration);
+        var audience = resource ?? audiences[0];
+        if (!audiences.Contains(audience, StringComparer.Ordinal))
+            throw new ArgumentException("Unknown MCP resource.", nameof(resource));
+
         var privateKey = McpJwtKeyLoader.LoadPrivateKey(_configuration)
             ?? throw new InvalidOperationException("McpAuth private signing key is not configured.");
 
         var issuer = _configuration["McpAuth:Issuer"] ?? "https://auth.convyapp.com";
-        var audience = _configuration["McpAuth:Audience"] ?? "https://mcp.convyapp.com";
         var now = DateTime.UtcNow;
         var expires = now.AddMinutes(_configuration.GetValue("McpAuth:AccessTokenMinutes", 60));
 

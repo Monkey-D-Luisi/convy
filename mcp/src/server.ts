@@ -1,4 +1,5 @@
 import express from "express";
+import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { authenticateRequest } from "./auth.js";
 import { loadConfig, type McpConfig } from "./config.js";
@@ -9,15 +10,30 @@ export function createApp(config: McpConfig) {
   const app = express();
 
   app.disable("x-powered-by");
+  if (config.trustedProxy) app.set("trust proxy", config.trustedProxy.split(",").map((address) => address.trim()));
   app.use(express.json({ limit: "1mb" }));
-  const mcpRateLimit = createFixedWindowRateLimit(120, 10 * 60 * 1000);
+  const mcpRateLimit = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    limit: 120,
+    standardHeaders: false,
+    legacyHeaders: false,
+    keyGenerator: (req) => ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? "unknown", false),
+    message: { error: "rate_limited" },
+    // Forwarding headers remain untrusted unless an explicit proxy allowlist is configured.
+    validate: { xForwardedForHeader: false },
+  });
 
   app.get("/health", (_req, res) => {
     res.json({ status: "ok" });
   });
 
-  app.get("/.well-known/oauth-protected-resource", (_req, res) => {
-    res.json(createProtectedResourceMetadata(config));
+  const resourceConfig = (req: express.Request) => ({
+    ...config,
+    mcpPublicUrl: config.mcpPublicUrlAliases?.find((origin) => new URL(origin).host === req.get("host")?.toLowerCase().replace(/:443$/, "")) ?? config.mcpPublicUrl,
+  });
+
+  app.get("/.well-known/oauth-protected-resource", (req, res) => {
+    res.json(createProtectedResourceMetadata(resourceConfig(req)));
   });
 
   app.get("/.well-known/openai-apps-challenge", (_req, res) => {
@@ -42,7 +58,7 @@ export function createApp(config: McpConfig) {
   app.get("/docs", sendDocs);
 
   const handleMcpRequest = async (req: express.Request, res: express.Response) => {
-    const auth = await authenticateRequest(req, res, config);
+    const auth = await authenticateRequest(req, res, resourceConfig(req));
     if (!auth) {
       return;
     }
@@ -63,30 +79,6 @@ export function createApp(config: McpConfig) {
   app.post("/mcp", mcpRateLimit, handleMcpRequest);
 
   return app;
-}
-
-function createFixedWindowRateLimit(limit: number, windowMs: number) {
-  const buckets = new Map<string, { count: number; resetAt: number }>();
-
-  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const now = Date.now();
-    const key = req.ip ?? req.socket.remoteAddress ?? "unknown";
-    const bucket = buckets.get(key);
-
-    if (!bucket || bucket.resetAt <= now) {
-      buckets.set(key, { count: 1, resetAt: now + windowMs });
-      next();
-      return;
-    }
-
-    if (bucket.count >= limit) {
-      res.status(429).json({ error: "rate_limited" });
-      return;
-    }
-
-    bucket.count += 1;
-    next();
-  };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
