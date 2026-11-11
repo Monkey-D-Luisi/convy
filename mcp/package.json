@@ -16,6 +16,7 @@
     "@modelcontextprotocol/ext-apps": "1.7.2",
     "@modelcontextprotocol/sdk": "1.32.1",
     "express": "5.2.1",
+    "express-rate-limit": "8.7.4",
     "jose": "6.2.3",
     "react": "19.2.6",
     "react-dom": "19.2.6",

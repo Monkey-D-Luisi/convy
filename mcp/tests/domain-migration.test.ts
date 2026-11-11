@@ -58,3 +58,35 @@ test("aliases reject non-origin URLs and insecure or credential-bearing origins"
   }
   assert.throws(() => loadConfig({ CONVY_API_BASE_URL: "http://api:8080", MCP_JWT_PUBLIC_KEY: "test", MCP_PUBLIC_URL_ALIASES: alias }), /accepted token audience/);
 });
+
+test("the existing 120-request MCP limit ignores untrusted forwarding headers", async () => {
+  const { publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const app = createApp(loadConfig({ CONVY_API_BASE_URL: "http://api:8080", MCP_JWT_PUBLIC_KEY: await exportSPKI(publicKey) }));
+  const server = app.listen(0);
+  const endpoint = `http://127.0.0.1:${(server.address() as AddressInfo).port}/mcp`;
+  try {
+    for (let index = 0; index < 121; index++) {
+      const response = await fetch(endpoint, { method: "POST", headers: { "x-forwarded-for": `198.51.100.${index + 1}` } });
+      assert.equal(response.status, index < 120 ? 401 : 429);
+      if (index === 120) assert.deepEqual(await response.json(), { error: "rate_limited" });
+      else await response.body?.cancel();
+    }
+  } finally { server.close(); }
+});
+
+test("an explicitly trusted proxy retains separate per-address MCP quotas", async () => {
+  const { publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const app = createApp(loadConfig({ CONVY_API_BASE_URL: "http://api:8080", MCP_JWT_PUBLIC_KEY: await exportSPKI(publicKey), MCP_TRUSTED_PROXY: "127.0.0.1/32" }));
+  const server = app.listen(0);
+  const endpoint = `http://127.0.0.1:${(server.address() as AddressInfo).port}/mcp`;
+  try {
+    for (let index = 0; index < 121; index++) {
+      const response = await fetch(endpoint, { method: "POST", headers: { "x-forwarded-for": "198.51.100.1" } });
+      assert.equal(response.status, index < 120 ? 401 : 429);
+      await response.body?.cancel();
+    }
+    const other = await fetch(endpoint, { method: "POST", headers: { "x-forwarded-for": "198.51.100.2" } });
+    assert.equal(other.status, 401);
+    await other.body?.cancel();
+  } finally { server.close(); }
+});

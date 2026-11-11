@@ -1,4 +1,5 @@
 import express from "express";
+import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { authenticateRequest } from "./auth.js";
 import { loadConfig, type McpConfig } from "./config.js";
@@ -11,7 +12,16 @@ export function createApp(config: McpConfig) {
   app.disable("x-powered-by");
   if (config.trustedProxy) app.set("trust proxy", config.trustedProxy.split(",").map((address) => address.trim()));
   app.use(express.json({ limit: "1mb" }));
-  const mcpRateLimit = createFixedWindowRateLimit(120, 10 * 60 * 1000);
+  const mcpRateLimit = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    limit: 120,
+    standardHeaders: false,
+    legacyHeaders: false,
+    keyGenerator: (req) => ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? "unknown", false),
+    message: { error: "rate_limited" },
+    // Forwarding headers remain untrusted unless an explicit proxy allowlist is configured.
+    validate: { xForwardedForHeader: false },
+  });
 
   app.get("/health", (_req, res) => {
     res.json({ status: "ok" });
@@ -69,30 +79,6 @@ export function createApp(config: McpConfig) {
   app.post("/mcp", mcpRateLimit, handleMcpRequest);
 
   return app;
-}
-
-function createFixedWindowRateLimit(limit: number, windowMs: number) {
-  const buckets = new Map<string, { count: number; resetAt: number }>();
-
-  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const now = Date.now();
-    const key = req.ip ?? req.socket.remoteAddress ?? "unknown";
-    const bucket = buckets.get(key);
-
-    if (!bucket || bucket.resetAt <= now) {
-      buckets.set(key, { count: 1, resetAt: now + windowMs });
-      next();
-      return;
-    }
-
-    if (bucket.count >= limit) {
-      res.status(429).json({ error: "rate_limited" });
-      return;
-    }
-
-    bucket.count += 1;
-    next();
-  };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
