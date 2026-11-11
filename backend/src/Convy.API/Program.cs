@@ -44,6 +44,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
+    foreach (var address in builder.Configuration.GetSection("ReverseProxy:KnownProxies").Get<string[]>() ?? [])
+        options.KnownProxies.Add(System.Net.IPAddress.Parse(address));
 });
 
 // OpenAPI
@@ -96,7 +98,7 @@ builder.Services.AddAuthentication(AuthSchemes.DefaultBearer)
     .AddJwtBearer(AuthSchemes.McpBearer, options =>
     {
         var issuer = builder.Configuration["McpAuth:Issuer"] ?? "https://auth.convyapp.com";
-        var audience = builder.Configuration["McpAuth:Audience"] ?? "https://mcp.convyapp.com";
+        var audiences = McpResources.GetAudiences(builder.Configuration);
         SecurityKey publicKey = (SecurityKey?)mcpPublicKey ?? CreateDevelopmentMcpPublicKey();
 
         options.MapInboundClaims = false;
@@ -105,7 +107,7 @@ builder.Services.AddAuthentication(AuthSchemes.DefaultBearer)
             ValidateIssuer = true,
             ValidIssuer = issuer,
             ValidateAudience = true,
-            ValidAudience = audience,
+            ValidAudiences = audiences,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = publicKey,

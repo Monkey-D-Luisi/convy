@@ -118,12 +118,12 @@ public class OpsContractTests
     }
 
     [Fact]
-    public void AndroidStagingFlavor_ShouldDefaultToConvyAppApiHostAndKeepOverride()
+    public void AndroidStagingFlavor_ShouldDefaultToParallelApiHostAndKeepOverride()
     {
         var source = ReadRepoFile("mobile", "androidApp", "build.gradle.kts");
 
         source.Should().Contain("CONVY_STAGING_API_HOST");
-        source.Should().Contain("\"api.convyapp.com\"");
+        source.Should().Contain("\"api-convy.monkeydluisi.com\"");
         source.Should().NotContain("\"178.105.70.69.nip.io\")");
     }
 

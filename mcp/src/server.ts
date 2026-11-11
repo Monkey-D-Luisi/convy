@@ -9,6 +9,7 @@ export function createApp(config: McpConfig) {
   const app = express();
 
   app.disable("x-powered-by");
+  if (config.trustedProxy) app.set("trust proxy", config.trustedProxy.split(",").map((address) => address.trim()));
   app.use(express.json({ limit: "1mb" }));
   const mcpRateLimit = createFixedWindowRateLimit(120, 10 * 60 * 1000);
 
@@ -16,8 +17,13 @@ export function createApp(config: McpConfig) {
     res.json({ status: "ok" });
   });
 
-  app.get("/.well-known/oauth-protected-resource", (_req, res) => {
-    res.json(createProtectedResourceMetadata(config));
+  const resourceConfig = (req: express.Request) => ({
+    ...config,
+    mcpPublicUrl: config.mcpPublicUrlAliases?.find((origin) => new URL(origin).host === req.get("host")?.toLowerCase().replace(/:443$/, "")) ?? config.mcpPublicUrl,
+  });
+
+  app.get("/.well-known/oauth-protected-resource", (req, res) => {
+    res.json(createProtectedResourceMetadata(resourceConfig(req)));
   });
 
   app.get("/.well-known/openai-apps-challenge", (_req, res) => {
@@ -42,7 +48,7 @@ export function createApp(config: McpConfig) {
   app.get("/docs", sendDocs);
 
   const handleMcpRequest = async (req: express.Request, res: express.Response) => {
-    const auth = await authenticateRequest(req, res, config);
+    const auth = await authenticateRequest(req, res, resourceConfig(req));
     if (!auth) {
       return;
     }

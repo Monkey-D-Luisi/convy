@@ -16,7 +16,7 @@ let cachedPublicKey: CryptoKey | undefined;
 export async function authenticateRequest(
   req: Request,
   res: Response,
-  config: Pick<McpConfig, "jwtPublicKeyPem" | "jwtIssuer" | "jwtAudience" | "mcpPublicUrl" | "authPublicUrl">,
+  config: Pick<McpConfig, "jwtPublicKeyPem" | "jwtIssuer" | "jwtAudience" | "jwtAudienceAliases" | "mcpPublicUrl" | "authPublicUrl">,
 ): Promise<McpAuthContext | null> {
   const token = extractBearerToken(req);
   if (!token) {
@@ -46,12 +46,12 @@ export async function authenticateRequest(
 
 export async function validateMcpToken(
   token: string,
-  config: Pick<McpConfig, "jwtPublicKeyPem" | "jwtIssuer" | "jwtAudience">,
+  config: Pick<McpConfig, "jwtPublicKeyPem" | "jwtIssuer" | "jwtAudience" | "jwtAudienceAliases">,
 ): Promise<McpAuthContext> {
   const publicKey = await getPublicKey(config.jwtPublicKeyPem);
   const { payload } = await jwtVerify(token, publicKey, {
     issuer: config.jwtIssuer,
-    audience: config.jwtAudience,
+    audience: [config.jwtAudience, ...(config.jwtAudienceAliases ?? [])],
   });
 
   if (payload.token_use !== "mcp_access") {

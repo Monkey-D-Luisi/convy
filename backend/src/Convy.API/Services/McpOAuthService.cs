@@ -103,7 +103,7 @@ public class McpOAuthService
             if (transaction is not null)
                 await transaction.CommitAsync(cancellationToken);
 
-            return CreateTokenResult(record.UserId, record.ClientId, record.Scopes, refreshToken);
+            return CreateTokenResult(record.UserId, record.ClientId, record.Resource, record.Scopes, refreshToken);
         });
     }
 
@@ -149,7 +149,7 @@ public class McpOAuthService
             if (transaction is not null)
                 await transaction.CommitAsync(cancellationToken);
 
-            return CreateTokenResult(record.UserId, record.ClientId, record.Scopes, replacementRefreshToken);
+            return CreateTokenResult(record.UserId, record.ClientId, record.Resource, record.Scopes, replacementRefreshToken);
         });
     }
 
@@ -167,7 +167,7 @@ public class McpOAuthService
     }
 
     public bool IsExpectedResource(string resource) =>
-        string.Equals(resource, _configuration["McpAuth:Audience"] ?? "https://mcp.convyapp.com", StringComparison.Ordinal);
+        McpResources.GetAudiences(_configuration).Contains(resource, StringComparer.Ordinal);
 
     public static string HashToken(string token)
     {
@@ -175,9 +175,9 @@ public class McpOAuthService
         return Base64UrlEncoder.Encode(hash);
     }
 
-    private McpTokenEndpointResult CreateTokenResult(Guid userId, string clientId, string scopes, string refreshToken)
+    private McpTokenEndpointResult CreateTokenResult(Guid userId, string clientId, string resource, string scopes, string refreshToken)
     {
-        var accessToken = _tokenService.CreateAccessToken(userId, clientId, scopes);
+        var accessToken = _tokenService.CreateAccessToken(userId, clientId, scopes, resource);
         return McpTokenEndpointResult.Valid(new McpTokenResponse(
             accessToken,
             "Bearer",
