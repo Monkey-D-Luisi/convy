@@ -1,5 +1,6 @@
 using Convy.Application.Common.Interfaces;
 using Convy.Domain.Repositories;
+using System.Security.Claims;
 
 namespace Convy.API.Services;
 
@@ -25,35 +26,37 @@ public class CurrentUserService : ICurrentUserService
 
     public string FirebaseUid
     {
-        get
-        {
-            if (string.Equals(_httpContextAccessor.HttpContext?.User?.FindFirst("auth_source")?.Value, "mcp", StringComparison.Ordinal))
-                return string.Empty;
-
-            var uid = _httpContextAccessor.HttpContext?.User?.FindFirst("user_id")?.Value
-                ?? _httpContextAccessor.HttpContext?.User?.FindFirst("sub")?.Value;
-
-            return uid ?? string.Empty;
-        }
+        get => GetFirebaseUid(_httpContextAccessor.HttpContext?.User);
     }
 
-    public async Task ResolveAsync(CancellationToken cancellationToken = default)
+    public Task ResolveAsync(CancellationToken cancellationToken = default) =>
+        ResolveAsync(_httpContextAccessor.HttpContext?.User, cancellationToken);
+
+    public async Task ResolveAsync(ClaimsPrincipal? principal, CancellationToken cancellationToken = default)
     {
-        if (_resolvedUserId.HasValue)
+        if (_resolvedUserId.HasValue || principal?.Identity?.IsAuthenticated != true)
             return;
 
-        if (string.Equals(_httpContextAccessor.HttpContext?.User?.FindFirst("auth_source")?.Value, "mcp", StringComparison.Ordinal)
-            && Guid.TryParse(_httpContextAccessor.HttpContext?.User?.FindFirst("sub")?.Value, out var mcpUserId))
+        if (string.Equals(principal.FindFirst("auth_source")?.Value, "mcp", StringComparison.Ordinal)
+            && Guid.TryParse(principal.FindFirst("sub")?.Value, out var mcpUserId))
         {
             _resolvedUserId = mcpUserId;
             return;
         }
 
-        var firebaseUid = FirebaseUid;
+        var firebaseUid = GetFirebaseUid(principal);
         if (string.IsNullOrEmpty(firebaseUid))
             return;
 
         var user = await _userRepository.GetByFirebaseUidAsync(firebaseUid, cancellationToken);
         _resolvedUserId = user?.Id ?? Guid.Empty;
+    }
+
+    private static string GetFirebaseUid(ClaimsPrincipal? principal)
+    {
+        if (string.Equals(principal?.FindFirst("auth_source")?.Value, "mcp", StringComparison.Ordinal))
+            return string.Empty;
+
+        return principal?.FindFirst("user_id")?.Value ?? principal?.FindFirst("sub")?.Value ?? string.Empty;
     }
 }

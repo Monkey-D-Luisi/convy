@@ -24,6 +24,12 @@ explicit build override. Verify login, households/lists, SignalR reconnect and F
 on a real device before publishing an update; an API test is not device acceptance.
 Publishing to Google Play remains an owner action.
 
+SignalR resolves the authenticated connection principal inside each hub invocation
+scope. The HTTP middleware's scoped user resolution does not carry into those
+scopes. Keep the invocation filter enabled so registered household members can
+join and leave their notification group; the existing membership checks continue
+to reject outsiders for both legacy and alias connections.
+
 Add the new public/auth/admin origins to Firebase authorized domains without
 removing any existing entry. Verify existing OAuth callback metadata unchanged.
 An existing ChatGPT connection keeps using its legacy URL and resource. To migrate

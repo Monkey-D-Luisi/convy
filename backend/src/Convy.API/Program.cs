@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
@@ -52,7 +53,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddOpenApi();
 
 // SignalR
-builder.Services.AddSignalR()
+builder.Services.AddSignalR(options => options.AddFilter<CurrentUserHubFilter>())
     .AddJsonProtocol(options =>
     {
         options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
